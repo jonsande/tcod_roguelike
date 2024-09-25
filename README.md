@@ -34,6 +34,7 @@ n - Down&Right<br />
 i - Open inventory<br />
 g - Pickup item<br />
 d - Drop item<br />
+a - Use item (in inventory)
 SPACE - Interact<br />
 o - On/Off lantern<br />
 p - Combat info panel<br />
