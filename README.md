@@ -2,7 +2,7 @@
 # Python + tcod roguelike
 
 
-Experimental traditional roguelike with procedural level generation, pathfinding,  raycasting FOV, stealth system... Based on "Yet another roguelike tutorial - Written on Python 3 and TCOD" (https://rogueliketutorials.com/tutorials/tcod/v2/).
+Experimental traditional roguelike with procedural level generation, pathfinding, raycasting FOV, stealth system... Based on "Yet another roguelike tutorial - Written on Python 3 and TCOD" (https://rogueliketutorials.com/tutorials/tcod/v2/).
 
 ## Controls
 
@@ -35,3 +35,5 @@ i - Open inventory<br />
 g - Pickup<br />
 SPACE - Interact<br />
 o - On/Off lantern<br />
+p - Combat info panel<br />
+v - Message log<br />
