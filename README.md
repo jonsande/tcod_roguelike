@@ -32,8 +32,10 @@ n - Down&Right<br />
 
 ### Other
 i - Open inventory<br />
-g - Pickup<br />
+g - Pickup item<br />
+d - Drop item<br />
 SPACE - Interact<br />
 o - On/Off lantern<br />
 p - Combat info panel<br />
 v - Message log<br />
+c - Character information
