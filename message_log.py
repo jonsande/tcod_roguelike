@@ -38,7 +38,8 @@ class MessageLog:
             self.messages.append(Message(text, fg))
 
     def render(
-        self, console: tcod.Console, x: int, y: int, width: int, height: int,
+        #self, console: tcod.Console, x: int, y: int, width: int, height: int,   # DEPRECATED
+        self, console: tcod.console.Console, x: int, y: int, width: int, height: int,
     ) -> None:
         """Render this log over the given area.
         `x`, `y`, `width`, `height` is the rectangular region to render onto
@@ -57,7 +58,8 @@ class MessageLog:
     @classmethod       
     def render_messages(
         cls,
-        console: tcod.Console,
+        #console: tcod.Console,  # DEPRECATED
+        console: tcod.console.Console,
         x: int,
         y: int,
         width: int,

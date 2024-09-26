@@ -39,8 +39,7 @@ class Entity:
         generated_item_list: int = [],
         #transparent: int = False,
         #blocks_vision: bool = False,
-
-    ):
+):
 
         self.spawn_coord = spawn_coord
         self.generated_item_list = generated_item_list

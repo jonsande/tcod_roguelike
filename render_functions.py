@@ -104,7 +104,7 @@ def render_dungeon_level(
 
     console.print(x=x, y=y, string=f"Dungeon level: {dungeon_level}")
 
-"""
+
 def render_names_at_mouse_location(
     console: Console, x: int, y: int, engine: Engine
 ) -> None:
@@ -115,7 +115,7 @@ def render_names_at_mouse_location(
     )
     
     console.print(x=x, y=y, string=names_at_mouse_location, bg=color.black, fg=color.white)
-"""    
+    
 
 """
 def render_names_at_mouse_location_alt(

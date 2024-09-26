@@ -170,16 +170,17 @@ else:
     )
     
 # MURO DEBBUG
-"""
-wall = new_tile(
-    walkable=False,
-    transparent=True,
-    #dark=(ord("#"), (39,7,47), (5,5,5)),
-    dark=(ord("#"), (39,7,47), (5,5,5)),
-    #light=(ord("#"), (255,255,184), (0,0,0)),
-    light=(ord("#"), (170,170,120), (0,0,0)),
-)
-"""
+
+# Debugg: uncomment for transparent view
+# wall = new_tile(
+#     walkable=False,
+#     transparent=True,
+#     #dark=(ord("#"), (39,7,47), (5,5,5)),
+#     dark=(ord("#"), (39,7,47), (5,5,5)),
+#     #light=(ord("#"), (255,255,184), (0,0,0)),
+#     light=(ord("#"), (170,170,120), (0,0,0)),
+# )
+
     
 # MURO PUEBLO:
 town_wall = new_tile(

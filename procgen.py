@@ -60,7 +60,7 @@ max_monsters_by_floor = [
     (6, 3)
 
 ]
-##
+
 # Probabilidades de que se generen estas entidades por sala.
 # El nivel 0 al parecer es lo que se aplica por defecto a todos los niveles
 # Al parecer las tiradas se hacen en orden?!
@@ -68,8 +68,8 @@ item_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #0: [(health_potion, 1), (damage_potion, 1)],
     #1: [(power_potion, 100), (damage_potion, 100), (health_potion, 100), (confusion_scroll, 100), (paralisis_scroll, 100), (lightning_scroll, 100), (fireball_scroll, 100)],
     #1: [(chain_mail, 100), (short_sword, 100), (long_sword, 100), (grial, 100)],
-    1: [(dagger_plus, 100)],
-    #1: [(antidote, 10), (sand_bag, 5), (health_potion, 10), (posion_potion, 10), (power_potion, 10), (stamina_potion, 10), (confusion_potion, 10), (precission_potion, 10), (strength_potion, 5)],
+    #1: [(dagger_plus, 100)],
+    1: [(antidote, 10), (sand_bag, 5), (health_potion, 10), (posion_potion, 10), (power_potion, 10), (stamina_potion, 10), (confusion_potion, 10), (precission_potion, 10), (strength_potion, 5)],
     2: [(health_potion, 15), (posion_potion, 15), (power_potion, 15), (stamina_potion, 15), (confusion_potion, 15), (precission_potion, 15), (rock, 15), (table, 15)],
     3: [(poisoned_triple_ration, 10), (triple_ration, 10), (rock, 45), (confusion_scroll, 10), (paralisis_scroll, 10), (lightning_scroll, 5), (fireball_scroll, 5), (short_sword, 5)],
     4: [(confusion_scroll, 15), (paralisis_scroll, 15), (lightning_scroll, 10), (fireball_scroll, 5)],
@@ -80,7 +80,7 @@ item_chances: Dict[int, List[Tuple[Entity, int]]] = {
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #0: [(rat, 100)], # Esto no hace nada porque el max_monsters_by_floor está a 0
     #1: [(bandit, 100)],
-    1: [(snake, 10), (adventurer, 10), (rat, 20), (swarm_rat, 20), (goblin, 10)],
+    1: [(fireplace, 100), (snake, 10), (adventurer, 10), (rat, 20), (swarm_rat, 20), (goblin, 10)],
     2: [(adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
     3: [(orc, 50), (goblin, 50)],
     4: [(swarm_rat, 20), (rat, 0), (orc, 20), (goblin, 30)],

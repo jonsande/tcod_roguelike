@@ -361,13 +361,13 @@ class Engine:
             dungeon_level=self.game_world.current_floor - 1,
             location=(61, 42),
             )
-        """
+        
         # Inspección de objetos
         render_functions.render_names_at_mouse_location(
             #console=console, x=51, y=37, engine=self
             console=console, x=1, y=1, engine=self
         )
-        """
+        
 
         # Combat mode indicator:
         if self.player.fighter.is_in_melee == True:

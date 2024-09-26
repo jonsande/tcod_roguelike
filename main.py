@@ -57,7 +57,8 @@ def main() -> None:
         title="MONKEY ISLAND RL",
         vsync=True,
     ) as context:
-        root_console = tcod.Console(screen_width, screen_heigth, order="F")
+        #root_console = tcod.Console(screen_width, screen_heigth, order="F")   # DEPRECATED
+        root_console = tcod.console.Console(screen_width, screen_heigth, order="F")
         try:
             while True:
                 root_console.clear()

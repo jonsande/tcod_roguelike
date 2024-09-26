@@ -203,12 +203,14 @@ debris_a = Decoration(
     color=(35, 25, 35),
     name="Debris",
 )
+
 rock = Decoration(
     char=";",
     #color=(207, 63, 255),
     color=(95, 85, 95),
     name="Rock",
 )
+
 table = Actor(
     char="#",
     color=(100,100,100),
@@ -220,6 +222,7 @@ table = Actor(
     inventory=Inventory(capacity=1),
     level=Level(xp_given=0),
 )
+
 fireplace = Actor(
     char="x",
     color=(255,170,0),
@@ -247,6 +250,7 @@ door = Obstacle(
     inventory=Inventory(capacity=0),
     equipment=Equipment(),
 )
+
 breakable_wall = Obstacle(
 
     char='√',
@@ -277,9 +281,10 @@ revolver = Item(
 dagger = Item(
     char="/", 
     color=(0, 191, 125), 
-    name="Machete", 
+    name="Dagger", 
     equippable=equippable.Dagger()
 )
+
 dagger_plus = Item(
     char="/", 
     color=(0, 191, 255), 
@@ -315,7 +320,7 @@ spear = Item(
 leather_armor = Item(
     char="[",
     color=(139, 69, 19),
-    name="Leather Jacket",
+    name="Leather armor",
     equippable=equippable.LeatherArmor(),
     info=f"Stealth penalty: 1"
 )
@@ -413,14 +418,16 @@ player = Actor(
     ai_cls=HostileEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=32, 
+        hp=32,
+        #hp=932, # Debugg
         base_defense=0, 
         base_power=0, 
         recover_rate=1, 
         fov=6,
-        #fov=90,
+        #fov=90, # Debugg
         dmg_mod = (1, 4), 
         base_stealth=1, 
+        #base_stealth=100, # Debugg
         base_to_hit=0,
         luck=1,
         satiety=32,

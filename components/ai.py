@@ -458,6 +458,7 @@ class SleepingEnemy(BaseAI):
                 #woke_ai = HostileEnemy(self.entity)
                 woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
                 self.entity.ai = woke_ai
+                self.entity.name = self.entity.name + " (!)"
                 
             else:
                 self.engine.message_log.add_message(
@@ -638,14 +639,17 @@ class Scout(BaseAI): # WORK IN PROGRESS
             
             if self.checkpoint:
                 dest_x, dest_y = self.checkpoint
-                #print(f"DESTINO ACTUAL DEL SCOUT: {dest_x},{dest_y}")
+                #print(f"DESTINO ACTUAL DEL SCOUT: {dest_x},{dest_y}") # DEBUGG
                 self.path2 = self.get_path_to(dest_x, dest_y) # Returns array of cells to checkpoint
                 
                 if self.entity.x == dest_x and self.entity.y == dest_y:
                     #self.checkpoint = []
-                    self.checkpoint = self.engine.center_room_array.pop(0)
-                    return WaitAction(self.entity).perform()
-                
+                    try:
+                        self.checkpoint = self.engine.center_room_array.pop(0) # Esto está dando un error IndexError
+                        return WaitAction(self.entity).perform()
+                    except IndexError:
+                        #print(f"[DEBUG] Error excepton -- IndexError: pop from empty list\nGoblin location: {self.checkpoint}")
+                        WaitAction(self.entity).perform()
                 else:
                     if self.path2:
                         to_x, to_y = self.path2.pop(0)
@@ -654,7 +658,7 @@ class Scout(BaseAI): # WORK IN PROGRESS
                         if distance > 6 + 2 and distance < 6 + 9:
                             #self.engine.game_map.visible
                             self.engine.message_log.add_message(
-                                f"¡Escuchas pasos!",
+                                f"You hear footsteps!",
                                 color.red
                                 )
                             

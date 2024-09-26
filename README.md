@@ -16,7 +16,7 @@ u - Up&Right<br />
 b - Down&Left<br />
 n - Down&Right<br />
 
-. - Wait
+. - Wait<br />
 
 ### NumPad
 8 - Up<br />
@@ -39,4 +39,5 @@ SPACE - Interact<br />
 o - On/Off lantern<br />
 p - Combat info panel<br />
 v - Message log<br />
+x - Look around<br />
 c - Character information
