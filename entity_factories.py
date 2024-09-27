@@ -73,6 +73,7 @@ confusion_scroll = Item(
     id_name = "Confusion scroll",
     consumable=consumable.ConfusionConsumable(number_of_turns=10),
 )
+
 paralisis_scroll = Item(
     char="~",
     color=color_roulette(),
@@ -80,6 +81,7 @@ paralisis_scroll = Item(
     id_name = "Paralisis scroll",
     consumable=consumable.ParalisisConsumable(number_of_turns=10),
 )
+
 lightning_scroll = Item(
     char="~",
     color=color_roulette(),
@@ -87,6 +89,7 @@ lightning_scroll = Item(
     id_name = "Lightning scroll",
     consumable=consumable.LightningDamageConsumable(damage=15, maximum_range=8),
 )
+
 fireball_scroll = Item(
     char="~",
     color=color_roulette(),
@@ -108,7 +111,6 @@ potion_options = [
     "Bloody potion",
 ]
 
-
 def potion_name_roulette():
     global potion_options
     if potion_options:
@@ -120,7 +122,6 @@ def potion_name_roulette():
     else:
         pass
 
-
 health_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -129,6 +130,7 @@ health_potion = Item(
     id_name = "Health potion",
     consumable=consumable.HealingConsumable(amount=random.randint(1, 6) + 4),
 )
+
 strength_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -136,6 +138,7 @@ strength_potion = Item(
     id_name = "Strength potion",
     consumable=consumable.StrenghtConsumable(amount=1),
 )
+
 posion_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -143,6 +146,7 @@ posion_potion = Item(
     id_name = "Posion potion",
     consumable=consumable.PosionConsumable(amount=1, counter=random.randint(6,10)),
 )
+
 antidote = Item(
     char="!",
     color=(200, 200, 200),
@@ -150,6 +154,7 @@ antidote = Item(
     id_name = "Antidote",
     consumable=consumable.AntidoteConsumable(),
 )
+
 #damage_potion = Item(
 #    char="!",
 #    color=(200, 200, 200),
@@ -164,6 +169,7 @@ antidote = Item(
 #    id_name = "Poison",
 #    consumable=consumable.TemporalEffectConsumable(random.randint(5,10), -1, 'hp', "You are poisoned!", "You are no longer poisoned"),
 #)
+
 power_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -265,7 +271,6 @@ breakable_wall = Obstacle(
     inventory=Inventory(capacity=1),
     equipment=Equipment(),
 )
-
 
 # EQUIPPABLES
 
@@ -407,7 +412,6 @@ def drop_roulette(chances, inventory):
             else:
                 pass
                 
-
 
 # CREATURES
 

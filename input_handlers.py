@@ -847,7 +847,7 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.KeySym.c:
             return CharacterScreenEventHandler(self.engine)
         # Inspeccionar alrededores
-        elif key == tcod.event.KeySym.x:
+        elif key == tcod.event.KeySym.x or key == tcod.event.KeySym.SLASH:
             return LookHandler(self.engine)
         elif key == tcod.event.KeySym.z:
             return ExamineScreenEventHandler(self.engine)
@@ -857,6 +857,9 @@ class MainGameEventHandler(EventHandler):
         #    return SingleRangedAttackHandler(self.engine)
         elif key == tcod.event.KeySym.o:
             return ToogleLightAction(player)
+        # Lanzar item del inventario
+        elif key == tcod.event.KeySym.t:
+            return None
 
         return action
 

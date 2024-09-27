@@ -96,8 +96,7 @@ class ItemAction(Action):
         """Invoke the items ability, this action will be given to provide context."""
         if self.item.consumable:
             self.item.consumable.activate(self)
-            
-        
+                    
 
 class DropItem(ItemAction):
     def perform(self) -> None:
@@ -111,7 +110,6 @@ class DropItem(ItemAction):
         print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
         self.entity.inventory.drop(self.item)
-
 
 
 class EquipAction(Action):
