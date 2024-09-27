@@ -31,13 +31,14 @@ n - Down&Right<br />
 5 - Wait<br />
 
 ### Other
-i - Open inventory<br />
+i - Examine inventory<br />
 g - Pickup item<br />
 d - Drop item<br />
-a - Use item (in inventory)
-SPACE - Interact<br />
+a - Use item (in inventory)<br />
+t - Throw item<br />
+SPACE - Interact (take stairs)<br />
 o - On/Off lantern<br />
 p - Combat info panel<br />
 v - Message log<br />
 x - Look around<br />
-c - Character information
+c - Character information<br />

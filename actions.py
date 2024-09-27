@@ -185,6 +185,140 @@ class ActionWithDirection(Action):
         raise NotImplementedError()
 
 
+class ThrowItemAction(Action):
+    def __init__(self, entity: Actor, item: Item, target_xy: Tuple[int, int]) -> None:
+        super().__init__(entity)
+        self.item = item
+        self.target_xy = target_xy
+
+    @property
+    def target_actor(self) -> Optional[Actor]:
+        """Return the actor at this actions destination."""
+        return self.engine.game_map.get_actor_at_location(*self.target_xy)
+
+    def perform(self) -> None:
+
+        if self.item.throwable == False:
+            raise exceptions.Impossible("You can't throw this")
+
+        target = self.target_actor
+
+        if not target:
+            raise exceptions.Impossible("Invalid target")
+        
+        if self.entity.fighter.stamina <= 0:
+            self.engine.message_log.add_message("You are exhausted!", color.red)
+            raise exceptions.Impossible("")
+        
+        hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
+
+        # Desequipar objeto
+        if self.entity.equipment.item_is_equipped(self.item):
+            self.entity.equipment.toggle_equip(self.item)
+
+        # Colocar el objeto lanzado en la casilla del objetivo
+        self.engine.player.inventory.throw(self.item, self.target_actor.x, self.target_actor.y)
+
+        # Si impacta
+        if hit_dice > target.fighter.defense:
+            
+            if self.entity.fighter.poisons_on_hit == True:
+                poison_roll = random.randint(1, 6)
+                if poison_roll >= 1:
+                    #print("POISONED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    #print(f"{target.name}")
+                    target.fighter.is_poisoned = True
+                    target.fighter.poisoned_counter += 5
+                    target.fighter.poison_dmg = 1
+
+            damage = self.entity.fighter.power + random.randint(self.entity.fighter.dmg_mod[0], self.entity.fighter.dmg_mod[1]) - target.fighter.armor_value
+
+            attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
+
+
+            # Si hace daño...
+            if damage > 0:
+                
+                if self.entity is self.engine.player:
+                    damage_color = color.health_recovered
+                else:
+                    damage_color = color.red
+
+                print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
+                self.engine.message_log.add_message(
+                    f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
+                )
+                target.fighter.hp -= damage
+
+            # Si no hace daño
+            else:
+
+                # Reseteamos la BONIFICACIÓN
+                #if self.entity.fighter.to_hit_counter > 0:
+                    # se resta el bonificador al daño...
+                    #self.entity.fighter.base_power -= self.entity.fighter.to_power_counter
+                    # ...o a la tirada de daño
+                    #self.entity.fighter.dmg_mod[1] -= self.entity.fighter.to_power_counter
+                    # ...o al to hit
+                    #self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+
+                    # reseteamos el contador de bonificación
+                    #self.entity.fighter.to_hit_counter = 0
+
+
+                print(f"{attack_desc} but does no damage.")
+                self.engine.message_log.add_message(
+                    f"{attack_desc} but does no damage."
+                )
+        
+        # Si no impacta:
+        else:
+
+            # Reseteamos la BONIFICACIÓN
+            if self.entity.fighter.to_hit_counter > 0:
+                # se resta el bonificador al daño...
+                #self.entity.fighter.base_power -= self.entity.fighter.to_power_counter
+                # ...o a la tirada de daño
+                #self.entity.fighter.dmg_mod[1] -= self.entity.fighter.to_power_counter
+                # ...o al to hit
+                #self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                self.entity.fighter.base_to_hit -= 1
+
+                # reseteamos el contador de bonificación
+                #self.entity.fighter.to_hit_counter = 0
+                self.entity.fighter.to_hit_counter -= 1
+
+
+            attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
+
+            print(f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})")
+            self.engine.message_log.add_message(
+                f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})"
+            )
+
+        # Con cada ataque gastamos 1 de stamina
+        self.entity.fighter.stamina -= 1
+
+        # TIME SYSTEM
+        # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
+        #self.entity.fighter.current_energy_points -= 10
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MeleeAction")
+        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+
+
+        # Con cada ataque reducimos 1 el defense bonus acumulado
+
+        if self.entity.fighter.to_defense_counter > 1:
+            self.entity.fighter.base_defense -= 1
+            self.entity.fighter.to_defense_counter -= 1
+
+        # ...o reducimos a 0 el defense bonus acumulado
+        #if self.entity.fighter.to_defense_counter >= 1:
+        #    self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
+        #    self.entity.fighter.to_defense_counter = 0
+
+
 class MeleeAction(ActionWithDirection):
 
     def perform(self) -> None:

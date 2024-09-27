@@ -27,3 +27,12 @@ class Inventory(BaseComponent):
         item.place(self.parent.x, self.parent.y, self.gamemap)
 
         self.engine.message_log.add_message(f"You dropped the {item.name}.")
+
+    def throw(self, item: Item, x, y) -> None:
+        """
+        Removes an item from the inventory and restores it to the game map, at certain location.
+        """
+        self.items.remove(item)
+        item.place(x, y, self.gamemap)
+
+        self.engine.message_log.add_message(f"You throw the {item.name}.")

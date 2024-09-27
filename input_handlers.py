@@ -14,7 +14,8 @@ from actions import (
     BumpAction,
     PickupAction,
     WaitAction,
-    ToogleLightAction
+    ToogleLightAction,
+    ThrowItemAction
 )
 import color
 import exceptions
@@ -657,6 +658,17 @@ class InventoryActivateHandler(InventoryEventHandler):
             return actions.EquipAction(self.engine.player, item)
         else:
             return None
+        
+    
+class InventoryThrowHandler(InventoryEventHandler):
+    """Handler for throwing items."""
+
+    TITLE = "Select an item to throw"
+
+    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+        """User selects an item to throw, then select target position."""
+        return SingleRangedAttackHandler(self.engine, lambda pos: ThrowItemAction(self.engine.player, item, pos))
+
 
 class InventoryExamineHandler(InventoryEventHandler):
     """Handle examine an inventory item."""
@@ -859,7 +871,8 @@ class MainGameEventHandler(EventHandler):
             return ToogleLightAction(player)
         # Lanzar item del inventario
         elif key == tcod.event.KeySym.t:
-            return None
+            # Selecciona el ítem primero, luego el objetivo.
+            return InventoryThrowHandler(self.engine)
 
         return action
 

@@ -287,7 +287,8 @@ dagger = Item(
     char="/", 
     color=(0, 191, 125), 
     name="Dagger", 
-    equippable=equippable.Dagger()
+    equippable=equippable.Dagger(),
+    throwable=True
 )
 
 dagger_plus = Item(

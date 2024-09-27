@@ -161,6 +161,7 @@ class Item(Entity):
         id_name: str = "<Unnamed>",
         consumable: Optional[Consumable] = None,
         equippable: Optional[Equippable] = None,
+        throwable: bool = False,
         #powered: Optional[Powered] = None,
         uses: int = 1,
         info: str = "NO INFO"
@@ -186,7 +187,7 @@ class Item(Entity):
         if self.equippable:
             self.equippable.parent = self
 
-
+        self.throwable = throwable
         self.identified = identified
         self.id_name = id_name
         self.uses = uses
