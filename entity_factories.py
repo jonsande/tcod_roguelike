@@ -540,6 +540,30 @@ goblin = Actor(
     level=Level(xp_given=3),
 )
 
+monkey = Actor(
+    char="y",
+    color=(110,4,4),
+    name="Monkey",
+    ai_cls=random.choice([SleepingEnemy, Scout]),
+    #ai_cls=Scout,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=8, 
+        base_defense=2, 
+        base_power=2, 
+        recover_rate=1, 
+        fov=random.randint(6, 10), 
+        dmg_mod = (1, 2), 
+        aggressivity=3, 
+        stamina=5, 
+        max_stamina=5,
+        action_time_cost=6,
+        woke_ai_cls=HostileEnemy
+    ),
+    inventory=Inventory(capacity=1, items=None),
+    level=Level(xp_given=3),
+)
+
 orc = Actor(
     char="o",
     color=(63, 127, 63),

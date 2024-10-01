@@ -80,8 +80,8 @@ item_chances: Dict[int, List[Tuple[Entity, int]]] = {
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #0: [(fireplace, 100)], # Esto no hace nada porque el max_monsters_by_floor está a 0
     #1: [(bandit, 100)],
-    1: [(fireplace, 15), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
-    2: [(adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
+    1: [(monkey, 20), (fireplace, 10), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
+    2: [(monkey, 20), (adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
     3: [(orc, 50), (goblin, 50)],
     4: [(swarm_rat, 20), (rat, 0), (orc, 20), (goblin, 30)],
     5: [(true_orc, 5), (orc, 30), (goblin, 30), (troll, 5)],

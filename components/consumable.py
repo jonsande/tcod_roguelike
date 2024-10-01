@@ -365,6 +365,8 @@ class PosionConsumable(Consumable):
             consumer = action.entity
             consumer.fighter.poisons_on_hit = True
             self.consume()
+
+            self.engine.message_log.add_message("You smear the edge of your weapon with poison.", color.descend)
         
 class AntidoteConsumable(Consumable):
     def __init__(self):
