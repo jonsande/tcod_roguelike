@@ -212,7 +212,7 @@ class ThrowItemAction(Action):
         
         hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
 
-        # Desequipar objeto
+        # Desequipar objeto (si está equipado)
         if self.entity.equipment.item_is_equipped(self.item):
             self.entity.equipment.toggle_equip(self.item)
 
@@ -221,15 +221,31 @@ class ThrowItemAction(Action):
 
         # Si impacta
         if hit_dice > target.fighter.defense:
+
+            if self.entity is self.engine.player:
+                damage_color = color.health_recovered
+            else:
+                damage_color = color.red
             
             if self.entity.fighter.poisons_on_hit == True:
                 poison_roll = random.randint(1, 6)
-                if poison_roll >= 1:
-                    #print("POISONED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    #print(f"{target.name}")
+
+                if poison_roll >= 2:
+                    if self.entity is self.engine.player:
+                        print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
+                        self.engine.message_log.add_message(
+                            f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
+                        )
+                    else:
+                        print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                        self.engine.message_log.add_message(
+                            f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
+                        )
+
                     target.fighter.is_poisoned = True
                     target.fighter.poisoned_counter += 5
                     target.fighter.poison_dmg = 1
+                    self.entity.fighter.poisons_on_hit = False
 
             damage = self.entity.fighter.power + random.randint(self.entity.fighter.dmg_mod[0], self.entity.fighter.dmg_mod[1]) - target.fighter.armor_value
 
@@ -239,11 +255,6 @@ class ThrowItemAction(Action):
             # Si hace daño...
             if damage > 0:
                 
-                if self.entity is self.engine.player:
-                    damage_color = color.health_recovered
-                else:
-                    damage_color = color.red
-
                 print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
                 self.engine.message_log.add_message(
                     f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
@@ -321,8 +332,21 @@ class ThrowItemAction(Action):
 
 class MeleeAction(ActionWithDirection):
 
+    # def is_door_object(self, obj):
+    #     from components.fighter import Door  # Importa la clase Door
+    #     return isinstance(obj, Door)  # Comprueba si obj es una instancia de Door
+    
+    def is_dummy_object(self, obj):
+        #from components.fighter import Door  # Importa la clase Door
+        from components.ai import Dummy
+        #from entity import Obstacle
+        #return isinstance(obj, Door)  # Comprueba si obj es una instancia de Door
+        return isinstance(obj, Dummy)
+
     def perform(self) -> None:
+
         target = self.target_actor
+
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
         
@@ -332,19 +356,60 @@ class MeleeAction(ActionWithDirection):
         
         hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
 
+        # Mecánica backstab/stealth/sigilo (beta)
+        # Bonificador al impacto
+        if not self.is_dummy_object(target.fighter):
+            if target.fighter.aggravated == False:
+                #import ipdb;ipdb.set_trace()
+                hit_dice += self.entity.fighter.luck
+                print("DEBUG: ATAQUE SIGILOSO!")
+
         # Si impacta
         if hit_dice > target.fighter.defense:
+
+            if self.entity is self.engine.player:
+                damage_color = color.health_recovered
+
+                # Despertar durmiente en caso de ser golpeado (aun sin daño)
+                #import ipdb;ipdb.set_trace()
+                from components.ai import HostileEnemy, SleepingEnemy
+                if isinstance(target, Actor) and isinstance(target.ai, SleepingEnemy):
+                    target.ai = HostileEnemy(target)
+
+            else:
+                damage_color = color.red
             
             if self.entity.fighter.poisons_on_hit == True:
                 poison_roll = random.randint(1, 6)
+
                 if poison_roll >= 1:
-                    #print("POISONED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    #print(f"{target.name}")
+                    if self.entity is self.engine.player:
+                        print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
+                        self.engine.message_log.add_message(
+                            f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
+                        )
+                    else:
+                        print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                        self.engine.message_log.add_message(
+                            f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
+                        )
+
                     target.fighter.is_poisoned = True
                     target.fighter.poisoned_counter += 5
                     target.fighter.poison_dmg = 1
+                    self.entity.fighter.poisons_on_hit = False
 
             damage = self.entity.fighter.power + random.randint(self.entity.fighter.dmg_mod[0], self.entity.fighter.dmg_mod[1]) - target.fighter.armor_value
+            
+            # Mecánica backstab/stealth/sigilo (beta)
+            # Bonificador al daño
+            from components.ai import Dummy
+            if isinstance(target, Actor) and target.ai_cls != Dummy:
+            #if not self.is_dummy_object(target.fighter):
+                if target.fighter.aggravated == False:
+                    damage = (damage + self.entity.fighter.luck) * 2
+                    print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+                    target.fighter.aggravated = True
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
 
@@ -376,11 +441,6 @@ class MeleeAction(ActionWithDirection):
                     # DEBUG
                     #print(f"power_hits_counter: {power_hits_counter}")
                     #print(f"base_power: {self.entity.fighter.base_power}")
-                
-                if self.entity is self.engine.player:
-                    damage_color = color.health_recovered
-                else:
-                    damage_color = color.red
 
                 print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
                 self.engine.message_log.add_message(
@@ -573,7 +633,7 @@ class WaitAction(Action):
             # FORTIFICAR: 
             # Punto de defensa GRATIS (e.e. sin gasto de estamina)
             # si el enemigo está a 1 de distancia
-            import render_functions
+            #import render_functions
             #if self.engine.player.fighter.can_fortify == True:
             if self.engine.player.fighter.fortified == True:
 
@@ -676,11 +736,13 @@ class ToogleLightAction(Action):
             self.engine.player.fighter.base_stealth += 1
             self.engine.player.fighter.fov = 1
             #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
+            self.engine.message_log.add_message("You turn off your lamp", color.descend)
             return 0
         if self.engine.player.fighter.fov == 1:
             self.engine.player.fighter.fov = 6
             self.engine.player.fighter.base_stealth -= 1
             #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
+            self.engine.message_log.add_message("You turn on your lamp", color.descend)
             return 0
     
 

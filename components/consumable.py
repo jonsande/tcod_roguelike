@@ -52,7 +52,6 @@ class Consumable(BaseComponent):
                         obj.identify()
             """
 
-
 class ConfusionConsumable(Consumable):
     def __init__(self, number_of_turns: int):
         self.number_of_turns = number_of_turns
@@ -90,7 +89,6 @@ class ConfusionConsumable(Consumable):
         self.consume()
         self.parent.identify()
 
-
 class SelfConfusionConsumable(Consumable):
     def __init__(self, number_of_turns: int):
         self.number_of_turns = number_of_turns
@@ -109,8 +107,7 @@ class SelfConfusionConsumable(Consumable):
             entity=target, previous_ai=target.ai, turns_remaining=self.number_of_turns,
         )
         self.consume()
-        self.parent.identify()
-        
+        self.parent.identify()       
 
 class BlindConsumable(Consumable):
     def __init__(self, number_of_turns: int, uses: int = 1):
@@ -153,7 +150,6 @@ class BlindConsumable(Consumable):
             self.parent.uses -= 1
             
         self.parent.identify()        
-
 
 class ParalisisConsumable(Consumable):
     def __init__(self, number_of_turns: int):
@@ -208,8 +204,8 @@ class PowerConsumable(Consumable):
 
         self.consume()
         self.parent.identify()
+        # import ipdb;ipdb.set_trace()
         
-
 class TemporalEffectConsumable(Consumable):
 
     def __init__(self, number_of_turns: int, amount: int, attribute_affected: str, message_hi: str, message_down: str):
@@ -230,7 +226,7 @@ class TemporalEffectConsumable(Consumable):
             self.message_hi,
             self.message_down,
         )
-
+        # import ipdb;ipdb.set_trace()
         self.consume()
         self.parent.identify()
 
@@ -351,13 +347,24 @@ class PosionConsumable(Consumable):
         self.counter = counter
 
     def activate(self, action: actions.ItemAction) -> None:
-        consumer = action.entity
-        consumer.fighter.is_poisoned = True
-        consumer.fighter.poison_dmg = self.amount
-        consumer.fighter.poisoned_counter = self.counter
-        
-        self.consume()
-        self.parent.identify()
+        #import ipdb;ipdb.set_trace()
+        if self.parent.identified == False:
+
+            consumer = action.entity
+            consumer.fighter.is_poisoned = True
+            consumer.fighter.poison_dmg = self.amount
+            consumer.fighter.poisoned_counter = self.counter
+            
+            self.consume()
+            self.parent.identify()
+
+        else:
+            # self.parent.identify()
+            # if self.parent.id_name == 'Posion potion' and self.parent.identified == False and self.parent.name != 'Posion potion':
+            #     self.parent.identify()
+            consumer = action.entity
+            consumer.fighter.poisons_on_hit = True
+            self.consume()
         
 class AntidoteConsumable(Consumable):
     def __init__(self):

@@ -83,6 +83,11 @@ def new_game() -> Engine:
     dagger = copy.deepcopy(entity_factories.dagger)
     leather_armor = copy.deepcopy(entity_factories.leather_armor)
     sand_bag = copy.deepcopy(entity_factories.sand_bag)
+    poison_potion = copy.deepcopy(entity_factories.posion_potion)
+    poison_potion2 = copy.deepcopy(entity_factories.posion_potion)
+    power_potion = copy.deepcopy(entity_factories.power_potion)
+    power_potion2 = copy.deepcopy(entity_factories.power_potion)
+
 
     # Aquí se asigna el inventario del jugador como el "padre" del objeto dagger. 
     # Esto significa que la daga ahora "pertenece" al inventario del jugador o está 
@@ -90,6 +95,11 @@ def new_game() -> Engine:
     dagger.parent = player.inventory
     leather_armor.parent = player.inventory
     sand_bag.parent = player.inventory
+    poison_potion.parent = player.inventory
+    poison_potion2.parent = player.inventory
+    # power_potion.parent = player.inventory
+    # power_potion2.parent = player.inventory
+
 
     player.inventory.items.append(dagger)
     player.equipment.toggle_equip(dagger, add_message=False)
@@ -97,7 +107,12 @@ def new_game() -> Engine:
     player.inventory.items.append(leather_armor)
     player.equipment.toggle_equip(leather_armor, add_message=False)
 
-    player.inventory.items.append(sand_bag)
+    player.inventory.items.append(poison_potion)
+    player.inventory.items.append(poison_potion2)
+    # player.inventory.items.append(power_potion)
+    # player.inventory.items.append(power_potion2)
+
+
 
     return engine
 

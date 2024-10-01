@@ -35,6 +35,7 @@ class Fighter(BaseComponent):
             base_armor_value: int = 0,
             temporal_effects: bool = False,
             luck: int = 0,
+            critical_chance: int = 2,
             satiety: int = 32,
             max_satiety: int = 32,
             stamina: int = 3,
@@ -55,6 +56,7 @@ class Fighter(BaseComponent):
             is_poisoned: bool = False,
             poisoned_counter: int = 0,
             poison_dmg: int = 0,
+            poison_resistance: int = 0,
             ):
         self.max_hp = hp
         self._hp = hp
@@ -81,6 +83,7 @@ class Fighter(BaseComponent):
         self.to_hit_counter = to_hit_counter
         self.to_power_counter = to_power_counter
         self.to_defense_counter = to_defense_couter
+        self.critical_chance = critical_chance + luck
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -98,6 +101,9 @@ class Fighter(BaseComponent):
         self.is_poisoned = is_poisoned
         self.poisoned_counter = poisoned_counter
         self.poison_dmg = poison_dmg
+
+        # Resistances
+        self.poison_resistance = poison_resistance
 
         
 
@@ -186,15 +192,25 @@ class Fighter(BaseComponent):
         
         if self.is_poisoned:
         
-            total_damage = self.poisoned_counter * self.poison_dmg
+            total_damage = (self.poisoned_counter * self.poison_dmg) - self.poison_resistance
+            print(">>>>>>>>>>>>>>> self.poison_resistance = ", self.poison_resistance)
             
             if self.poisoned_counter > 1:
-                self.hp -= self.poison_dmg
+                #self.hp -= self.poison_dmg
+                self.hp -= total_damage
                 self.poisoned_counter -= 1
-                self.engine.message_log.add_message(
-                    f"You are poisoned! You take {self.poison_dmg} damage points",
-                    color.red,
-                    )
+
+                if self.parent.name == self.engine.player.name:
+                    self.engine.message_log.add_message(
+                        f"You are poisoned! You take {total_damage} damage points",
+                        color.red,
+                        )
+                else:
+                    self.engine.message_log.add_message(
+                        f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points",
+                        color.red,
+                        )
+
             else:
                 self.poisoned_counter = 0
                 self.is_poisoned = False

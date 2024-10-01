@@ -124,6 +124,7 @@ class Actor(Entity):
             render_order=RenderOrder.ACTOR,
         )
 
+        self.ai_cls = ai_cls
         self.ai: Optional[BaseAI] = ai_cls(self)
 
         self.equipment: Equipment = equipment
@@ -194,9 +195,19 @@ class Item(Entity):
         self.info = info
 
     def identify(self):
+        # Esto creo que no es necesario
         self.name = self.id_name
+        self.identified = True
         
         # ESTO HAY QUE HACERLO CON for obj in set(self.gamemap.items) + ...
+        # Identificación automática por consumo:
+        # for obj in set(self.gamemap.items):
+        #     if isinstance(obj, Item):
+        #         # Para que sólo identifique el mismo tipo de item que se consuma:
+        #         if obj.id_name == self.id_name:
+        #             obj.name = self.id_name
+        #         obj.identified = True
+        #         self.parent.engine.identified_items.append(self.id_name)
 
         # Identificación automática por consumo:
         import gc
@@ -206,7 +217,9 @@ class Item(Entity):
             if isinstance(obj, Item):
                 # Para que sólo identifique el mismo tipo de item que se consuma:
                 if obj.id_name == self.id_name:
+                    #import ipdb;ipdb.set_trace()
                     obj.name = self.id_name
+                    obj.identified = True
 
 
 

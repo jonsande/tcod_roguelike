@@ -193,11 +193,6 @@ def place_player(map):
     return location[winner]
 
 
-
-
-
-
-
 # Esta función es para la generación de monstruos aleatorios
 # en las posiciones donde haya una 'M'.
 # Actualmente no se está usando.

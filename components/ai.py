@@ -217,8 +217,9 @@ class HostileEnemyPlus(BaseAI):
 
         if distance > 1 and distance <= engage_rng:
 
-            self.entity.fighter.aggravated = True
-            #self.engine.message_log.add_message(f"¡Has provocado a {self.entity.name}!")
+            if self.entity.fighter.aggravated == False:
+                self.entity.fighter.aggravated = True
+                self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -231,6 +232,10 @@ class HostileEnemyPlus(BaseAI):
 
         # Comportamiento al acercarse al jugador:         
         elif distance == 1:
+
+            if self.entity.fighter.aggravated == False:
+                self.entity.fighter.aggravated = True
+                self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
  
             # Si se queda sin estamina:
             if self.entity.fighter.stamina == 0:
@@ -364,6 +369,7 @@ class HostileEnemy(BaseAI):
             if self.engine.player.fighter.stealth < 0:
                 engage_rng = random.randint(1, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
             else:
+                # engage_rng = 1d3 + fov enemigo - 1d(player stealth)
                 engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
@@ -374,8 +380,9 @@ class HostileEnemy(BaseAI):
 
         if distance > 1 and distance <= engage_rng:
             #self.engine.player.fighter.is_in_melee = False
-            self.entity.fighter.aggravated = True
-            #self.engine.message_log.add_message(f"¡Has provocado a {self.entity.name}!")
+            if self.entity.fighter.aggravated == False:
+                self.entity.fighter.aggravated = True
+                self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -440,9 +447,9 @@ class SleepingEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
 
-
     def perform(self) -> None:
         
+        # Si self.entity se encuentra entre las casillas visibles por el PJ... 
         if self.engine.game_map.visible[self.entity.x, self.entity.y]:
             
             sneak_dice = random.randint(1, 6)
@@ -451,18 +458,19 @@ class SleepingEnemy(BaseAI):
             break_point = 3 + random.randint(0, self.engine.player.fighter.luck)
             
             if sneak_final > break_point:
+            #if sneak_final == 666:   # DEBUG
                 self.engine.message_log.add_message(
                     f"The {self.entity.name} notices you! ({sneak_final}VS{break_point})",
-                    color.red
+                    color.orange
                     )
                 #woke_ai = HostileEnemy(self.entity)
                 woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
                 self.entity.ai = woke_ai
-                self.entity.name = self.entity.name + " (!)"
+                #self.entity.name = self.entity.name + " (!)"
                 
             else:
                 self.engine.message_log.add_message(
-                    f"The {self.entity.name} doesn't notice you. ({sneak_final}VS{break_point})"
+                    f"The {self.entity.name} doesn't notice you (sleeping). ({sneak_final}VS{break_point})"
                     )
                 return PassAction(self.entity).perform()
         else:
@@ -470,6 +478,10 @@ class SleepingEnemy(BaseAI):
      
  
 class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA
+
+    # Actualmente un personaje con IA "Neutral" camina derecho
+    # hacia las escaleras y baja por ellas.
+
     def __init__(self, entity: Actor):
         super().__init__(entity)
         self.path: List[Tuple[int, int]] = []
@@ -480,14 +492,8 @@ class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA
         target_y = self.engine.game_map.downstairs_location[1]
 
         if self.entity.x == target_x and self.entity.y == target_y:
-            # Aquí hay que hacer que desaparezca
-            # HAY QUE HACERLE A LA CLASE ACTOR UNA FUNCIÓN DE DESINTEGRARSE
-            #return WaitAction(self.entity).perform()
             
             return self.entity.fighter.desintegrate()
-            
-            
-
 
         #dx = target_x - self.entity.x
         #dy = target_y - self.entity.y
@@ -645,7 +651,7 @@ class Scout(BaseAI): # WORK IN PROGRESS
                 if self.entity.x == dest_x and self.entity.y == dest_y:
                     #self.checkpoint = []
                     try:
-                        self.checkpoint = self.engine.center_room_array.pop(0) # Esto está dando un error IndexError
+                        self.checkpoint = self.engine.center_room_array.pop(0) # Esto estaba dando un error IndexError
                         return WaitAction(self.entity).perform()
                     except IndexError:
                         #print(f"[DEBUG] Error excepton -- IndexError: pop from empty list\nGoblin location: {self.checkpoint}")

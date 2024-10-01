@@ -165,7 +165,7 @@ class EventHandler(BaseEventHandler):
 
         Returns True if the action will advance a turn.
         """        
-
+        
         if action is None:
             return False
 
@@ -199,6 +199,10 @@ class EventHandler(BaseEventHandler):
         #self.engine.update_fortify_indicator()
 
         # Melee indicator
+        # ToDo: estaría bien limitar la cantidad de veces que se ejecuta esto,
+        # por ejemplo: que si no hay enemigos visibles alrededor no se ejecute,
+        # pues hay que tener en cuenta que itera sobre todos los actores, cada
+        # cada vez que se ejecuta.
         self.engine.update_melee_indicator()
 
         # Actualizamos efectos temporales
@@ -306,10 +310,17 @@ class CombatControlHandler(AskUserEventHandler):
             aggravated = f"{e.fighter.aggravated}"
             power = f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}"
 
+            print(">>>>>>>>>>>>>>>>>>>>>> ", e.fighter.aggravated)
+
+            if e.fighter.aggravated == True:
+                string=f"{name} ({distance}) (!) \n SP:  DEF:  DMG:      ToHit:  AV:"
+            else:
+                string=f"{name} ({distance}) \n SP:  DEF:  DMG:      ToHit:  AV:"
+
             console.print(
                 x=x+1, 
                 y=1+i+counter_mons +counter_lines, 
-                string=f"{name} ({distance}) \n SP:  DEF:  DMG:      ToHit:  AV:",
+                string=string,
             )
 
             console.print(x + 5, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.stamina}", fg=color.blue)

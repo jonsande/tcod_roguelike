@@ -144,7 +144,8 @@ posion_potion = Item(
     color=(200, 200, 200),
     name=potion_name_roulette(),
     id_name = "Posion potion",
-    consumable=consumable.PosionConsumable(amount=1, counter=random.randint(6,10)),
+    #consumable=consumable.PosionConsumable(amount=1, counter=random.randint(6,10)),
+    consumable=consumable.PosionConsumable(amount=1, counter=8),
 )
 
 antidote = Item(
@@ -320,7 +321,8 @@ spear = Item(
     char="/", 
     color=(0, 191, 255), 
     name="Spear", 
-    equippable=equippable.Spear()
+    equippable=equippable.Spear(),
+    throwable=True
 )
 
 leather_armor = Item(
@@ -426,7 +428,7 @@ player = Actor(
         hp=32,
         #hp=932, # Debugg
         base_defense=0, 
-        base_power=0, 
+        base_power=-5,
         recover_rate=1, 
         fov=6,
         #fov=90, # Debugg
@@ -434,10 +436,13 @@ player = Actor(
         base_stealth=1, 
         #base_stealth=100, # Debugg
         base_to_hit=0,
-        luck=1,
-        satiety=32,
+        luck=100,
+        critical_chance=1,
+        # satiety=32,
+        satiety=24,
         stamina=3, 
-        max_stamina=3
+        max_stamina=3,
+        poison_resistance=1
     ),
     inventory=Inventory(capacity=20),
     level=Level(level_up_base=20), # Default: 200
@@ -474,6 +479,7 @@ rat = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=6, 
+        #hp=32,
         base_defense=1, 
         base_power=1, 
         recover_rate=0, 
@@ -522,12 +528,13 @@ goblin = Actor(
         base_defense=2, 
         base_power=3, 
         recover_rate=1, 
-        fov=random.randint(2, 8), 
+        fov=random.randint(6, 8), 
         dmg_mod = (1, 2), 
         aggressivity=5, 
         stamina=3, 
         max_stamina=3,
         action_time_cost=7,
+        woke_ai_cls=HostileEnemy
     ),
     inventory=Inventory(capacity=1, items=inv_roulette("Goblin", 1)),
     level=Level(xp_given=3),
@@ -544,12 +551,13 @@ orc = Actor(
         base_defense=2, 
         base_power=3, 
         recover_rate=0, 
-        fov=random.randint(1,3), 
+        fov=random.randint(3,6), 
         dmg_mod = (1, 6), 
         aggressivity=8, 
         stamina=3, 
         max_stamina=3,
         action_time_cost=10,
+        woke_ai_cls=HostileEnemy
     ),
     inventory=Inventory(capacity=1, items=inv_roulette("Orc", 1)),
     level=Level(xp_given=4),
@@ -561,7 +569,19 @@ true_orc = Actor(
     name="True Orc",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
     equipment=Equipment(),
-    fighter=Fighter(hp=32, base_defense=2, base_power=3, recover_rate=0, fov=random.randint(1,3), dmg_mod = (1, 6), aggressivity=15, base_to_hit=1, stamina=4, max_stamina=4),
+    fighter=Fighter(
+        hp=32, 
+        base_defense=2, 
+        base_power=3, 
+        recover_rate=0, 
+        fov=random.randint(5,8), 
+        dmg_mod = (1, 6), 
+        aggressivity=15, 
+        base_to_hit=1, 
+        stamina=4, 
+        max_stamina=4,
+        woke_ai_cls=HostileEnemy
+        ),
     inventory=Inventory(capacity=2, items=inv_roulette("True Orc", 2)),
     level=Level(xp_given=10),
 )

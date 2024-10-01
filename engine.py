@@ -14,11 +14,13 @@ from tcod.console import Console
 from tcod.map import compute_fov
 from tcod import constants
 
+import components.ai
+import components.base_component
 import exceptions
 from message_log import MessageLog
 import color
 import render_functions
-
+from entity import Actor
 
 if TYPE_CHECKING:
     from entity import Actor, Obstacle
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
     
 #import gc
 import components.fighter
-import entity_factories
+#import entity_factories
 
 
 # Calendario:
@@ -47,6 +49,7 @@ class Engine:
         self.satiety_counter = 0
         self.temporal_effects = []
         self.center_room_array = []
+        self.identified_items = []
 
     def clock(self):
         """
@@ -232,6 +235,9 @@ class Engine:
             #for obj in gc.get_objects():
                 if isinstance(obj, components.fighter.Fighter):
                     components.fighter.Fighter.autoheal(obj)
+
+            self.player.fighter.autoheal()
+
             self.autoheal_counter = 0
 
 
@@ -263,15 +269,19 @@ class Engine:
 
     def update_center_rooms_array(self, room_list):
         self.center_room_array = room_list
-        
+    
 
     def update_melee_indicator(self):
         self.player.fighter.is_in_melee = False
 
         for obj in set(self.game_map.actors) - {self.player}:
-            if obj.is_alive and obj.name != "Door" and obj.name != "Suspicious wall" and obj.name != "Table":
-            #if not isinstance(obj, components.fighter.Door) and obj.is_alive:
-
+            # Lo que tienen en común todos los objetos rompibles
+            # que no son enemigos es que tienen la ia_cls "Dummy".
+            #if obj.is_alive and obj.name != "Door" and obj.name != "Suspicious wall" and obj.name != "Table" and obj.name != "Fire place":
+            #if obj.is_alive and self.is_dummy_object(obj):
+            
+            if isinstance(obj, Actor) and obj.is_alive and obj.ai_cls != components.ai.Dummy:
+                
                 if self.game_map.visible[obj.x, obj.y]:
                     distance = int(obj.distance(self.player.x, self.player.y))
                     #print(distance)
@@ -298,10 +308,11 @@ class Engine:
 
             for i in range(len(self.temporal_effects)):
                 turns, amount, attribute, message_down = self.temporal_effects[i]
-                print(turns)
-                print(amount)
-                print(attribute)
-                print(message_down)
+                print("[DEBUG]: ", self.temporal_effects[i])
+                print("[DEBUG]: ", turns)
+                print("[DEBUG]: ", amount)
+                print("[DEBUG]: ", attribute)
+                print("[DEBUG]: ", message_down)
                 if turns <= 0:
                     self.message_log.add_message(f"{message_down}", color.red)
                     if attribute == 'base_power':
