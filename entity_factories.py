@@ -488,6 +488,7 @@ rat = Actor(
         stamina=3, 
         max_stamina=3,
         action_time_cost=7,
+        luck=0,
     ),
     inventory=Inventory(capacity=1, items=inv_roulette("Giant rat", 1)),
     level=Level(xp_given=2),

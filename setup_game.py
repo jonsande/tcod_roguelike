@@ -61,7 +61,7 @@ def new_game() -> Engine:
     # sus atributos (y valores de esos atributos) originales (e.e. más primitivos)
     player = copy.deepcopy(entity_factories.player)
 
-    engine = Engine(player=player)
+    engine = Engine(player=player, debug=True)
 
     engine.game_world = GameWorld(
         engine=engine,

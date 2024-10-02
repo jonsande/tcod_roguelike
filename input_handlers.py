@@ -884,6 +884,11 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.KeySym.t:
             # Selecciona el ítem primero, luego el objetivo.
             return InventoryThrowHandler(self.engine)
+        # Debug console
+        elif self.engine.debug == True:
+            if key == tcod.event.KeySym.BACKSPACE:
+                import ipdb
+                return ipdb.set_trace()
 
         return action
 

@@ -40,7 +40,7 @@ class Engine:
     game_map: GameMap
     game_world: GameWorld
 
-    def __init__(self, player: Actor):
+    def __init__(self, player: Actor, debug: bool = False):
         self.message_log = MessageLog()
         self.mouse_location = (0, 0)
         self.player = player
@@ -50,6 +50,7 @@ class Engine:
         self.temporal_effects = []
         self.center_room_array = []
         self.identified_items = []
+        self.debug = debug
 
     def clock(self):
         """
@@ -115,7 +116,8 @@ class Engine:
             
             if entity.fighter.current_time_points > 20:
 
-                print(f"{color.bcolors.OKCYAN}{entity.name} {color.bcolors.OKCYAN}EXTRA TURN{color.bcolors.ENDC}!")
+                if self.debug == True:
+                    print(f"{color.bcolors.OKCYAN}{entity.name} {color.bcolors.OKCYAN}EXTRA TURN{color.bcolors.ENDC}!")
                 
                 #entity.fighter.current_time_points = 0
 
@@ -125,11 +127,13 @@ class Engine:
                         entity.ai.perform()
                     except exceptions.Impossible:
                         entity.fighter.current_time_points = 0
-                        print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
+                        if self.debug == True:
+                            print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
                         pass  # Ignore impossible action exceptions from AI.
 
                 entity.fighter.current_time_points = 0
-                print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
+                if self.debug == True:
+                    print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
 
 
     """
@@ -273,6 +277,7 @@ class Engine:
 
     def update_melee_indicator(self):
         self.player.fighter.is_in_melee = False
+        self.player.fighter.aggravated = False # Para la gestión del stealth attack de los enemigos
 
         for obj in set(self.game_map.actors) - {self.player}:
             # Lo que tienen en común todos los objetos rompibles
@@ -284,6 +289,7 @@ class Engine:
                 
                 if self.game_map.visible[obj.x, obj.y]:
                     distance = int(obj.distance(self.player.x, self.player.y))
+                    self.player.fighter.aggravated = True # Para la gestión del stealth attack de los enemigos
                     #print(distance)
                     if distance > 0:
                         if distance <= 1:

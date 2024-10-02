@@ -523,7 +523,8 @@ def generate_dungeon(
             center_of_last_room = new_room.center
             rooms_array.append(center_of_last_room)
             engine.update_center_rooms_array(rooms_array)
-            print(f"CENTER OF ROOMS ARRAY: {rooms_array}")
+            if engine.debug == True:
+                print(f"DEBUG: CENTER OF ROOMS ARRAY: {rooms_array}")
 
         # Colocamos entidades genéricas
         place_entities(new_room, dungeon, engine.game_world.current_floor)

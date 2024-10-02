@@ -69,8 +69,9 @@ class PickupAction(Action):
                 # TIME SYSTEM
                 #self.entity.fighter.current_energy_points -= 10
                 self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-                print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in PickupAction")
-                print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+                if self.engine.debug == True:
+                    print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in PickupAction")
+                    print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
                 return
 
@@ -106,8 +107,9 @@ class DropItem(ItemAction):
         #TIME SYSTEM
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in DropItem")
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+        if self.engine.debug == True:
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in DropItem")
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
         self.entity.inventory.drop(self.item)
 
@@ -123,8 +125,9 @@ class EquipAction(Action):
         # TIME SYSTEM
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in EquipAction")
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+        if self.engine.debug == True:
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in EquipAction")
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
         self.entity.equipment.toggle_equip(self.item)
 
@@ -144,8 +147,9 @@ class TakeStairsAction(Action):
             # Bajar escaleras gasta puntos de tiempo
             #self.entity.fighter.current_energy_points -= 10
             self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-            print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TakeStairsAction")
-            print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+            if self.engine.debug == True:
+                print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TakeStairsAction")
+                print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
             if self.engine.game_world.current_floor > 1:
                 xp_amount = (self.engine.game_world.current_floor * 5) + 10
@@ -229,7 +233,8 @@ class ThrowItemAction(Action):
             if target.fighter.aggravated == False:
                 #import ipdb;ipdb.set_trace()
                 hit_dice += self.entity.fighter.luck
-                print("DEBUG: ATAQUE SIGILOSO!")
+                if self.engine.debug == True:
+                    print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 
         # Si impacta
         if hit_dice > target.fighter.defense:
@@ -255,12 +260,16 @@ class ThrowItemAction(Action):
                     if poison_roll >= 1:
 
                         if self.entity is self.engine.player:
+
                             print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
+
                             self.engine.message_log.add_message(
                                 f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
                             )
                         else:
+
                             print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+
                             self.engine.message_log.add_message(
                                 f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
                             )
@@ -278,7 +287,19 @@ class ThrowItemAction(Action):
                 if self.is_dummy_object(target.ai) == False:
                     if target.fighter.aggravated == False:
                         damage = (damage + self.entity.fighter.luck) * 2
-                        print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+
+                        if self.engine.debug == True:
+                            print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+
+                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+                        
+                        # Experiencia extra
+                        if self.entity == self.engine.player:
+                            if self.engine.debug == True:
+                                print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                            self.engine.player.level.add_xp(target.level.xp_given)
+                            self.engine.message_log.add_message(f"You gain {target.level.xp_given} experience points.")
+
                         target.fighter.aggravated = True
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
@@ -287,9 +308,11 @@ class ThrowItemAction(Action):
             if damage > 0:
                 
                 print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
+
                 self.engine.message_log.add_message(
                     f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
                 )
+
                 target.fighter.hp -= damage
 
             # Si no hace daño
@@ -309,6 +332,7 @@ class ThrowItemAction(Action):
 
 
                 print(f"{attack_desc} but does no damage.")
+
                 self.engine.message_log.add_message(
                     f"{attack_desc} but does no damage."
                 )
@@ -345,8 +369,9 @@ class ThrowItemAction(Action):
         # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MeleeAction")
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+        if self.engine.debug == True:
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MeleeAction")
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
 
         # Con cada ataque reducimos 1 el defense bonus acumulado
@@ -394,7 +419,8 @@ class MeleeAction(ActionWithDirection):
             if target.fighter.aggravated == False:
                 #import ipdb;ipdb.set_trace()
                 hit_dice += self.entity.fighter.luck
-                print("DEBUG: ATAQUE SIGILOSO!")
+                if self.engine.debug == True:
+                    print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 
         # Si impacta
         if hit_dice > target.fighter.defense:
@@ -442,14 +468,24 @@ class MeleeAction(ActionWithDirection):
             
             # Mecánica backstab/stealth/sigilo (beta)
             # Bonificador al daño
-            #from components.ai import Dummy
-            #if isinstance(target, Actor) and target.ai_cls != Dummy:
             if isinstance(target, Actor):
-            #if not self.is_dummy_object(target.fighter):
                 if self.is_dummy_object(target.ai) == False:
                     if target.fighter.aggravated == False:
+                        
                         damage = (damage + self.entity.fighter.luck) * 2
-                        print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+                        
+                        if self.engine.debug == True:
+                            print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+                       
+                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+                        
+                        # Experiencia extra
+                        if self.entity == self.engine.player:
+                            if self.engine.debug == True:
+                                print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                            self.engine.player.level.add_xp(target.level.xp_given)
+                            self.engine.message_log.add_message(f"You gain {target.level.xp_given} experience points.")
+
                         target.fighter.aggravated = True
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
