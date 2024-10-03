@@ -167,9 +167,9 @@ class TakeStairsAction(Action):
 
                 print(f"DEBUG: Unaware_enemies = {unaware_enemies}")
 
-                xp_amount = (self.engine.game_world.current_floor * 5) + (unaware_enemies * self.engine.game_world.current_floor)
+                xp_amount = (self.engine.game_world.current_floor * 2) + (unaware_enemies * self.engine.game_world.current_floor)
                 self.entity.level.add_xp(xp_amount)
-                
+
                 print(f"Total level xp gained: [{self.engine.game_world.current_floor} (current floor) * 5] + [{unaware_enemies} (unaware enemies) * {self.engine.game_world.current_floor} (current floor)")
             
             self.engine.game_world.generate_floor()

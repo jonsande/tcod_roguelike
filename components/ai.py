@@ -713,10 +713,25 @@ class SentinelEnemy(BaseAI):
 # Objetos rompibles, como mesas:
 from entity import Obstacle
 class Dummy(BaseAI):
+
     def __init__(self, entity: Obstacle):
         super().__init__(entity)
         self.path: List[Tuple[int, int]] = []
 
     def perform(self) -> None:
-        pass
-        #return WaitAction(self.entity).perform()
+        
+        if self.entity.name == "Fire place":
+
+            player = self.engine.player
+            fireplace = self.entity
+            dx = player.x - fireplace.x
+            dy = player.y - fireplace.y
+            distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+            if distance <= 1:
+                player.fighter.heal(1)
+                if player.fighter.hp < player.fighter.max_hp:
+                    self.engine.message_log.add_message(
+                        f"You restore 1 HP.",
+                        color.health_recovered
+                    )

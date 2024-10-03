@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class Level(BaseComponent):
     parent: Actor
 
-    # Con un valor de '10', el primer nivel cuesta 30pt (level_up_base + 10), 
+    # Con un valor level_up_factor de '10', el primer nivel cuesta 30pt (level_up_base + 10), 
     # el segundo 40pts (level_up_base + 10x2), el tercero 20+(10x3)=50pts, etc.
 
     def __init__(
@@ -31,7 +31,9 @@ class Level(BaseComponent):
 
     @property
     def experience_to_next_level(self) -> int:
-        return self.level_up_base + self.current_level * self.level_up_factor * 2
+        x = self.current_level ** 2
+        y = self.level_up_factor
+        return self.level_up_base + (x * y)
 
     @property
     def requires_level_up(self) -> bool:

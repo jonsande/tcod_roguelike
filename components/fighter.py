@@ -289,12 +289,12 @@ class Fighter(BaseComponent):
                 death_message_color = color.descend
                 self.engine.message_log.add_message(death_message, death_message_color)
 
-        if self.parent.name == "Adventurer":
-            self.engine.player.fighter.luck -= 1
+        # if self.parent.name == "Adventurer":
+        #     self.engine.player.fighter.luck -= 1
 
-            death_message = f"Distant thunder sounds."
-            death_message_color = color.descend
-            self.engine.message_log.add_message(death_message, death_message_color)
+        #     death_message = f"Distant thunder sounds."
+        #     death_message_color = color.descend
+        #     self.engine.message_log.add_message(death_message, death_message_color)
 
 
 

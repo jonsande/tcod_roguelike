@@ -236,7 +236,7 @@ fireplace = Actor(
     name="Fire place",
     ai_cls=Dummy,
     equipment=Equipment(),
-    fighter=Fighter(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=0),
+    fighter=Fighter(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=3),
     inventory=Inventory(capacity=0),
     level=Level(xp_given=5),
 )
@@ -585,7 +585,7 @@ orc = Actor(
         woke_ai_cls=HostileEnemy
     ),
     inventory=Inventory(capacity=1, items=inv_roulette("Orc", 1)),
-    level=Level(xp_given=4),
+    level=Level(xp_given=5),
 )
 
 true_orc = Actor(
