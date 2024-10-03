@@ -257,7 +257,7 @@ class GameWorld:
             engine=self.engine,
         )
         # FIXED LEVELS
-        elif self.current_floor == 3:
+        elif self.current_floor == 6:
             self.engine.game_map = generate_fixed_dungeon(
             map_width=self.map_width,
             map_height=self.map_height,
@@ -266,7 +266,7 @@ class GameWorld:
             walls=tile_types.wall_v1,
             walls_special=tile_types.wall_v2,
             )
-        elif self.current_floor == 5:
+        elif self.current_floor == 11:
             self.engine.game_map = generate_fixed_dungeon(
             map_width=self.map_width,
             map_height=self.map_height,
@@ -274,7 +274,7 @@ class GameWorld:
             map=three_doors,
             walls=tile_types.wall_v2,
             walls_special=tile_types.wall_v1,
-            )  
+            )
         # RANDOMIZED LEVELS
         elif self.current_floor == random.randint(3,16):
             self.engine.game_map = generate_dungeon(

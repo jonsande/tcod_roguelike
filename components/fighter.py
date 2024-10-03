@@ -202,22 +202,28 @@ class Fighter(BaseComponent):
 
                 if self.parent.name == self.engine.player.name:
                     self.engine.message_log.add_message(
-                        f"You are poisoned! You take {total_damage} damage points",
+                        f"You are poisoned! You take {total_damage} damage points.",
                         color.red,
                         )
                 else:
                     self.engine.message_log.add_message(
-                        f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points",
+                        f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points.",
                         color.red,
                         )
 
             else:
                 self.poisoned_counter = 0
                 self.is_poisoned = False
-                self.engine.message_log.add_message(
-                    f"You are no longer poisoned",
-                    color.status_effect_applied,
-                    )
+                if self.parent.name == self.engine.player.name:
+                    self.engine.message_log.add_message(
+                        f"You are no longer poisoned.",
+                        color.status_effect_applied,
+                        )
+                else:
+                    self.engine.message_log.add_message(
+                        f"{self.parent.name} is no longer poisoned.",
+                        color.status_effect_applied,
+                        )
  
     #def update_energy_points(self):
     #    self.current_energy_points += self.energy_points

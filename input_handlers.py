@@ -208,6 +208,9 @@ class EventHandler(BaseEventHandler):
         # Actualizamos efectos temporales
         self.engine.update_temporal_effects()
 
+        # Monstruos que entran por las escaleras
+        self.engine.spawn_monsters_upstairs()
+
         # Restore Energy Points for all actors (Speed System)
         #self.engine.restore_energy_all()
 
@@ -505,12 +508,12 @@ class LevelUpEventHandler(AskUserEventHandler):
             bg=(0, 0, 0),
         )
 
-        console.print(x=x + 1, y=1, string="Congratulations! You level up!")
-        console.print(x=x + 1, y=2, string="Select an attribute to increase.")
+        console.print(x=x + 1, y=2, string="Congratulations! You level up!")
+        console.print(x=x + 1, y=3, string="Select an attribute to increase.")
 
         console.print(
             x=x + 1,
-            y=4,
+            y=5,
             string=f"a) Base Stealth + 1 (current: {self.engine.player.fighter.stealth})",
         )
         """
@@ -522,17 +525,17 @@ class LevelUpEventHandler(AskUserEventHandler):
         """
         console.print(
             x=x + 1,
-            y=5,
+            y=6,
             string=f"b) To Hit mod +1 (current {self.engine.player.fighter.to_hit})",
         )
         console.print(
             x=x + 1,
-            y=6,
+            y=7,
             string=f"c) Parry (defense) +1 (current: {self.engine.player.fighter.defense})",
         )
         console.print(
             x=x + 1,
-            y=7,
+            y=8,
             string=f"d) Max stamina +1 (current: {self.engine.player.fighter.max_stamina})",
         )
 

@@ -253,8 +253,12 @@ class HostileEnemyPlus(BaseAI):
                 if random.randint(1,6) <= 3:
 
                     self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-                    dest_x, dest_y = self.path_to_origin.pop(0)
-                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+                    try:
+                        dest_x, dest_y = self.path_to_origin.pop(0) # BUG: Esto estaba dando error IndexError: pop from empty list
+                        return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+                    except IndexError:
+                        return MeleeAction(self.entity, dx, dy).perform()
 
                 else:
                     return MeleeAction(self.entity, dx, dy).perform()
@@ -272,9 +276,6 @@ class HostileEnemyPlus(BaseAI):
                         dest_x, dest_y = self.path_to_origin.pop(0)
                         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
             """
-        
-        # TO DO: mecánica de ataque siguiloso, con un superbonificador a to hit y a daño, 
-        # que haga que la habilidad STEALTH sea más útil
         
         elif distance > engage_rng:
 
@@ -307,6 +308,7 @@ class HostileEnemyPlus(BaseAI):
         Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
         Mirar en esta misma página el final de la classe ConfusedEnemy
         """
+
 
 class HostileEnemy(BaseAI):
     def __init__(self, entity: Actor):
@@ -370,7 +372,13 @@ class HostileEnemy(BaseAI):
                 engage_rng = random.randint(1, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
             else:
                 # engage_rng = 1d3 + fov enemigo - 1d(player stealth)
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(1, self.engine.player.fighter.stealth)
+                # BUG: esto está devolviendo un error:
+                # ValueError: empty range for randrange() (1, 1, 0)
+                # Parece que se soluciona sustituyendo esto... 
+                #engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(1, self.engine.player.fighter.stealth)
+                # Por esto:
+                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
+
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
             engage_rng = random.randint(1, 3) + self.entity.fighter.fov
@@ -404,9 +412,6 @@ class HostileEnemy(BaseAI):
                 return WaitAction(self.entity).perform()
             else:
                 return MeleeAction(self.entity, dx, dy).perform()
-        
-        # TO DO: mecánica de ataque siguiloso, con un superbonificador a to hit y a daño, 
-        # que haga que la habilidad STEALTH sea más útil
         
         elif distance > engage_rng:
 

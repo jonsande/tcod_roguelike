@@ -29,9 +29,9 @@ max_breakable_walls = 3
 max_debris_by_floor = [
     (1, 30),
     (2, 9),
-    (3, 14), # Floor 3 FIXED
     (4, 7),
-    (6, 2),
+    (6, 14), # Floor 5 FIXED
+    (7, 2),
 ]
 
 # Items máximos por habitación
@@ -41,10 +41,11 @@ max_items_by_floor = [
     (1, 2),
     #(1, 1),
     (2, 1),
-    (3, random.randint(1, 3)), # Floor 3 FIXED
+    (3, 0), 
     (4, 2),
-    (5, random.randint(1, 5)), # Floor 5 FIXED
-    (6, 2), 
+    (6, random.randint(1, 3)), # Floor 5 FIXED
+    (7, 2),
+    (11, random.randint(1, 5)), # Floor 10 FIXED
     (12, 1),
 ]
 
@@ -54,10 +55,11 @@ max_monsters_by_floor = [
     (0, 0),
     (1, 2),
     (2, 1),
-    (3, 0), # Floor 3 FIXED
+    (3, 1),
     (4, 2),
-    (5, 20), # Floor 5 FIXED
-    (6, 3)
+    (6, 0), # Floor 5 FIXED
+    (7, 2),
+    (11, 2),  # Floor 10 FIXED
 
 ]
 

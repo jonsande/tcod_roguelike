@@ -47,6 +47,7 @@ class Engine:
         self.turn = 0
         self.autoheal_counter = 0
         self.satiety_counter = 0
+        self.spawn_monsters_counter = 0
         self.temporal_effects = []
         self.center_room_array = []
         self.identified_items = []
@@ -243,6 +244,18 @@ class Engine:
             self.player.fighter.autoheal()
 
             self.autoheal_counter = 0
+
+
+    def spawn_monsters_upstairs(self):
+
+        total = self.spawn_monsters_counter + random.randint(1, 6)
+        if total >= 150:
+            amount = random.randint(1, 2)
+            import entity_factories
+            for i in range(amount):
+                # ToDo: aleatorizar enemigos spawneados.
+                entity_factories.goblin.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+            self.spawn_monsters_counter = 0
 
 
     def update_hunger(self): 
