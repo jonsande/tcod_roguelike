@@ -152,9 +152,28 @@ class TakeStairsAction(Action):
                 print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
             if self.engine.game_world.current_floor > 1:
-                xp_amount = (self.engine.game_world.current_floor * 5) + 10
+
+                # Se gana experiencia por bajar escaleras (proporcional al nivel de mazmorra)
+                # y por enemigos que no hayan sido provocados (stealth system)
+                unaware_enemies = 0
+
+                for entity in set(self.engine.game_map.actors) - {self.engine.player}:
+
+                    if entity.fighter.aggravated == False:
+                        # Las entidades dummie también cuentan, pues
+                        # la idea es dar puntos por no hacer ruido.
+                        unaware_enemies += 1
+                        print(f"DEBUG: {entity.name} aggravated: {entity.fighter.aggravated}")
+
+                print(f"DEBUG: Unaware_enemies = {unaware_enemies}")
+
+                xp_amount = (self.engine.game_world.current_floor * 5) + (unaware_enemies * self.engine.game_world.current_floor)
                 self.entity.level.add_xp(xp_amount)
+                
+                print(f"Total level xp gained: [{self.engine.game_world.current_floor} (current floor) * 5] + [{unaware_enemies} (unaware enemies) * {self.engine.game_world.current_floor} (current floor)")
+            
             self.engine.game_world.generate_floor()
+            
             self.engine.message_log.add_message(
                 "You descend the staircase.", color.descend
                 )
@@ -298,7 +317,6 @@ class ThrowItemAction(Action):
                             if self.engine.debug == True:
                                 print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
                             self.engine.player.level.add_xp(target.level.xp_given)
-                            self.engine.message_log.add_message(f"You gain {target.level.xp_given} experience points.")
 
                         target.fighter.aggravated = True
 
@@ -471,7 +489,7 @@ class MeleeAction(ActionWithDirection):
             if isinstance(target, Actor):
                 if self.is_dummy_object(target.ai) == False:
                     if target.fighter.aggravated == False:
-                        
+
                         damage = (damage + self.entity.fighter.luck) * 2
                         
                         if self.engine.debug == True:
@@ -484,7 +502,6 @@ class MeleeAction(ActionWithDirection):
                             if self.engine.debug == True:
                                 print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
                             self.engine.player.level.add_xp(target.level.xp_given)
-                            self.engine.message_log.add_message(f"You gain {target.level.xp_given} experience points.")
 
                         target.fighter.aggravated = True
 

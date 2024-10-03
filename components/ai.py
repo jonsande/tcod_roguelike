@@ -370,11 +370,12 @@ class HostileEnemy(BaseAI):
                 engage_rng = random.randint(1, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
             else:
                 # engage_rng = 1d3 + fov enemigo - 1d(player stealth)
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
+                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(1, self.engine.player.fighter.stealth)
         else:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
+            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
             engage_rng = random.randint(1, 3) + self.entity.fighter.fov
         
+        # Debug
         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
         #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
 
