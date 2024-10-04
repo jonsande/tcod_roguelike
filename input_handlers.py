@@ -214,6 +214,10 @@ class EventHandler(BaseEventHandler):
         # Restore Energy Points for all actors (Speed System)
         #self.engine.restore_energy_all()
 
+        # BugFix provisional:
+        # Colocar escaleras para que no queden ocultas por la debris
+        self.engine.bugfix_downstairs()
+
         return True
     
 

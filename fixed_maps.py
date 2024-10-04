@@ -241,15 +241,6 @@ def generate_fixed_monsters_array(map):
     return location
 """
 
-def monster_roulette():
-
-    choices = [ef.orc, ef.goblin, ef.snake]
-    max_choices = len(choices)
-    winner = random.randint(0,max_choices - 1)
-    for i in range(0, max_choices):
-        if i == winner:
-            return choices[i]
-
 # No está funcionando bien
 # Razón: esta función se ejecuta una sola vez desde
 # procgen; de modo que solo devuelve un monstruo cuando

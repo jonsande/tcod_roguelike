@@ -9,6 +9,7 @@ from components.level import Level
 from entity import Actor, Item, Decoration, Obstacle
 import random
 import numpy as np
+from settings import tileset_cod
 
 
 def color_roulette():
@@ -258,20 +259,54 @@ door = Obstacle(
     equipment=Equipment(),
 )
 
-breakable_wall = Obstacle(
+if tileset_cod == "ascii":
+    breakable_wall = Obstacle(
 
-    char='√',
-    #char='#',
-    # Poniendo color=None el color es transparente
-    color=None,
-    name="Suspicious wall",
-    ai_cls=Dummy,
-    fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-    #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-    level=Level(xp_given=2),
-    inventory=Inventory(capacity=1),
-    equipment=Equipment(),
-)
+        char='#',
+        # Poniendo color=None el color es transparente
+        color=None,
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
+
+if tileset_cod == "pseudo_ascii":
+
+    breakable_wall = Obstacle(
+
+        char='√',
+        #char='#',
+        # Poniendo color=None el color es transparente
+        color=None,
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
+
+if tileset_cod == "hardcore":
+
+    breakable_wall = Obstacle(
+
+        char='√',
+        #char='#',
+        # Poniendo color=None el color es transparente
+        color=None,
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
 
 # EQUIPPABLES
 
@@ -425,16 +460,16 @@ player = Actor(
     ai_cls=HostileEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        #hp=32,
-        hp=999, # Debugg
+        hp=32,
+        #hp=999, # Debug
         base_defense=0, 
         base_power=0,
         recover_rate=1, 
         fov=6,
-        #fov=90, # Debugg
+        #fov=90, # Debug
         dmg_mod = (1, 4), 
         base_stealth=1, 
-        #base_stealth=100, # Debugg
+        #base_stealth=100, # Debug
         base_to_hit=0,
         luck=1,
         critical_chance=1,
@@ -698,3 +733,11 @@ sentinel = Actor(
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )
+
+def monster_roulette(choices=[orc, goblin, snake]):
+
+    max_choices = len(choices)
+    winner = random.randint(0,max_choices - 1)
+    for i in range(0, max_choices):
+        if i == winner:
+            return choices[i]

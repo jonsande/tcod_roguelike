@@ -23,12 +23,13 @@ import render_functions
 from entity import Actor
 
 if TYPE_CHECKING:
-    from entity import Actor, Obstacle
+    from entity import Actor
     from game_map import GameMap, GameWorld
     
 #import gc
 import components.fighter
 #import entity_factories
+from components.ai import Dummy
 
 
 # Calendario:
@@ -114,27 +115,29 @@ class Engine:
     def extra_turn_manager(self):
         # EXTRA TURN CONDITIONS
         for entity in set(self.game_map.actors) - {self.player}:
+
+            if isinstance(entity.ai, Dummy) == False:
             
-            if entity.fighter.current_time_points > 20:
+                if entity.fighter.current_time_points > 20:
 
-                if self.debug == True:
-                    print(f"{color.bcolors.OKCYAN}{entity.name} {color.bcolors.OKCYAN}EXTRA TURN{color.bcolors.ENDC}!")
-                
-                #entity.fighter.current_time_points = 0
+                    if self.debug == True:
+                        print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name} {color.bcolors.OKCYAN}EXTRA TURN{color.bcolors.ENDC}!")
+                    
+                    #entity.fighter.current_time_points = 0
 
-                #for entity in set(self.game_map.actors) - {self.player}:
-                if entity.ai:
-                    try:
-                        entity.ai.perform()
-                    except exceptions.Impossible:
-                        entity.fighter.current_time_points = 0
-                        if self.debug == True:
-                            print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
-                        pass  # Ignore impossible action exceptions from AI.
+                    #for entity in set(self.game_map.actors) - {self.player}:
+                    if entity.ai:
+                        try:
+                            entity.ai.perform()
+                        except exceptions.Impossible:
+                            entity.fighter.current_time_points = 0
+                            if self.debug == True:
+                                print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
+                            pass  # Ignore impossible action exceptions from AI.
 
-                entity.fighter.current_time_points = 0
-                if self.debug == True:
-                    print(f"{color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
+                    entity.fighter.current_time_points = 0
+                    if self.debug == True:
+                        print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
 
 
     """
@@ -246,15 +249,63 @@ class Engine:
             self.autoheal_counter = 0
 
 
-    def spawn_monsters_upstairs(self):
+    #def where_the_hell_the_stairs_are(self):
+        #return self.game_map.downstairs_location
+    def bugfix_downstairs(self):
 
-        total = self.spawn_monsters_counter + random.randint(1, 6)
-        if total >= 150:
-            amount = random.randint(1, 2)
-            import entity_factories
-            for i in range(amount):
-                # ToDo: aleatorizar enemigos spawneados.
-                entity_factories.goblin.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+        from entity import Decoration
+        stairs = Decoration(
+            x=self.game_map.downstairs_location[0], 
+            y=self.game_map.downstairs_location[1], 
+            char='>', 
+            color=(50,50,40), 
+            name="Downstairs")
+        stairs.spawn(self.game_map, stairs.x, stairs.y)
+
+
+    def spawn_monsters_upstairs(self):
+        
+        #print(f"DEBUG: >>>>>>>>>>>>>>>> DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}")
+        
+        self.spawn_monsters_counter = self.spawn_monsters_counter + 1
+
+        dice = random.randint(1, 20)
+
+        total = self.spawn_monsters_counter + dice
+
+        if self.debug == True:
+            print("DEGUB: self.spawn_monsters_counter = ", self.spawn_monsters_counter)
+            print("DEGUB: Spawn monsters dice (1d20) = ", dice)
+            print("DEGUB: Total = ", total)
+
+        if total >= 130:
+
+            spawn_chance = random.randint(1,6)
+
+            if self.debug == True:
+                    print(f"DEGUB: spawn chance dice: {spawn_chance}")
+
+            if spawn_chance >= 5:
+
+                amount = random.randint(1, 3)
+
+                if self.debug == True:
+                    print(f"DEGUB: New monsters upstairs! ({amount})")
+
+                from entity_factories import monster_roulette, orc, goblin, snake, true_orc
+                for i in range(amount):
+
+                    # Generate random monsters upstairs
+                    if self.game_world.current_floor <= 4:
+                        selected_monster = monster_roulette(choices=[orc, goblin])
+                        selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+                    if self.game_world.current_floor > 4:
+                        selected_monster = monster_roulette(choices=[orc, goblin, true_orc])
+                        selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+                    
+                    # Generate single type monster upstairs
+                    #entity_factories.goblin.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+            
             self.spawn_monsters_counter = 0
 
 

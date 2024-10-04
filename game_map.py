@@ -237,13 +237,14 @@ class GameWorld:
         #self.adventurer_unique_exists = adventurer_unique_exists
 
     def generate_floor(self) -> None:
-        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon
-
-        self.current_floor += 1
 
         """Aquí establecemos los mapas fijos
         Dependiendo de en qué nivel nos encontramos, se disparará un generador
         del procgen u otro"""
+
+        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon
+
+        self.current_floor += 1
 
         # STARTING LEVEL
         if self.current_floor == 1:
@@ -278,9 +279,9 @@ class GameWorld:
         # RANDOMIZED LEVELS
         elif self.current_floor == random.randint(3,16):
             self.engine.game_map = generate_dungeon(
-                max_rooms=30,
-                room_min_size=14,
-                room_max_size=19,
+                max_rooms=90,
+                room_min_size=2,
+                room_max_size=12,
                 map_width=self.map_width,
                 map_height=self.map_height,
                 engine=self.engine,
@@ -288,7 +289,7 @@ class GameWorld:
         elif self.current_floor == random.randint(3,16):
             self.engine.game_map = generate_dungeon(
                 max_rooms=60,
-                room_min_size=4,
+                room_min_size=3,
                 room_max_size=9,
                 map_width=self.map_width,
                 map_height=self.map_height,

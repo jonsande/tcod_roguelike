@@ -82,7 +82,7 @@ item_chances: Dict[int, List[Tuple[Entity, int]]] = {
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #0: [(fireplace, 100)], # Esto no hace nada porque el max_monsters_by_floor está a 0
     #1: [(bandit, 100)],
-    1: [(monkey, 20), (fireplace, 100), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
+    1: [(monkey, 20), (fireplace, 10), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
     2: [(monkey, 20), (adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
     3: [(orc, 50), (goblin, 50)],
     4: [(swarm_rat, 20), (rat, 0), (orc, 20), (goblin, 30)],
@@ -189,9 +189,9 @@ class TownRoom:
         center_y = int((self.y1 + self.y2) / 2)
 
         return center_x, center_y
-    
-"""
-class FixedRoom:
+
+
+"""class FixedRoom:
 
     def __init__(self, x: int, y: int, width: int, height: int):
         # Para que no se generen muros en el borde le metemos el -1
@@ -213,6 +213,7 @@ class FixedRoom:
 
         return center_x, center_y
 """
+
 
 def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) -> None:
     
@@ -239,15 +240,21 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
         debris_chances, number_of_debris, floor_number
     )
 
-    # Esto genera las coordenadas de spawneo (en habitación)
+    # Generamos las coordenadas de spawneo (en habitación)
     # para cada monstruo e ítem a generar
     for entity in monsters + items + debris:
         x = random.randint(room.x1 + 1, room.x2 - 1)
         y = random.randint(room.y1 + 1, room.y2 - 1)
+
         # Esto comprueba si la coordenada en la que spawmear
         # está o no ya ocupada, y spawmea
         if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
 
+            print(f"DEBUG: Generando... {entity.name} en x={x} y={y}")
+            
+            # Evitar que se genere nada sobre las escaleras.
+            # No se puede hacer desde aquí. La instancia de Engine no tiene aún generado un gamemap
+                
             # Memorizamos las coordenadas donde se va a spawmear en origen la entidad
             # Esto es para la mecánica de la ia de que el monstruo vuelva a su posición
             # cuando el PJ queda fuera de su rango de detección
@@ -255,7 +262,7 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
 
             # Se spawmea
             entity.spawn(dungeon, x, y)
-
+            
 
 def tunnel_between(
     start: Tuple[int, int], end: Tuple[int, int]
@@ -445,7 +452,7 @@ def generate_fixed_dungeon(
         # Para hacer esto bien habría que pasarle por parámetro
         # un map.name, pero para eso hay que hacer
         # que map sea una clase de objeto
-        selected_monster = fixed_maps.monster_roulette()
+        selected_monster = entity_factories.monster_roulette(choices=[entity_factories.orc, entity_factories.goblin, entity_factories.snake])
         selected_monster.spawn(dungeon, x, y)
     
     # Colocamos al héroe
@@ -535,8 +542,8 @@ def generate_dungeon(
         door_options = generate_posible_doors(new_room, dungeon, engine.game_world.current_floor)
 
         # Colocamos escaleras,
-        # pero evitando que se genere escalera en el nivel 12
-        if engine.game_world.current_floor == 12:
+        # pero evitando que se genere escalera en el nivel 16
+        if engine.game_world.current_floor == 16:
             pass
         else:
             dungeon.tiles[center_of_last_room] = tile_types.down_stairs

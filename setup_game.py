@@ -77,7 +77,7 @@ def new_game() -> Engine:
     engine.update_fov()
 
     engine.message_log.add_message(
-        "You arrive to Monkey Island!", color.welcome_text
+        "You arrive to the beach.", color.welcome_text
     )
 
     dagger = copy.deepcopy(entity_factories.dagger)

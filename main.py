@@ -12,6 +12,7 @@ import color
 import exceptions
 import input_handlers
 import setup_game
+import settings
 
 
 def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
@@ -30,23 +31,7 @@ def main() -> None:
     #screen_width = 70
     #screen_heigth = 45
 
-    # 32x8 son el número de casillas en las que se va a dividir el png: 32 ancho x 8 de alto
-    #tileset = tcod.tileset.load_tilesheet(
-    #    "data/dejavu10x10_gs_tc_2x.png", 32, 8, tcod.tileset.CHARMAP_TCOD
-    #)
-
-    tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 64, 64)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 60, 58)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 128, 128)
-    #tileset = tcod.tileset.load_truetype_font("data/Terminus.ttf", 64, 64)
-    #tileset = tcod.tileset.set_truetype_font("data/Terminus.ttf", 128, 128)
-    #tileset = tcod.tileset.load_truetype_font("data/square.ttf", 64, 64)
-    
-    #tileset = tcod.tileset.load_truetype_font("data/white-rabbit.regular.ttf", 128, 128)
-    
-    
-    
+    tileset = settings.tileset  
 
     handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
 
@@ -54,7 +39,7 @@ def main() -> None:
         screen_width,
         screen_heigth,
         tileset=tileset,
-        title="MONKEY ISLAND RL",
+        title="Yet Another Roguelike",
         vsync=True,
     ) as context:
         #root_console = tcod.Console(screen_width, screen_heigth, order="F")   # DEPRECATED

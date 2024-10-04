@@ -735,3 +735,6 @@ class Dummy(BaseAI):
                         f"You restore 1 HP.",
                         color.health_recovered
                     )
+
+            #if self.engine.game_map.visible[fireplace.x, fireplace.y]:
+

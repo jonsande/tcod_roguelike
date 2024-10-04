@@ -269,7 +269,7 @@ class Obstacle(Entity):
             color=color,
             name=name,
             blocks_movement=True,
-            render_order=RenderOrder.DECORATION,
+            render_order=RenderOrder.OBSTACLE,
         )
 
         self.ai: Optional[BaseAI] = ai_cls(self)
