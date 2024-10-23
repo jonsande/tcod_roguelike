@@ -4,8 +4,8 @@ import tcod
 # 16x16 son el número de casillas en las que se va a dividir el png: 16 ancho x 16 de alto
 
 # Default - Pseudo Ascii
-#tileset_cod = "pseudo_ascii"
-#tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+tileset_cod = "pseudo_ascii"
+tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
 
 
 # Alternative - Ascii
@@ -19,8 +19,8 @@ import tcod
 #tileset = tcod.tileset.load_truetype_font("data/white-rabbit.regular.ttf", 128, 128)
 
 # Hardcore mode
-tileset_cod = "hardcore"
-tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+#tileset_cod = "hardcore"
+#tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
 
 
 # Original

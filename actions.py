@@ -172,6 +172,9 @@ class TakeStairsAction(Action):
 
                 print(f"Total level xp gained: [{self.engine.game_world.current_floor} (current floor) * 5] + [{unaware_enemies} (unaware enemies) * {self.engine.game_world.current_floor} (current floor)")
             
+            # Reinicia el contador para la generación de monstruos
+            self.engine.spawn_monsters_counter = 0
+
             self.engine.game_world.generate_floor()
             
             self.engine.message_log.add_message(
@@ -251,7 +254,7 @@ class ThrowItemAction(Action):
         if self.is_dummy_object(target.ai) == False:
             if target.fighter.aggravated == False:
                 #import ipdb;ipdb.set_trace()
-                hit_dice += self.entity.fighter.luck
+                hit_dice = hit_dice + self.entity.fighter.luck + self.entity.fighter.base_stealth
                 if self.engine.debug == True:
                     print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 
@@ -436,7 +439,7 @@ class MeleeAction(ActionWithDirection):
 
             if target.fighter.aggravated == False:
                 #import ipdb;ipdb.set_trace()
-                hit_dice += self.entity.fighter.luck
+                hit_dice = hit_dice + self.entity.fighter.luck + self.entity.fighter.base_stealth
                 if self.engine.debug == True:
                     print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 

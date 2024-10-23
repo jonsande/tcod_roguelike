@@ -266,7 +266,7 @@ class Engine:
     def spawn_monsters_upstairs(self):
         
         #print(f"DEBUG: >>>>>>>>>>>>>>>> DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}")
-        
+
         self.spawn_monsters_counter = self.spawn_monsters_counter + 1
 
         dice = random.randint(1, 20)
@@ -297,10 +297,10 @@ class Engine:
 
                     # Generate random monsters upstairs
                     if self.game_world.current_floor <= 4:
-                        selected_monster = monster_roulette(choices=[orc, goblin])
+                        selected_monster = monster_roulette(choices=[goblin,])
                         selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
                     if self.game_world.current_floor > 4:
-                        selected_monster = monster_roulette(choices=[orc, goblin, true_orc])
+                        selected_monster = monster_roulette(choices=[orc, goblin, true_orc,])
                         selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
                     
                     # Generate single type monster upstairs

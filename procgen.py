@@ -53,7 +53,7 @@ max_items_by_floor = [
 # Nivel mazmorra | nº monstruos
 max_monsters_by_floor = [
     (0, 0),
-    (1, 2),
+    (1, 1),
     (2, 1),
     (3, 1),
     (4, 2),
@@ -72,20 +72,20 @@ item_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #1: [(chain_mail, 100), (short_sword, 100), (long_sword, 100), (grial, 100)],
     #1: [(dagger_plus, 100)],
     1: [(antidote, 5), (sand_bag, 5), (health_potion, 5), (posion_potion, 5), (power_potion, 5), (stamina_potion, 5), (confusion_potion, 5), (precission_potion, 5), (strength_potion, 2)],
-    2: [(health_potion, 15), (posion_potion, 15), (power_potion, 15), (stamina_potion, 15), (confusion_potion, 15), (precission_potion, 15), (rock, 15), (table, 15)],
-    3: [(poisoned_triple_ration, 10), (triple_ration, 10), (rock, 45), (confusion_scroll, 10), (paralisis_scroll, 10), (lightning_scroll, 5), (fireball_scroll, 5), (short_sword, 5)],
+    2: [(health_potion, 15), (posion_potion, 15), (power_potion, 15), (stamina_potion, 15), (confusion_potion, 15), (precission_potion, 15), (rock, 15), (table, 15), (short_sword, 5), (short_sword_plus, 2), (long_sword, 5), (long_sword_plus, 3), (spear, 5), (spear_plus, 3)],
+    3: [(poisoned_triple_ration, 10), (triple_ration, 10), (rock, 45), (confusion_scroll, 10), (paralisis_scroll, 10), (lightning_scroll, 5), (fireball_scroll, 5), (short_sword, 5), (short_sword_plus, 2), (long_sword, 5), (long_sword_plus, 3), (spear, 5), (spear_plus, 3)],
     4: [(confusion_scroll, 15), (paralisis_scroll, 15), (lightning_scroll, 10), (fireball_scroll, 5)],
     5: [(lightning_scroll, 10), (fireball_scroll, 10), (long_sword, 5), (chain_mail, 5)],
-    7: [(spear, 5)],
+    7: [(spear, 10), (spear_plus, 5)],
     8: [(short_sword, 15)],
 }
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
     #0: [(fireplace, 100)], # Esto no hace nada porque el max_monsters_by_floor está a 0
     #1: [(bandit, 100)],
     1: [(monkey, 20), (fireplace, 10), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
-    2: [(monkey, 20), (adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
-    3: [(orc, 50), (goblin, 50)],
-    4: [(swarm_rat, 20), (rat, 0), (orc, 20), (goblin, 30)],
+    2: [(monkey, 10), (adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
+    3: [(orc, 20), (goblin, 50)],
+    4: [(swarm_rat, 20), (rat, 0), (orc, 30), (goblin, 30)],
     5: [(true_orc, 5), (orc, 30), (goblin, 30), (troll, 5)],
     8: [(adventurer, 15), (true_orc, 20), (orc, 50), (goblin, 15), (bandit, 10)],
     12: [(adventurer, 0)],

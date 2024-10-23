@@ -129,14 +129,29 @@ class ShortSword(Equippable):
         super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=4, to_hit_bonus=1)
 
 
+class ShortSwordPlus(Equippable):
+    def __init__(self) -> None:
+        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=4+random.randint(1, 3), to_hit_bonus=1)
+
+
 class LongSword(Equippable):
     def __init__(self) -> None:
         super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5, stealth_penalty=1, to_hit_penalty=0)
 
 
+class LongSwordPlus(Equippable):
+    def __init__(self) -> None:
+        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5+random.randint(1, 3), stealth_penalty=1, to_hit_penalty=0)
+
+
 class Spear(Equippable):
     def __init__(self) -> None:
         super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5)
+
+
+class SpearPlus(Equippable):
+    def __init__(self) -> None:
+        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5+random.randint(1, 3))
 
 
 class LeatherArmor(Equippable):

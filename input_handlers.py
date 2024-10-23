@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from engine import Engine
     from entity import Item
 
+from components.ai import Dummy
+
 MOVE_KEYS = {
     # Arrow keys.
     #tcod.event.K_UP: (0, -1),
@@ -317,27 +319,29 @@ class CombatControlHandler(AskUserEventHandler):
             aggravated = f"{e.fighter.aggravated}"
             power = f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}"
 
-            print(">>>>>>>>>>>>>>>>>>>>>> ", e.fighter.aggravated)
+            print("DEBUG: >>>>>>>>>>>>>>>>>>>>>> e.name: ", e.name)
+            print("DEBUG: >>>>>>>>>>>>>>>>>>>>>> e.fighter.aggravated: ", e.fighter.aggravated)
 
-            if e.fighter.aggravated == True:
-                string=f"{name} ({distance}) (!) \n SP:  DEF:  DMG:      ToHit:  AV:"
-            else:
-                string=f"{name} ({distance}) \n SP:  DEF:  DMG:      ToHit:  AV:"
+            if isinstance(e.ai, Dummy) == False:
+                if e.fighter.aggravated == True:
+                    string=f"{name} ({distance}) (!) \n SP:  DEF:  DMG:      ToHit:  AV:"
+                else:
+                    string=f"{name} ({distance}) \n SP:  DEF:  DMG:      ToHit:  AV:"
 
-            console.print(
-                x=x+1, 
-                y=1+i+counter_mons +counter_lines, 
-                string=string,
-            )
+                console.print(
+                    x=x+1, 
+                    y=1+i+counter_mons +counter_lines, 
+                    string=string,
+                )
 
-            console.print(x + 5, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.stamina}", fg=color.blue)
-            console.print(x + 11, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.defense}", fg=color.orange)
-            console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}", fg=color.red)
-            console.print(x + 29, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.to_hit}", fg=color.orange)
-            console.print(x + 34, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.armor_value}", fg=color.orange)
-            counter_lines += 1
-            #self.engine.player.fighter.armor_value
-            #console.print(x=x+1, y=1+i+2, string=f"ESTAMINA: {e.fighter.stamina}")
+                console.print(x + 5, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.stamina}", fg=color.blue)
+                console.print(x + 11, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.defense}", fg=color.orange)
+                console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}", fg=color.red)
+                console.print(x + 29, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.to_hit}", fg=color.orange)
+                console.print(x + 34, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.armor_value}", fg=color.orange)
+                counter_lines += 1
+                #self.engine.player.fighter.armor_value
+                #console.print(x=x+1, y=1+i+2, string=f"ESTAMINA: {e.fighter.stamina}")
   
 
 

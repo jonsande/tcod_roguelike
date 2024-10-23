@@ -454,33 +454,46 @@ class SleepingEnemy(BaseAI):
         super().__init__(entity)
 
     def perform(self) -> None:
-        
-        # Si self.entity se encuentra entre las casillas visibles por el PJ... 
-        if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-            
-            sneak_dice = random.randint(1, 6)
-            sneak_final = sneak_dice - self.engine.player.fighter.stealth
-            #print(f"SNEAK ROLL: {sneak_dice}")
-            break_point = 3 + random.randint(0, self.engine.player.fighter.luck)
-            
-            if sneak_final > break_point:
-            #if sneak_final == 666:   # DEBUG
+
+        sleeping_dice = random.randint(2,12) - self.engine.player.fighter.luck
+
+        if sleeping_dice > 10:
+            woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
+            self.entity.ai = woke_ai
+            # Si self.entity se encuentra entre las casillas visibles por el PJ... 
+            if self.engine.game_map.visible[self.entity.x, self.entity.y]:
                 self.engine.message_log.add_message(
-                    f"The {self.entity.name} notices you! ({sneak_final}VS{break_point})",
+                    f"The {self.entity.name} wakes up.",
                     color.orange
                     )
-                #woke_ai = HostileEnemy(self.entity)
-                woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
-                self.entity.ai = woke_ai
-                #self.entity.name = self.entity.name + " (!)"
                 
-            else:
-                self.engine.message_log.add_message(
-                    f"The {self.entity.name} doesn't notice you (sleeping). ({sneak_final}VS{break_point})"
-                    )
-                return PassAction(self.entity).perform()
         else:
-            return PassAction(self.entity).perform()
+            # Si self.entity se encuentra entre las casillas visibles por el PJ... 
+            if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+                
+                sneak_dice = random.randint(1, 6)
+                sneak_final = sneak_dice - self.engine.player.fighter.stealth
+                #print(f"SNEAK ROLL: {sneak_dice}")
+                break_point = 3 + random.randint(0, self.engine.player.fighter.luck)
+                
+                if sneak_final > break_point:
+                #if sneak_final == 666:   # DEBUG
+                    self.engine.message_log.add_message(
+                        f"The {self.entity.name} notices you! ({sneak_final}VS{break_point})",
+                        color.orange
+                        )
+                    #woke_ai = HostileEnemy(self.entity)
+                    woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
+                    self.entity.ai = woke_ai
+                    #self.entity.name = self.entity.name + " (!)"
+                    
+                else:
+                    self.engine.message_log.add_message(
+                        f"The {self.entity.name} doesn't notice you (sleeping). ({sneak_final}VS{break_point})"
+                        )
+                    return PassAction(self.entity).perform()
+            else:
+                return PassAction(self.entity).perform()
      
  
 class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA

@@ -147,6 +147,7 @@ posion_potion = Item(
     id_name = "Posion potion",
     #consumable=consumable.PosionConsumable(amount=1, counter=random.randint(6,10)),
     consumable=consumable.PosionConsumable(amount=1, counter=8),
+    throwable=True,
 )
 
 antidote = Item(
@@ -345,18 +346,45 @@ short_sword = Item(
     equippable=equippable.ShortSword()
 )
 
+short_sword_plus = Item(
+    char="/", 
+    color=(0, 191, 155), 
+    name="Short Sword",
+    id_name="Short Sword (good)",
+    equippable=equippable.ShortSwordPlus()
+)
+
 long_sword = Item(
     char="/", 
     color=(0, 191, 255), 
-    name="Long Sword", 
+    name="Long Sword",
+    id_name="Long Sword",
     equippable=equippable.LongSword()
+)
+
+long_sword_plus = Item(
+    char="/", 
+    color=(0, 191, 155), 
+    name="Long Sword",
+    id_name="Long Sword (good)",
+    equippable=equippable.LongSwordPlus()
 )
 
 spear = Item(
     char="/", 
     color=(0, 191, 255), 
-    name="Spear", 
+    name="Spear",
+    id_name="Spear",
     equippable=equippable.Spear(),
+    throwable=True
+)
+
+spear_plus = Item(
+    char="/", 
+    color=(0, 191, 155), 
+    name="Spear",
+    id_name="Spear (good)",
+    equippable=equippable.SpearPlus(),
     throwable=True
 )
 
@@ -474,7 +502,7 @@ player = Actor(
         luck=1,
         critical_chance=1,
         # satiety=32,
-        satiety=24,
+        satiety=28,
         stamina=3, 
         max_stamina=3,
         poison_resistance=1
