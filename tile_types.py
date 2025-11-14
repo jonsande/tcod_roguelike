@@ -1,7 +1,7 @@
 from typing import Tuple
 import random
 #import render_order
-from settings import tileset_cod
+from settings import GRAPHIC_MODE, WALL_STYLE
 
 import numpy as np  # type: ignore
 
@@ -38,53 +38,33 @@ def new_tile(
 SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 
 
-door = new_tile(
-    walkable=True,
+closed_door = new_tile(
+    walkable=False,
     transparent=False,
-    #dark=(ord("∞"), (15,15,15), (0,0,0)),
-    #light=(ord("%"), (250,250,250), (0,0,0)),
-    dark=(ord("+"), (15,15,15), (0,0,0)),
-    light=(ord("+"), (93,59,0), (0,0,0)),
+    dark=(ord("+"), (15, 15, 15), (0, 0, 0)),
+    light=(ord("+"), (93, 59, 0), (0, 0, 0)),
 )
 
-if tileset_cod == "pseudo_ascii":
+open_door = new_tile(
+    walkable=True,
+    transparent=True,
+    dark=(ord("-"), (50, 50, 40), (0, 0, 0)),
+    light=(ord("-"), (200, 200, 120), (0, 0, 0)),
+)
 
-    # BALDOSAS: δ
+if GRAPHIC_MODE == "pseudo_ascii":
     floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord("∞"), (15,15,15), (0,0,0)),
         light=(ord("∞"), (50,50,40), (5,5,5)),
     )
-
-    classic_floor = new_tile(
-        walkable=True,
-        transparent=True,
-        #dark=(ord("∞"), (15,15,15), (0,0,0)),
-        #light=(ord("∞"), (50,50,40), (5,5,5)),
-        dark=(ord("."), (15,15,15), (0,0,0)),
-        light=(ord("."), (50,50,40), (5,5,5)),
-    )
-
     town_floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord("~"), (133,116,66), (0,0,0)),
         light=(ord("~"), (133,116,66), (0,0,0)),
     )
-    town_wall = new_tile(
-        walkable=False,
-        transparent=False,
-        dark=(ord("~"), (133,116,66), (0,0,0)),
-        light=(ord("~"), (133,116,66), (0,0,0)),
-        )
-
-    classic_wall = new_tile(
-        walkable=False,
-        transparent=False,
-        dark=(ord("#"), (15,15,15), (0,0,0)),
-        light=(ord("#"), (50,50,40), (5,5,5)),
-        )
 
     wall_v1 = new_tile(
             walkable=False,
@@ -110,87 +90,66 @@ if tileset_cod == "pseudo_ascii":
     # No se pueden generar diferentes baldosas por este medio,
     # Hay que hacerlo con items
 
-    # MUROS: √
-    ## Randomizar muros
-
-    wall_roulette = random.randint(1,3)
+    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3) else random.randint(1,3)
 
     if wall_roulette == 1:
+
+        light=(ord('√'), (170,170,120), (0,0,0))
+        dark=(ord('√'), (39,7,47), (5,5,5))
+        #dark=(ord("√"), (0,0,0), (0,0,0)) # Modo Hardcore
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord('√'), (170,170,120), (0,0,0)),
-            dark=(ord('√'), (39,7,47), (5,5,5)),
-            #light=(ord('#'), (170,170,120), (0,0,0)),
-            #dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord('√'), (170,170,120), (0,0,0)),
-            dark=(ord('√'), (39,7,47), (5,5,5)),
-            #light=(ord('#'), (170,170,120), (0,0,0)),
-            #dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
+
     elif wall_roulette == 2:
+
+        light=(ord('√'), (255,255,184), (0,0,0))
+        dark=(ord('√'), (39,7,47), (5,5,5))
+        #dark=(ord("√"), (0,0,0), (0,0,0)) # Modo Hardcore
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("√"), (255,255,184), (0,0,0)),
-            dark=(ord("√"), (39,7,47), (5,5,5)),
-            #light=(ord("#"), (255,255,184), (0,0,0)),
-            #dark=(ord("#"), (39,7,47), (5,5,5)),
-            # Modo Hardcore:
-            #dark=(ord("√"), (0,0,0), (0,0,0)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("√"), (255,255,184), (0,0,0)),
-            dark=(ord("√"), (39,7,47), (5,5,5)),
-            #light=(ord("#"), (255,255,184), (0,0,0)),
-            #dark=(ord("#"), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
+
     else:
+
+        light=(ord('√'), (70,40,70), (0,0,0))
+        dark=(ord('√'), (39,50,47), (5,5,5))
+        #dark=(ord("√"), (0,0,0), (0,0,0)) # Modo Hardcore
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("√"), (70,40,70), (0,0,0)),
-            dark=(ord("√"), (39,50,47), (5,5,5)),
-            #light=(ord("#"), (70,40,70), (0,0,0)),
-            #dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("√"), (70,40,70), (0,0,0)),
-            dark=(ord("√"), (39,50,47), (5,5,5)),
-            #light=(ord("#"), (70,40,70), (0,0,0)),
-            #dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         
-    # MURO DEBBUG
-
-    # Debugg: uncomment for transparent view
-    # wall = new_tile(
-    #     walkable=False,
-    #     transparent=True,
-    #     #dark=(ord("#"), (39,7,47), (5,5,5)),
-    #     dark=(ord("#"), (39,7,47), (5,5,5)),
-    #     #light=(ord("#"), (255,255,184), (0,0,0)),
-    #     light=(ord("#"), (170,170,120), (0,0,0)),
-    # )
-
-        
-    # MURO PUEBLO:
-    town_wall = new_tile(
-        walkable=False,
-        transparent=True,
-        #dark=(ord("#"), (39,7,47), (5,5,5)),
-        dark=(ord("#"), (39,7,47), (5,5,5)),
-        #light=(ord("#"), (255,255,184), (0,0,0)),
-        light=(ord("#"), (170,170,120), (0,0,0)),
-    )
+    town_wall = wall
 
     # ESCALERAS:
     down_stairs = new_tile(
@@ -198,10 +157,9 @@ if tileset_cod == "pseudo_ascii":
         transparent=True,
         dark=(ord(">"), (25, 25, 25), (5, 5, 5)),
         light=(ord(">"), (50,50,40), (6,9,3)),
-        #render_order=render_order.RenderOrder.STAIRS,
     )
 
-if tileset_cod == "ascii":
+elif GRAPHIC_MODE == "ascii":
     # BALDOSAS: δ
     floor = new_tile(
         walkable=True,
@@ -266,50 +224,61 @@ if tileset_cod == "ascii":
     # Hay que hacerlo con items
 
     # MUROS: √
-    ## Randomizar muros
+    ## Randomizar color de muros para GRAPHIC_MODE == "ascii"
 
-    wall_roulette = random.randint(1,3)
+    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3) else random.randint(1,3)
 
     if wall_roulette == 1:
+
+        light=(ord('#'), (170,170,120), (0,0,0))
+        dark=(ord('#'), (39,7,47), (5,5,5))
+        #dark=(ord("#"), (0,0,0), (0,0,0)), # Modo Hardcore
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord('#'), (170,170,120), (0,0,0)),
-            dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord('#'), (170,170,120), (0,0,0)),
-            dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
     elif wall_roulette == 2:
+
+        light=(ord("#"), (255,255,184), (0,0,0))
+        dark=(ord("#"), (39,7,47), (5,5,5))
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("#"), (255,255,184), (0,0,0)),
-            dark=(ord("#"), (39,7,47), (5,5,5)),
-            # Modo Hardcore:
-            #dark=(ord("√"), (0,0,0), (0,0,0)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("#"), (255,255,184), (0,0,0)),
-            dark=(ord("#"), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
     else:
+
+        light=(ord("#"), (70,40,70), (0,0,0))
+        dark=(ord("#"), (39,50,47), (5,5,5))
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("#"), (70,40,70), (0,0,0)),
-            dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("#"), (70,40,70), (0,0,0)),
-            dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         
     # MURO DEBBUG
@@ -326,14 +295,7 @@ if tileset_cod == "ascii":
 
         
     # MURO PUEBLO:
-    town_wall = new_tile(
-        walkable=False,
-        transparent=True,
-        #dark=(ord("#"), (39,7,47), (5,5,5)),
-        dark=(ord("#"), (39,7,47), (5,5,5)),
-        #light=(ord("#"), (255,255,184), (0,0,0)),
-        light=(ord("#"), (170,170,120), (0,0,0)),
-    )
+    town_wall = wall
 
     # ESCALERAS:
     down_stairs = new_tile(
@@ -344,7 +306,7 @@ if tileset_cod == "ascii":
         #render_order=render_order.RenderOrder.STAIRS,
     )
 
-if tileset_cod == "hardcore":
+else:
 
     # BALDOSAS: δ
     floor = new_tile(
@@ -408,62 +370,60 @@ if tileset_cod == "hardcore":
     # Hay que hacerlo con items
 
     # MUROS: √
-    ## Randomizar muros
+    ## Randomizar color de los muros cuando GRAPHIC_MODE == "hardcore"
 
-    wall_roulette = random.randint(1,3)
+    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3) else random.randint(1,3)
 
     if wall_roulette == 1:
+
+        light=(ord('√'), (170,170,120), (0,0,0))
+        dark=(ord(" "), (0,0,0), (0,0,0))
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord('√'), (170,170,120), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord('#'), (170,170,120), (0,0,0)),
-            #dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord('√'), (170,170,120), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord('#'), (170,170,120), (0,0,0)),
-            #dark=(ord('#'), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
     elif wall_roulette == 2:
+
+        light=(ord("√"), (255,255,184), (0,0,0))
+        dark=(ord(" "), (0,0,0), (0,0,0))
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("√"), (255,255,184), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord("#"), (255,255,184), (0,0,0)),
-            #dark=(ord("#"), (39,7,47), (5,5,5)),
-            # Modo Hardcore:
-            #dark=(ord("√"), (0,0,0), (0,0,0)),
+            light=light,
+            dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("√"), (255,255,184), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord("#"), (255,255,184), (0,0,0)),
-            #dark=(ord("#"), (39,7,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
     else:
+
+        light=(ord("√"), (70,40,70), (0,0,0)),
+        dark=(ord(" "), (0,0,0), (0,0,0)),
+
         wall = new_tile(
             walkable=False,
             transparent=False,
-            light=(ord("√"), (70,40,70), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord("#"), (70,40,70), (0,0,0)),
-            #dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=True,
+            walkable=False,
             transparent=False,
-            light=(ord("√"), (70,40,70), (0,0,0)),
-            dark=(ord(" "), (0,0,0), (0,0,0)),
-            #light=(ord("#"), (70,40,70), (0,0,0)),
-            #dark=(ord("#"), (39,50,47), (5,5,5)),
+            light=light,
+            dark=dark,
         )
         
     # MURO DEBBUG
@@ -480,14 +440,7 @@ if tileset_cod == "hardcore":
 
         
     # MURO PUEBLO:
-    town_wall = new_tile(
-        walkable=False,
-        transparent=True,
-        #dark=(ord("#"), (39,7,47), (5,5,5)),
-        dark=(ord(" "), (0,0,0), (0,0,0)),
-        #light=(ord("#"), (255,255,184), (0,0,0)),
-        light=(ord("#"), (170,170,120), (0,0,0)),
-    )
+    town_wall = wall
 
     # ESCALERAS:
     down_stairs = new_tile(
@@ -496,4 +449,30 @@ if tileset_cod == "hardcore":
         dark=(ord(" "), (0,0,0), (0,0,0)),
         light=(ord(">"), (50,50,40), (6,9,3)),
         #render_order=render_order.RenderOrder.STAIRS,
+    )
+    wall_colors = {
+        1: ((ord('√'), (170,170,120), (0,0,0)), (ord('√'), (39,7,47), (5,5,5))),
+        2: ((ord('√'), (255,255,184), (0,0,0)), (ord('√'), (39,7,47), (5,5,5))),
+        3: ((ord('√'), (70,40,70), (0,0,0)), (ord('√'), (39,50,47), (5,5,5))),
+    }
+    light, dark = wall_colors.get(wall_roulette, wall_colors[1])
+
+    wall = new_tile(
+        walkable=False,
+        transparent=False,
+        light=light,
+        dark=dark,
+    )
+    breakable_wall = new_tile(
+        walkable=False,
+        transparent=False,
+        light=light,
+        dark=dark,
+    )
+    town_wall = wall
+    town_floor = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("~"), (133,116,66), (0,0,0)),
+        light=(ord("~"), (133,116,66), (0,0,0)),
     )

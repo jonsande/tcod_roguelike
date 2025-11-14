@@ -5,6 +5,7 @@ from typing import Tuple, TYPE_CHECKING
 import color
 from components.base_component import BaseComponent
 from render_order import RenderOrder
+import tile_types
 
 if TYPE_CHECKING:
     from entity import Actor, Obstacle
@@ -600,6 +601,8 @@ class Door(BaseComponent):
 
         print(death_message)
         self.engine.message_log.add_message(death_message, death_message_color)
+        if hasattr(self.parent, "x") and hasattr(self.parent, "y"):
+            self.engine.game_map.tiles[self.parent.x, self.parent.y] = tile_types.floor
 
         self.engine.player.level.add_xp(self.parent.level.xp_given)
 

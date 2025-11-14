@@ -7,6 +7,7 @@ from tcod.console import Console
 from entity import Actor, Item, Obstacle
 import tile_types
 import entity_factories
+import settings
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     
 import random
 from fixed_maps import template, temple, three_doors
+
+CLOSED_DOOR_CHAR = tile_types.closed_door["dark"]["ch"]
 
 
 class GameMapTown:
@@ -78,6 +81,19 @@ class GameMapTown:
     def in_bounds(self, x: int, y: int) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
         return 0 <= x < self.width and 0 <= y < self.height
+
+    def is_closed_door(self, x: int, y: int) -> bool:
+        return self.tiles["dark"]["ch"][x, y] == CLOSED_DOOR_CHAR
+
+    def open_door(self, x: int, y: int) -> None:
+        if self.is_closed_door(x, y):
+            self.tiles[x, y] = tile_types.open_door
+
+    def try_open_door(self, x: int, y: int) -> bool:
+        if self.is_closed_door(x, y):
+            self.open_door(x, y)
+            return True
+        return False
 
     def render(self, console: Console) -> None:
         """
@@ -173,6 +189,19 @@ class GameMap:
         """Return True if x and y are inside of the bounds of this map."""
         return 0 <= x < self.width and 0 <= y < self.height
 
+    def is_closed_door(self, x: int, y: int) -> bool:
+        return self.tiles["dark"]["ch"][x, y] == CLOSED_DOOR_CHAR
+
+    def open_door(self, x: int, y: int) -> None:
+        if self.is_closed_door(x, y):
+            self.tiles[x, y] = tile_types.open_door
+
+    def try_open_door(self, x: int, y: int) -> bool:
+        if self.is_closed_door(x, y):
+            self.open_door(x, y)
+            return True
+        return False
+
     def render(self, console: Console) -> None:
         """
         Renders the map.
@@ -242,7 +271,7 @@ class GameWorld:
         Dependiendo de en qué nivel nos encontramos, se disparará un generador
         del procgen u otro"""
 
-        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon
+        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern
 
         self.current_floor += 1
 
@@ -295,6 +324,16 @@ class GameWorld:
                 map_height=self.map_height,
                 engine=self.engine,
             )
+        elif random.random() < settings.CAVERN_SPAWN_CHANCE:
+            self.engine.game_map = generate_cavern(
+                map_width=self.map_width,
+                map_height=self.map_height,
+                engine=self.engine,
+                fill_probability=settings.CAVERN_FILL_PROBABILITY,
+                birth_limit=settings.CAVERN_BIRTH_LIMIT,
+                death_limit=settings.CAVERN_DEATH_LIMIT,
+                smoothing_steps=settings.CAVERN_SMOOTHING_STEPS,
+            )
         else: 
             self.engine.game_map = generate_dungeon(
                 max_rooms=self.max_rooms,
@@ -304,4 +343,3 @@ class GameWorld:
                 map_height=self.map_height,
                 engine=self.engine,
             )
-

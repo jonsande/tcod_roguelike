@@ -496,7 +496,7 @@ class SleepingEnemy(BaseAI):
                 return PassAction(self.entity).perform()
      
  
-class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA
+class Neutral(BaseAI):
 
     # Actualmente un personaje con IA "Neutral" camina derecho
     # hacia las escaleras y baja por ellas.
@@ -504,14 +504,26 @@ class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA
     def __init__(self, entity: Actor):
         super().__init__(entity)
         self.path: List[Tuple[int, int]] = []
+        self._last_hp: Optional[int] = None
 
     def perform(self) -> None:
+
+        current_hp = self.entity.fighter.hp
+
+        if self._last_hp is None:
+            self._last_hp = current_hp
+
+        if current_hp < self._last_hp or self.entity.fighter.aggravated:
+            self.entity.fighter.aggravated = True
+            woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
+            self.entity.ai = woke_ai
+            return woke_ai.perform()
 
         target_x = self.engine.game_map.downstairs_location[0]
         target_y = self.engine.game_map.downstairs_location[1]
 
         if self.entity.x == target_x and self.entity.y == target_y:
-            
+            self._last_hp = current_hp
             return self.entity.fighter.desintegrate()
 
         #dx = target_x - self.entity.x
@@ -531,10 +543,12 @@ class Neutral(BaseAI): #ToDO: QUE SE VUELVA HOSTIL SI SE LE ATACA
             # Aquí se elimina del path la casilla que se acaba de ocupar...
             dest_x, dest_y = self.path.pop(0)
             # ...y se avanza a la siguiente casilla del path.
+            self._last_hp = current_hp
             return MovementAction(
                 self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
             ).perform()
 
+        self._last_hp = current_hp
         return WaitAction(self.entity).perform()
 
 
@@ -750,4 +764,3 @@ class Dummy(BaseAI):
                     )
 
             #if self.engine.game_map.visible[fireplace.x, fireplace.y]:
-

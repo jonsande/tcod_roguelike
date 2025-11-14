@@ -1,11 +1,15 @@
 from __future__ import annotations
-from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING
+from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set
 from game_map import GameMap, GameMapTown
 import tile_types
 import random
 import tcod
+import numpy as np
+import fixed_rooms
 from entity_factories import *
 import uniques
+import caverns
+import settings
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -16,85 +20,46 @@ import fixed_maps
 
 """En la línea 289 aprox establecemos el número de niveles de la mazmorra"""
 
-# Camino de tiles que genera la tuneladora
-tiles_path = []
-# Tiles que pertenecen a una habitación
-room_tiles = []
+# Direcciones cardinales (N, S, E, O) reutilizadas en varias rutinas.
+CARDINAL_DIRECTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 # Número máximo de puertas por nivel
 max_doors = 4
 # Número de muros rompibles
 max_breakable_walls = 3
 
+# Relative weights for non-rectangular room shapes (rectangle weight is always 1.0).
+ROOM_SHAPE_WEIGHTS = settings.ROOM_SHAPE_WEIGHTS
+ROOM_MIN_SIZE_SHAPES = settings.ROOM_MIN_SIZE_SHAPES
+ROOM_DECORATION_CHANCE = settings.ROOM_DECORATION_CHANCE
+FIXED_ROOM_CHANCES = settings.FIXED_ROOM_CHANCES
+
 # Escombros máximos por planta
-max_debris_by_floor = [
-    (1, 30),
-    (2, 9),
-    (4, 7),
-    (6, 14), # Floor 5 FIXED
-    (7, 2),
-]
+max_debris_by_floor = settings.MAX_DEBRIS_BY_FLOOR
 
 # Items máximos por habitación
 # Nivel mazmorra | nº items
 treasure_floor = random.randint(5,9)
-max_items_by_floor = [
-    (1, 2),
-    #(1, 1),
-    (2, 1),
-    (3, 0), 
-    (4, 2),
-    (6, random.randint(1, 3)), # Floor 5 FIXED
-    (7, 2),
-    (11, random.randint(1, 5)), # Floor 10 FIXED
-    (12, 1),
-]
+max_items_by_floor = settings.MAX_ITEMS_BY_FLOOR
 
 # Monstruos máximos por habitación
 # Nivel mazmorra | nº monstruos
-max_monsters_by_floor = [
-    (0, 0),
-    (1, 1),
-    (2, 1),
-    (3, 1),
-    (4, 2),
-    (6, 0), # Floor 5 FIXED
-    (7, 2),
-    (11, 2),  # Floor 10 FIXED
+max_monsters_by_floor = settings.MAX_MONSTERS_BY_FLOOR
 
-]
 
-# Probabilidades de que se generen estas entidades por sala.
-# El nivel 0 al parecer es lo que se aplica por defecto a todos los niveles
-# Al parecer las tiradas se hacen en orden?!
-item_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    #0: [(health_potion, 1), (damage_potion, 1)],
-    #1: [(power_potion, 100), (damage_potion, 100), (health_potion, 100), (confusion_scroll, 100), (paralisis_scroll, 100), (lightning_scroll, 100), (fireball_scroll, 100)],
-    #1: [(chain_mail, 100), (short_sword, 100), (long_sword, 100), (grial, 100)],
-    #1: [(dagger_plus, 100)],
-    1: [(antidote, 5), (sand_bag, 5), (health_potion, 5), (posion_potion, 5), (power_potion, 5), (stamina_potion, 5), (confusion_potion, 5), (precission_potion, 5), (strength_potion, 2)],
-    2: [(health_potion, 15), (posion_potion, 15), (power_potion, 15), (stamina_potion, 15), (confusion_potion, 15), (precission_potion, 15), (rock, 15), (table, 15), (short_sword, 5), (short_sword_plus, 2), (long_sword, 5), (long_sword_plus, 3), (spear, 5), (spear_plus, 3)],
-    3: [(poisoned_triple_ration, 10), (triple_ration, 10), (rock, 45), (confusion_scroll, 10), (paralisis_scroll, 10), (lightning_scroll, 5), (fireball_scroll, 5), (short_sword, 5), (short_sword_plus, 2), (long_sword, 5), (long_sword_plus, 3), (spear, 5), (spear_plus, 3)],
-    4: [(confusion_scroll, 15), (paralisis_scroll, 15), (lightning_scroll, 10), (fireball_scroll, 5)],
-    5: [(lightning_scroll, 10), (fireball_scroll, 10), (long_sword, 5), (chain_mail, 5)],
-    7: [(spear, 10), (spear_plus, 5)],
-    8: [(short_sword, 15)],
-}
-enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    #0: [(fireplace, 100)], # Esto no hace nada porque el max_monsters_by_floor está a 0
-    #1: [(bandit, 100)],
-    1: [(monkey, 20), (fireplace, 10), (snake, 10), (adventurer, 10), (rat, 50), (swarm_rat, 20), (goblin, 10)],
-    2: [(monkey, 10), (adventurer, 2), (rat, 50), (swarm_rat, 50), (goblin, 50)],
-    3: [(orc, 20), (goblin, 50)],
-    4: [(swarm_rat, 20), (rat, 0), (orc, 30), (goblin, 30)],
-    5: [(true_orc, 5), (orc, 30), (goblin, 30), (troll, 5)],
-    8: [(adventurer, 15), (true_orc, 20), (orc, 50), (goblin, 15), (bandit, 10)],
-    12: [(adventurer, 0)],
-}
-debris_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    0: [(debris_a, 30)],
-    3: [(debris_a, 20)],
-    6: [(debris_a, 10)],
-}
+def _resolve_entity_table(table_config):
+    resolved: Dict[int, List[Tuple[Entity, int]]] = {}
+    for floor, entries in table_config.items():
+        resolved_entries = []
+        for name, weight in entries:
+            entity = getattr(entity_factories, name)
+            resolved_entries.append((entity, weight))
+        resolved[floor] = resolved_entries
+    return resolved
+
+
+item_chances = _resolve_entity_table(settings.ITEM_CHANCES)
+enemy_chances = _resolve_entity_table(settings.ENEMY_CHANCES)
+debris_chances = _resolve_entity_table(settings.DEBRIS_CHANCES)
 
 
 def get_max_value_for_floor(
@@ -138,13 +103,52 @@ def get_entities_at_random(
     return chosen_entities
 
 
+def choose_room_shape(width: int, height: int) -> str:
+    """Pick a room shape based on available sizes and weights."""
+    options: List[Tuple[str, float]] = [("rectangle", 1.0)]
+
+    if min(width, height) >= ROOM_MIN_SIZE_SHAPES["circle"]:
+        options.append(("circle", ROOM_SHAPE_WEIGHTS["circle"]))
+
+    if width >= ROOM_MIN_SIZE_SHAPES["ellipse"] and height >= ROOM_MIN_SIZE_SHAPES["ellipse"]:
+        options.append(("ellipse", ROOM_SHAPE_WEIGHTS["ellipse"]))
+
+    if width >= ROOM_MIN_SIZE_SHAPES["cross"] and height >= ROOM_MIN_SIZE_SHAPES["cross"]:
+        options.append(("cross", ROOM_SHAPE_WEIGHTS["cross"]))
+
+    shapes, weights = zip(*options)
+    return random.choices(shapes, weights=weights, k=1)[0]
+
+
 class RectangularRoom:
 
-    def __init__(self, x: int, y: int, width: int, height: int):
+    def __init__(self, x: int, y: int, width: int, height: int, shape: str = "rectangle"):
         self.x1 = x
         self.y1 = y
         self.x2 = x + width
         self.y2 = y + height
+        self.shape = shape
+
+        inner_width = max(1, self.x2 - self.x1 - 1)
+        inner_height = max(1, self.y2 - self.y1 - 1)
+
+        self.radius = max(2, min(inner_width, inner_height) // 2) if shape == "circle" else 0
+        if shape == "ellipse":
+            self.ellipse_axes = (
+                max(2.0, inner_width / 2),
+                max(2.0, inner_height / 2),
+            )
+        else:
+            self.ellipse_axes = None
+
+        if shape == "cross":
+            self.cross_half_width_x = max(1, inner_width // 4)
+            self.cross_half_width_y = max(1, inner_height // 4)
+        else:
+            self.cross_half_width_x = 0
+            self.cross_half_width_y = 0
+
+        self._cached_tiles: Optional[List[Tuple[int, int]]] = None
 
     @property
     def center(self) -> Tuple[int, int]:
@@ -166,6 +170,55 @@ class RectangularRoom:
             and self.y1 <= other.y2
             and self.y2 >= other.y1
         )
+
+    def iter_floor_tiles(self) -> Iterator[Tuple[int, int]]:
+        """Yield every interior tile that belongs to this room."""
+        if self.shape == "circle":
+            cx, cy = self.center
+            radius_sq = self.radius * self.radius
+            for x in range(self.x1 + 1, self.x2):
+                for y in range(self.y1 + 1, self.y2):
+                    if (x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius_sq:
+                        yield x, y
+        elif self.shape == "ellipse" and self.ellipse_axes:
+            cx, cy = self.center
+            axis_x, axis_y = self.ellipse_axes
+            axis_x_sq = axis_x * axis_x
+            axis_y_sq = axis_y * axis_y
+            for x in range(self.x1 + 1, self.x2):
+                for y in range(self.y1 + 1, self.y2):
+                    if (
+                        ((x - cx) * (x - cx)) / axis_x_sq
+                        + ((y - cy) * (y - cy)) / axis_y_sq
+                    ) <= 1.0:
+                        yield x, y
+        elif self.shape == "cross":
+            cx, cy = self.center
+            for x in range(self.x1 + 1, self.x2):
+                for y in range(self.y1 + 1, self.y2):
+                    if (
+                        abs(x - cx) <= self.cross_half_width_x
+                        or abs(y - cy) <= self.cross_half_width_y
+                    ):
+                        yield x, y
+        else:
+            for x in range(self.x1 + 1, self.x2):
+                for y in range(self.y1 + 1, self.y2):
+                    yield x, y
+
+    def random_location(self) -> Tuple[int, int]:
+        """Return a random floor coordinate inside the room."""
+        if self.shape == "rectangle":
+            return (
+                random.randint(self.x1 + 1, self.x2 - 1),
+                random.randint(self.y1 + 1, self.y2 - 1),
+            )
+
+        if self._cached_tiles is None:
+            self._cached_tiles = list(self.iter_floor_tiles())
+        if not self._cached_tiles:
+            return self.center
+        return random.choice(self._cached_tiles)
 
     
 class TownRoom:
@@ -189,6 +242,13 @@ class TownRoom:
         center_y = int((self.y1 + self.y2) / 2)
 
         return center_x, center_y
+
+    def random_location(self) -> Tuple[int, int]:
+        """Return a random interior coordinate inside the town room."""
+        return (
+            random.randint(self.x1 + 1, self.x2 - 1),
+            random.randint(self.y1 + 1, self.y2 - 1),
+        )
 
 
 """class FixedRoom:
@@ -242,26 +302,32 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
 
     # Generamos las coordenadas de spawneo (en habitación)
     # para cada monstruo e ítem a generar
+    def can_place_entity(entity: Entity, x: int, y: int) -> bool:
+        if not dungeon.in_bounds(x, y):
+            return False
+        if not dungeon.tiles["walkable"][x, y]:
+            return False
+        if (x, y) == dungeon.downstairs_location:
+            return False
+        if any(existing.x == x and existing.y == y for existing in dungeon.entities):
+            return False
+        return True
+
     for entity in monsters + items + debris:
-        x = random.randint(room.x1 + 1, room.x2 - 1)
-        y = random.randint(room.y1 + 1, room.y2 - 1)
+        placed = False
+        for _ in range(20):
+            x, y = room.random_location()
 
-        # Esto comprueba si la coordenada en la que spawmear
-        # está o no ya ocupada, y spawmea
-        if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
+            if can_place_entity(entity, x, y):
+                print(f"DEBUG: Generando... {entity.name} en x={x} y={y}")
+                entity.spawn_coord = (x, y)
+                entity.spawn(dungeon, x, y)
+                placed = True
+                break
 
-            print(f"DEBUG: Generando... {entity.name} en x={x} y={y}")
-            
-            # Evitar que se genere nada sobre las escaleras.
-            # No se puede hacer desde aquí. La instancia de Engine no tiene aún generado un gamemap
-                
-            # Memorizamos las coordenadas donde se va a spawmear en origen la entidad
-            # Esto es para la mecánica de la ia de que el monstruo vuelva a su posición
-            # cuando el PJ queda fuera de su rango de detección
-            entity.spawn_coord = (x, y)
-
-            # Se spawmea
-            entity.spawn(dungeon, x, y)
+        if not placed:
+            if __debug__:
+                print(f"DEBUG: Failed to place {entity.name} in room at {room.center}")
             
 
 def tunnel_between(
@@ -284,6 +350,226 @@ def tunnel_between(
 
     for x, y in tcod.los.bresenham((corner_x, corner_y), (x2, y2)).tolist():
         yield x, y
+
+
+def carve_room(dungeon: GameMap, room: RectangularRoom) -> None:
+    """Carve the interior of the room into the dungeon tile map."""
+    if room.shape == "rectangle":
+        dungeon.tiles[room.inner] = tile_types.floor
+        return
+
+    for x, y in room.iter_floor_tiles():
+        dungeon.tiles[x, y] = tile_types.floor
+
+
+def clamp_room_position(room: RectangularRoom, x: int, y: int) -> Tuple[int, int]:
+    min_x = room.x1 + 1
+    max_x = room.x2 - 1
+    min_y = room.y1 + 1
+    max_y = room.y2 - 1
+    return (
+        max(min_x, min(max_x, x)),
+        max(min_y, min(max_y, y)),
+    )
+
+
+def place_column_if_possible(dungeon: GameMap, x: int, y: int) -> bool:
+    if not dungeon.in_bounds(x, y):
+        return False
+    if not dungeon.tiles["walkable"][x, y]:
+        return False
+    if (x, y) == dungeon.downstairs_location:
+        return False
+    if dungeon.get_blocking_entity_at_location(x, y):
+        return False
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if dx == 0 and dy == 0:
+                continue
+            nx, ny = x + dx, y + dy
+            if dungeon.in_bounds(nx, ny) and not dungeon.tiles["walkable"][nx, ny]:
+                return False
+
+    dungeon.tiles[x, y] = tile_types.wall
+    return True
+
+
+def rectangle_column_positions(room: RectangularRoom) -> List[Tuple[int, int]]:
+    cx, cy = room.center
+    width = room.x2 - room.x1
+    height = room.y2 - room.y1
+    dx = max(2, width // 4)
+    dy = max(2, height // 4)
+    raw = [
+        (cx - dx, cy - dy),
+        (cx - dx, cy + dy),
+        (cx + dx, cy - dy),
+        (cx + dx, cy + dy),
+    ]
+    return [clamp_room_position(room, x, y) for x, y in raw]
+
+
+def circle_column_positions(room: RectangularRoom) -> List[Tuple[int, int]]:
+    cx, cy = room.center
+    offset = max(1, room.radius - 1)
+    raw = [
+        (cx + offset, cy),
+        (cx - offset, cy),
+        (cx, cy + offset),
+        (cx, cy - offset),
+    ]
+    return [clamp_room_position(room, x, y) for x, y in raw]
+
+
+def ellipse_column_positions(room: RectangularRoom) -> List[Tuple[int, int]]:
+    cx, cy = room.center
+    axis_x, axis_y = room.ellipse_axes if room.ellipse_axes else (3.0, 2.0)
+    dx = max(1, int(axis_x) - 1)
+    dy = max(1, int(axis_y) - 2)
+    raw = [
+        (cx + dx, cy - dy),
+        (cx + dx, cy + dy),
+        (cx - dx, cy - dy),
+        (cx - dx, cy + dy),
+    ]
+    return [clamp_room_position(room, x, y) for x, y in raw]
+
+
+def cross_column_positions(room: RectangularRoom) -> List[Tuple[int, int]]:
+    cx, cy = room.center
+    dx = max(1, room.cross_half_width_x)
+    dy = max(1, room.cross_half_width_y)
+    raw = [
+        (cx, cy - dy),
+        (cx, cy + dy),
+        (cx - dx, cy),
+        (cx + dx, cy),
+        (cx, cy),
+    ]
+    return [clamp_room_position(room, x, y) for x, y in raw]
+
+
+def add_room_decorations(dungeon: GameMap, room: RectangularRoom) -> None:
+    shape = getattr(room, "shape", None)
+    if shape not in ROOM_DECORATION_CHANCE:
+        return
+    if random.random() > ROOM_DECORATION_CHANCE[shape]:
+        return
+
+    if shape == "rectangle":
+        positions = rectangle_column_positions(room)
+    elif shape == "circle":
+        positions = circle_column_positions(room)
+    elif shape == "ellipse":
+        positions = ellipse_column_positions(room)
+    elif shape == "cross":
+        positions = cross_column_positions(room)
+    else:
+        return
+
+    placed_any = False
+    seen = set()
+    for x, y in positions:
+        if (x, y) in seen:
+            continue
+        seen.add((x, y))
+        if place_column_if_possible(dungeon, x, y):
+            placed_any = True
+
+    if placed_any:
+        return
+
+    # Fallback: attempt to place up to two columns at random floor tiles.
+    floor_tiles = list(room.iter_floor_tiles())
+    random.shuffle(floor_tiles)
+    attempts = 0
+    for x, y in floor_tiles:
+        if place_column_if_possible(dungeon, x, y):
+            placed_any = True
+        attempts += 1
+        if attempts >= 2 or placed_any:
+            break
+
+
+def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[str, ...]) -> bool:
+    room_height = len(template)
+    room_width = len(template[0]) if room_height else 0
+
+    if room_width > (room.x2 - room.x1) or room_height > (room.y2 - room.y1):
+        return False
+
+    offset_x = room.x1
+    offset_y = room.y1
+    for y, row in enumerate(template):
+        for x, ch in enumerate(row):
+            tx = offset_x + x
+            ty = offset_y + y
+            if ch == "#":
+                dungeon.tiles[tx, ty] = tile_types.wall
+            elif ch == ".":
+                dungeon.tiles[tx, ty] = tile_types.floor
+            elif ch == "B":
+                dungeon.tiles[tx, ty] = tile_types.wall
+                instance = entity_factories.breakable_wall.spawn(dungeon, tx, ty)
+                wall_char_code = tile_types.wall["light"]["ch"]
+                wall_fg = tuple(tile_types.wall["light"]["fg"])
+                instance.char = chr(wall_char_code)
+                instance.color = wall_fg
+            elif ch == "+":
+                dungeon.tiles[tx, ty] = tile_types.closed_door
+    cx, cy = room.center
+    dungeon.tiles[cx, cy] = tile_types.floor
+    return True
+
+
+def ensure_path_between(dungeon: GameMap, start: Tuple[int, int], goal: Tuple[int, int]) -> bool:
+    from collections import deque
+
+    width, height = dungeon.width, dungeon.height
+    visited = set()
+    queue = deque([start])
+
+    def is_traversable(x: int, y: int) -> bool:
+        if not dungeon.in_bounds(x, y):
+            return False
+        if dungeon.tiles["walkable"][x, y]:
+            return True
+        actor = dungeon.get_blocking_entity_at_location(x, y)
+        if actor and getattr(actor, "name", "").lower().startswith("door"):
+            return True
+        return False
+
+    while queue:
+        x, y = queue.popleft()
+        if (x, y) == goal:
+            return True
+        for dx, dy in CARDINAL_DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) not in visited and is_traversable(nx, ny):
+                visited.add((nx, ny))
+                queue.append((nx, ny))
+
+    return False
+
+
+def get_fixed_room_choice(current_floor: int) -> Optional[Tuple[str, Tuple[str, ...]]]:
+    candidates: List[Tuple[str, Tuple[str, ...]]] = []
+    for name, rules in FIXED_ROOM_CHANCES.items():
+        chance = 0.0
+        for min_floor, value in rules:
+            if current_floor >= min_floor:
+                chance = value
+        if chance <= 0:
+            continue
+        if random.random() < chance:
+            template = getattr(fixed_rooms, name, None)
+            if template:
+                candidates.append((name, template))
+
+    if not candidates:
+        return None
+
+    return random.choice(candidates)
 
 
 def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_number: int, forbidden_cells) -> None:
@@ -314,11 +600,13 @@ def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_num
     allowed_cells_array = []
     for x in range(room.x1 + 1, room.x2 - 1):
         for y in range(room.y1 + 1, room.y2 - 1):
+            if (x, y) in forbidden_cells:
+                continue
+            if not dungeon.tiles["walkable"][x, y]:
+                continue
+            if (x, y) == dungeon.downstairs_location:
+                continue
             allowed_cells_array.append((x, y))
-
-    allowed_cells_array = list(set(allowed_cells_array) - set(forbidden_cells))
-    # DEBUG
-    #print(f"Allowed cells array: {allowed_cells_array}")
 
     for entity in monsters + items + debris:
         cell = random.choice(allowed_cells_array)
@@ -327,7 +615,7 @@ def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_num
         x = cell[0]
         y = cell[1]
 
-        if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
+        if not any(entity.x == x and entity.y == y for entity in dungeon.entities) and dungeon.in_bounds(x, y):
 
             # Memorizamos las coordenadas donde se va a spawmear en origen la entidad
             # Esto es para la mecánica de la ia de que el monstruo vuelva a su posición
@@ -424,7 +712,7 @@ def generate_fixed_dungeon(
         dungeon.downstairs_location = (x, y)
     
     for x, y in doors:
-        dungeon.tiles[(x, y)] = tile_types.door
+        dungeon.tiles[(x, y)] = tile_types.closed_door
         
     for x, y in fake_walls_array:
         dungeon.tiles[(x, y)] = tile_types.breakable_wall
@@ -471,6 +759,81 @@ def generate_fixed_dungeon(
     return dungeon
 
 
+def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
+    for entity in list(dungeon.entities):
+        if entity is dungeon.engine.player:
+            continue
+        dungeon.entities.discard(entity)
+
+    rooms_array = []
+    dungeon.engine.update_center_rooms_array(rooms_array)
+
+    for _ in range(60):
+        x = random.randint(1, dungeon.width - 2)
+        y = random.randint(1, dungeon.height - 2)
+        if dungeon.tiles["walkable"][x, y] and (x, y) != dungeon.downstairs_location:
+            entity_factories.debris_a.spawn(dungeon, x, y)
+    dungeon.spawn_monsters_counter = 0
+
+    for _ in range(random.randint(8, 14)):
+        x = random.randint(1, dungeon.width - 2)
+        y = random.randint(1, dungeon.height - 2)
+        if dungeon.tiles["walkable"][x, y] and (x, y) != dungeon.downstairs_location:
+            entity_factories.monster_roulette().spawn(dungeon, x, y)
+
+
+def generate_cavern(
+    map_width: int,
+    map_height: int,
+    engine: Engine,
+    *,
+    fill_probability: Optional[float] = None,
+    birth_limit: Optional[int] = None,
+    death_limit: Optional[int] = None,
+    smoothing_steps: Optional[int] = None,
+) -> GameMap:
+    player = engine.player
+    dungeon = GameMap(engine, map_width, map_height, entities=[player])
+    dungeon.tiles = np.full((map_width, map_height), fill_value=tile_types.wall, order="F")
+
+    fill_probability = fill_probability if fill_probability is not None else settings.CAVERN_FILL_PROBABILITY
+    birth_limit = birth_limit if birth_limit is not None else settings.CAVERN_BIRTH_LIMIT
+    death_limit = death_limit if death_limit is not None else settings.CAVERN_DEATH_LIMIT
+    smoothing_steps = smoothing_steps if smoothing_steps is not None else settings.CAVERN_SMOOTHING_STEPS
+
+    ca_map = caverns.generate_cavern_map(
+        map_width,
+        map_height,
+        steps=smoothing_steps,
+        fill_probability=fill_probability,
+        birth_limit=birth_limit,
+        death_limit=death_limit,
+    )
+    ca_map, player_start, stairs_location = caverns.connect_cavern_regions(ca_map)
+
+    dungeon.tiles["walkable"] = ca_map
+    dungeon.tiles["transparent"] = ca_map
+
+    floor_indices = np.where(ca_map)
+    dungeon.tiles["dark"]["ch"][floor_indices] = tile_types.floor["dark"]["ch"]
+    dungeon.tiles["dark"]["fg"][floor_indices] = tile_types.floor["dark"]["fg"]
+    dungeon.tiles["dark"]["bg"][floor_indices] = tile_types.floor["dark"]["bg"]
+    dungeon.tiles["light"]["ch"][floor_indices] = tile_types.floor["light"]["ch"]
+    dungeon.tiles["light"]["fg"][floor_indices] = tile_types.floor["light"]["fg"]
+    dungeon.tiles["light"]["bg"][floor_indices] = tile_types.floor["light"]["bg"]
+
+    dungeon.tiles[player_start] = tile_types.floor
+    player.place(*player_start, dungeon)
+
+    dungeon.tiles[stairs_location] = tile_types.floor
+    dungeon.tiles[stairs_location] = tile_types.down_stairs
+    dungeon.downstairs_location = stairs_location
+
+    populate_cavern(dungeon, engine.game_world.current_floor)
+
+    return dungeon
+
+
 def generate_dungeon(
     max_rooms: int,
     room_min_size: int,
@@ -489,15 +852,24 @@ def generate_dungeon(
     center_of_last_room = (0, 0)
     rooms_array = []
 
-    for r in range(max_rooms):
-        room_width = random.randint(room_min_size, room_max_size)
-        room_height = random.randint(room_min_size, room_max_size)
+    for _ in range(max_rooms):
+        template = None
+        fixed_choice = get_fixed_room_choice(engine.game_world.current_floor)
+        if fixed_choice:
+            _, template = fixed_choice
+            room_height = len(template)
+            room_width = len(template[0]) if room_height else 0
+        else:
+            room_width = random.randint(room_min_size, room_max_size)
+            room_height = random.randint(room_min_size, room_max_size)
 
         x = random.randint(0, dungeon.width - room_width - 1)
         y = random.randint(0, dungeon.height - room_height - 1)
 
         # "RectangularRoom" class makes rectangles easier to work with
-        new_room = RectangularRoom(x, y, room_width, room_height)
+        shape = "rectangle" if template else choose_room_shape(room_width, room_height)
+
+        new_room = RectangularRoom(x, y, room_width, room_height, shape=shape)
 
         # new_room2 = RectangularRoom2(x, y, room_width, room_height)
 
@@ -507,27 +879,25 @@ def generate_dungeon(
         # If there are no intersections then the room is valid.
 
         # Dig out this rooms inner area.
-        #dungeon.tiles[new_room.borders] = tile_types.door
-        dungeon.tiles[new_room.inner] = tile_types.floor
+        carve_room(dungeon, new_room)
+
+        used_fixed_room = False
+        if template:
+            if carve_fixed_room(dungeon, new_room, template):
+                used_fixed_room = True
+
+        if not used_fixed_room:
+            add_room_decorations(dungeon, new_room)
         
 
         if len(rooms) == 0:
             # The first room, where the player starts.
             player.place(*new_room.center, dungeon)
+            center_of_last_room = new_room.center
+            rooms_array.append(center_of_last_room)
         else:  # All rooms after the first.
-            # Dig out a tunnel between this room and the previous one.
-
-
-            # tunner_between(start: Tuple[int,int], end: Tuple[int,int])
             for x, y in tunnel_between(rooms[-1].center, new_room.center):
-
-                # Coloca suelo en cada posición x,y
                 dungeon.tiles[x, y] = tile_types.floor
-
-                # listado de posiciones por pasa el generador de túneles
-                global tiles_path
-
-                tiles_path.append((x, y))
 
             center_of_last_room = new_room.center
             rooms_array.append(center_of_last_room)
@@ -538,14 +908,12 @@ def generate_dungeon(
         # Colocamos entidades genéricas
         place_entities(new_room, dungeon, engine.game_world.current_floor)
 
-        # Colocamos puertas
-        door_options = generate_posible_doors(new_room, dungeon, engine.game_world.current_floor)
-
         # Colocamos escaleras,
         # pero evitando que se genere escalera en el nivel 16
         if engine.game_world.current_floor == 16:
             pass
         else:
+            dungeon.tiles[center_of_last_room] = tile_types.floor
             dungeon.tiles[center_of_last_room] = tile_types.down_stairs
             dungeon.downstairs_location = center_of_last_room
 
@@ -560,65 +928,86 @@ def generate_dungeon(
         rooms.append(new_room)
         # rooms.append(new_room2)
 
-    return place_doors(dungeon, door_options)
+    if not ensure_path_between(
+        dungeon,
+        (player.x, player.y),
+        dungeon.downstairs_location,
+    ):
+        return generate_dungeon(
+            max_rooms, room_min_size, room_max_size, map_width, map_height, engine
+        )
+
+    door_candidates = collect_door_candidates(dungeon)
+
+    return place_doors(dungeon, door_candidates)
 
 
-def place_doors(dungeon, door_options):
+def place_doors(dungeon: GameMap, door_options: List[Tuple[int, int]]):
 
-    if door_options == []:
-        return dungeon
-    else:
-
-        #print(door_options)
-        for i in range(max_doors):
-            door_location = random.choice(door_options)  
-            
-            dungeon.tiles[door_location[0], door_location[1]] = tile_types.door
-            #entity_factories.door.spawn(dungeon, door_location[0], door_location[1])
-        
-        for i in range(max_breakable_walls):
-            breakable_wall_location = random.choice(door_options)
-            dungeon.tiles[breakable_wall_location[0], breakable_wall_location[1]] = tile_types.breakable_wall
-            entity_factories.breakable_wall.spawn(dungeon, breakable_wall_location[0], breakable_wall_location[1])
-
-        #print(dungeon)
-
+    if not door_options:
         return dungeon
 
+    pool = door_options.copy()
+    random.shuffle(pool)
 
-def generate_posible_doors(room: RectangularRoom, dungeon: GameMap, floor_number: int,) -> None:
-    
-    # Crear una lista con las casillas de la habitación recién creada:
+    doors_to_place = min(max_doors, len(pool))
+    selected_doors = pool[:doors_to_place]
 
-    x1 = room.x1
-    x2 = room.x2
-    y1 = room.y1
-    y2 = room.y2
+    for x, y in selected_doors:
+        dungeon.tiles[x, y] = tile_types.closed_door
 
-    global room_tiles
-    for y in range(y1, y2 +1):
-            for x in range(x1, x2 +1):
-                room_tiles.append((x, y))
-                 
-    set1 = set(room_tiles)
-    if tiles_path == []:
-        pass
-    
-    else:
-        set2 = set(tiles_path)
-        #print("tiles_path set:")
-        #print(set2)
-        set2 = set2.difference(set1)
-        #print("Final set")
-        #print(set2)
+    remaining = pool[doors_to_place:]
+    breakable_to_place = min(max_breakable_walls, len(remaining))
 
-        door_options = list(set2)
-        #print("Door options list:")
-        #print(door_options)
+    for x, y in remaining[:breakable_to_place]:
+        dungeon.tiles[x, y] = tile_types.breakable_wall
+        entity_factories.breakable_wall.spawn(dungeon, x, y)
 
-        return door_options
-    
-    #return print("Ahún no se ha generado nintún tiles_path")
+    return dungeon
+
+
+def collect_door_candidates(dungeon: GameMap) -> List[Tuple[int, int]]:
+    candidates: List[Tuple[int, int]] = []
+
+    for x in range(1, dungeon.width - 1):
+        for y in range(1, dungeon.height - 1):
+            if not dungeon.tiles["walkable"][x, y]:
+                continue
+
+            if (x, y) == dungeon.downstairs_location:
+                continue
+
+            walls = {}
+            wall_neighbors = 0
+            walkable_neighbors = 0
+
+            for name, (dx, dy) in zip(
+                ("north", "south", "east", "west"),
+                [(0, -1), (0, 1), (1, 0), (-1, 0)],
+            ):
+                nx, ny = x + dx, y + dy
+                is_wall = (
+                    not dungeon.in_bounds(nx, ny)
+                    or not dungeon.tiles["walkable"][nx, ny]
+                )
+                walls[name] = is_wall
+                if is_wall:
+                    wall_neighbors += 1
+                else:
+                    walkable_neighbors += 1
+
+            if wall_neighbors != 2 or walkable_neighbors < 2:
+                continue
+
+            if not (
+                (walls["north"] and walls["south"])
+                or (walls["east"] and walls["west"])
+            ):
+                continue
+
+            candidates.append((x, y))
+
+    return candidates
 
 
 def generate_town(
@@ -679,6 +1068,7 @@ def generate_town(
     place_entities(new_room, dungeon, engine.game_world.current_floor)
 
     # Colocamos escaleras,
+    dungeon.tiles[(35, 17)] = tile_types.floor
     dungeon.tiles[(35, 17)] = tile_types.down_stairs
     dungeon.downstairs_location = (35, 17)
 

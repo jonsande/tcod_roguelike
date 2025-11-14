@@ -9,7 +9,70 @@ from components.level import Level
 from entity import Actor, Item, Decoration, Obstacle
 import random
 import numpy as np
-from settings import tileset_cod
+from settings import GOD_MODE, GOD_MODE_STEALTH, GRAPHIC_MODE
+
+# OBSTACLES:
+
+door = Obstacle(
+
+    char='+',
+    color=(120,120,120),
+    name="Door",
+    ai_cls=Dummy,
+    fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
+    #obstacle=Door(hp=random.randint(15,35), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
+    level=Level(xp_given=1),
+    inventory=Inventory(capacity=0),
+    equipment=Equipment(),
+)
+
+if GRAPHIC_MODE == "ascii":
+    breakable_wall = Obstacle(
+
+        char='#',
+        # Poniendo color=None el color es transparente
+        color=None,
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
+
+if GRAPHIC_MODE == "pseudo_ascii":
+
+    breakable_wall = Obstacle(
+
+        char='√',
+        # CODEX char='#',
+        color=None,
+        # CODEX color=(170, 170, 120),
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
+
+if GRAPHIC_MODE == "hardcore":
+
+    breakable_wall = Obstacle(
+
+        char='√',
+        # CODEX char='#',
+        color=(170, 170, 120),
+        name="Suspicious wall",
+        ai_cls=Dummy,
+        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
+        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
+        level=Level(xp_given=2),
+        inventory=Inventory(capacity=1),
+        equipment=Equipment(),
+    )
 
 
 def color_roulette():
@@ -201,8 +264,7 @@ confusion_potion = Item(
     id_name = "Self confusion potion",
     consumable=consumable.SelfConfusionConsumable(random.randint(5, 10)),
 )
-#TO DO Potions:
-## Infravision potion: fov + 4
+# TODO: Poción "de infravisión", que al consumirla aumente en 4 el fov de la criatura que la consume. 
 
 # DECORATION
 
@@ -245,69 +307,6 @@ fireplace = Actor(
 
 #fireplace = Entity(char="x", color=(218,52,99), name="Fireplace", blocks_movement=False)
 
-# OBSTACLES:
-
-door = Obstacle(
-
-    char='+',
-    color=(120,120,120),
-    name="Door",
-    ai_cls=Dummy,
-    fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
-    #obstacle=Door(hp=random.randint(15,35), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
-    level=Level(xp_given=1),
-    inventory=Inventory(capacity=0),
-    equipment=Equipment(),
-)
-
-if tileset_cod == "ascii":
-    breakable_wall = Obstacle(
-
-        char='#',
-        # Poniendo color=None el color es transparente
-        color=None,
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
-
-if tileset_cod == "pseudo_ascii":
-
-    breakable_wall = Obstacle(
-
-        char='√',
-        #char='#',
-        # Poniendo color=None el color es transparente
-        color=None,
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
-
-if tileset_cod == "hardcore":
-
-    breakable_wall = Obstacle(
-
-        char='√',
-        #char='#',
-        # Poniendo color=None el color es transparente
-        color=None,
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
 
 # EQUIPPABLES
 
@@ -481,6 +480,10 @@ def drop_roulette(chances, inventory):
 
 # CREATURES
 
+player_hp = 999 if GOD_MODE else 32
+player_satiety = 999 if GOD_MODE else 28
+player_stealth = 100 if GOD_MODE_STEALTH else 1
+
 player = Actor(
     char="@",
     color=(255, 255, 255),
@@ -488,21 +491,17 @@ player = Actor(
     ai_cls=HostileEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=32,
-        #hp=999, # Debug
+        hp=player_hp,
         base_defense=0, 
         base_power=0,
         recover_rate=1, 
         fov=6,
-        #fov=90, # Debug
         dmg_mod = (1, 4), 
         base_stealth=1, 
-        #base_stealth=100, # Debug
         base_to_hit=0,
         luck=1,
         critical_chance=1,
-        # satiety=32,
-        satiety=28,
+        satiety=player_satiety,
         stamina=3, 
         max_stamina=3,
         poison_resistance=1
@@ -592,7 +591,7 @@ goblin = Actor(
         base_defense=2, 
         base_power=3, 
         recover_rate=1, 
-        fov=random.randint(6, 8), 
+        fov=random.randint(4, 6), 
         dmg_mod = (1, 2), 
         aggressivity=5, 
         stamina=3, 
@@ -616,7 +615,7 @@ monkey = Actor(
         base_defense=2, 
         base_power=2, 
         recover_rate=1, 
-        fov=random.randint(6, 10), 
+        fov=random.randint(3, 6), 
         dmg_mod = (1, 2), 
         aggressivity=3, 
         stamina=5, 
@@ -639,7 +638,7 @@ orc = Actor(
         base_defense=2, 
         base_power=3, 
         recover_rate=0, 
-        fov=random.randint(3,6), 
+        fov=random.randint(2,4), 
         dmg_mod = (1, 6), 
         aggressivity=8, 
         stamina=3, 
@@ -662,7 +661,7 @@ true_orc = Actor(
         base_defense=2, 
         base_power=3, 
         recover_rate=0, 
-        fov=random.randint(5,8), 
+        fov=random.randint(3,6), 
         dmg_mod = (1, 6), 
         aggressivity=15, 
         base_to_hit=1, 

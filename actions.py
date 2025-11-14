@@ -618,51 +618,45 @@ class MovementAction(ActionWithDirection):
 
     def perform(self) -> None:
         dest_x, dest_y = self.dest_xy
+        game_map = self.engine.game_map
+        door_opened = False
 
-        # Si en MELEE
-        if self.entity.fighter.is_in_melee:
-
-            if not self.engine.game_map.in_bounds(dest_x, dest_y):
-                # Destination is out of bounds.
+        if not game_map.in_bounds(dest_x, dest_y):
+            raise exceptions.Impossible("That way is blocked.")
+        if not game_map.tiles["walkable"][dest_x, dest_y]:
+            if game_map.try_open_door(dest_x, dest_y):
+                door_opened = True
+            else:
                 raise exceptions.Impossible("That way is blocked.")
-            if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
-                # Destination is blocked by a tile.
-                raise exceptions.Impossible("That way is blocked.")
-            if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
-                # Destination is blocked by an entity.
-                raise exceptions.Impossible("That way is blocked.")
+        if not door_opened and game_map.get_blocking_entity_at_location(dest_x, dest_y):
+            raise exceptions.Impossible("That way is blocked.")
 
-            # BONIFICADOR a la defensa
-            if self.entity.fighter.to_defense_counter < 3:
-                self.entity.fighter.base_defense += 1
-                self.entity.fighter.to_defense_counter += 1
-            
-            # PENALIZACIÓN a To Hit
-            if self.entity.fighter.to_hit_counter >= 1:
-                self.entity.fighter.base_to_hit -= 1
-                self.entity.fighter.to_hit_counter -= 1
-
-            self.entity.move(self.dx, self.dy)            
-           
-        # Si no en MELEE 
+        if door_opened:
+            if self.entity is self.engine.player:
+                self.engine.message_log.add_message("You open the door.", color.descend)
         else:
+            # Si en MELEE
+            if self.entity.fighter.is_in_melee:
+                # BONIFICADOR a la defensa
+                if self.entity.fighter.to_defense_counter < 3:
+                    self.entity.fighter.base_defense += 1
+                    self.entity.fighter.to_defense_counter += 1
+                
+                # PENALIZACIÓN a To Hit
+                if self.entity.fighter.to_hit_counter >= 1:
+                    self.entity.fighter.base_to_hit -= 1
+                    self.entity.fighter.to_hit_counter -= 1
 
-            if not self.engine.game_map.in_bounds(dest_x, dest_y):
-                # Destination is out of bounds.
-                raise exceptions.Impossible("That way is blocked.")
-            if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
-                # Destination is blocked by a tile.
-                raise exceptions.Impossible("That way is blocked.")
-            if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
-                # Destination is blocked by an entity.
-                raise exceptions.Impossible("That way is blocked.")
+                self.entity.move(self.dx, self.dy)            
             
-            # Reseteamos BONIFICADOR a la defensa
-            if self.entity.fighter.to_defense_counter > 0:
-                self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
-                self.entity.fighter.to_defense_counter = 0
+            # Si no en MELEE 
+            else:
+                # Reseteamos BONIFICADOR a la defensa
+                if self.entity.fighter.to_defense_counter > 0:
+                    self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
+                    self.entity.fighter.to_defense_counter = 0
 
-            self.entity.move(self.dx, self.dy)
+                self.entity.move(self.dx, self.dy)
 
         # Reseteamos toda BONIFICACIÓN
 
@@ -680,7 +674,7 @@ class MovementAction(ActionWithDirection):
         #    self.entity.fighter.to_defense_counter = 0
 
         # Recuperamos stamina al movernos
-        if self.entity.fighter.stamina < self.entity.fighter.max_stamina:
+        if not door_opened and self.entity.fighter.stamina < self.entity.fighter.max_stamina:
             self.entity.fighter.stamina += 1
             #print(f"{self.entity.name}: stamina: {self.entity.fighter.stamina}")
 

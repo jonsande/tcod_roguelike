@@ -13,6 +13,7 @@ from tcod.context import Context
 from tcod.console import Console
 from tcod.map import compute_fov
 from tcod import constants
+import settings
 
 import components.ai
 import components.base_component
@@ -45,6 +46,8 @@ class Engine:
         self.message_log = MessageLog()
         self.mouse_location = (0, 0)
         self.player = player
+        if settings.GOD_MODE:
+            self.player.fighter.fov = 90
         self.turn = 0
         self.autoheal_counter = 0
         self.satiety_counter = 0
@@ -173,6 +176,11 @@ class Engine:
 
     def update_fov(self) -> None:
         
+        if settings.GOD_MODE:
+            self.game_map.visible[:] = True
+            self.game_map.explored[:] = True
+            return
+
         if self.game_world.current_floor == 1:
             radius = 90
         else:
@@ -211,6 +219,11 @@ class Engine:
 
 
     def update_fov_alt(self) -> None:
+
+        if settings.GOD_MODE:
+            self.game_map.visible[:] = True
+            self.game_map.explored[:] = True
+            return
 
         #radius = random.randint(4,5)
         radius = 90
