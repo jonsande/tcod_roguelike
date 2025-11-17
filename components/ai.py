@@ -5,9 +5,14 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np  # type: ignore
 import tcod
+from tcod import constants
+from tcod.map import compute_fov
 
 from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction
 import color
+import tile_types
+import exceptions
+import settings
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -552,6 +557,301 @@ class Neutral(BaseAI):
         return WaitAction(self.entity).perform()
 
 
+class AdventurerAI(BaseAI):
+    """Adventurers wander between rooms, rest when exhausted, and stay neutral unless provoked."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self.path: List[Tuple[int, int]] = []
+        self.target: Optional[Tuple[int, int]] = None
+        self.current_room: Optional[Tuple[int, int]] = None
+        self.room_centers: List[Tuple[int, int]] = []
+        self.stalled_turns: int = 0
+        self.waiting_fireplace = None
+        self._player_contact = False
+
+    def perform(self) -> None:
+        if getattr(self.entity.fighter, "stamina", 1) <= 0:
+            return WaitAction(self.entity).perform()
+
+        if getattr(self.entity.fighter, "aggravated", False):
+            return self._pursue_player()
+
+        centers = getattr(self.engine, "center_room_array", None) or []
+        if centers and not self.room_centers:
+            self.room_centers = [tuple(c) for c in centers if c]
+            self.current_room = self._nearest_room_center()
+
+        if self._check_fireplace_pause():
+            self._handle_player_contact()
+            return WaitAction(self.entity).perform()
+
+        if self._stairs_visible():
+            stairs = self.engine.game_map.downstairs_location
+            if stairs:
+                self.target = stairs
+                self.path = self._build_path(stairs)
+        elif not self.room_centers:
+            self._handle_player_contact()
+            return self._wander()
+        elif self.target is None or self.target == self.current_room:
+            self._select_new_room()
+
+        stairs = self.engine.game_map.downstairs_location
+        if stairs and (self.entity.x, self.entity.y) == stairs:
+            return self.entity.fighter.desintegrate()
+
+        if not self.path and self.target:
+            self.path = self._build_path(self.target)
+            if not self.path:
+                self.target = None
+                self._handle_player_contact()
+                return self._wander()
+
+        if not self.path:
+            self._handle_player_contact()
+            return self._wander()
+
+        dest_x, dest_y = self.path[0]
+        if (dest_x, dest_y) == (self.entity.x, self.entity.y):
+            self.path.pop(0)
+            self.stalled_turns = 0
+            if not self.path:
+                self.current_room = self.target
+                self.target = None
+            self._handle_player_contact()
+            return
+
+        dx = dest_x - self.entity.x
+        dy = dest_y - self.entity.y
+        blocking_actor = self.engine.game_map.get_actor_at_location(dest_x, dest_y)
+        if blocking_actor:
+            if blocking_actor is self.engine.player and not getattr(
+                self.entity.fighter, "aggravated", False
+            ):
+                self.path = []
+                self.target = None
+                self._handle_player_contact()
+                return WaitAction(self.entity).perform()
+
+        prev_pos = (self.entity.x, self.entity.y)
+        try:
+            BumpAction(self.entity, dx, dy).perform()
+        except exceptions.Impossible:
+            self._handle_stall()
+            self._handle_player_contact()
+            return
+
+        if (self.entity.x, self.entity.y) == (dest_x, dest_y):
+            self.path.pop(0)
+            self.stalled_turns = 0
+            if not self.path:
+                self.current_room = self.target
+                self.target = None
+        elif (self.entity.x, self.entity.y) == prev_pos:
+            self._handle_stall()
+        else:
+            self.stalled_turns = 0
+        self._handle_player_contact()
+
+    def _handle_stall(self) -> None:
+        if getattr(self.entity.fighter, "aggravated", False):
+            self.path = []
+            self.stalled_turns = 0
+            return
+        self.stalled_turns += 1
+        if self.stalled_turns >= 2:
+            self.target = None
+            self.path = []
+            self.stalled_turns = 0
+
+    def _select_new_room(self) -> None:
+        options = [room for room in self.room_centers if room != self.current_room]
+        if not options:
+            self.target = None
+            return
+        self.target = random.choice(options)
+        self.path = []
+        self.stalled_turns = 0
+
+    def _nearest_room_center(self) -> Optional[Tuple[int, int]]:
+        if not self.room_centers:
+            return None
+        best = min(
+            self.room_centers,
+            key=lambda c: abs(c[0] - self.entity.x) + abs(c[1] - self.entity.y),
+        )
+        return best
+
+    def _build_path(self, destination: Tuple[int, int]) -> List[Tuple[int, int]]:
+        gm = self.engine.game_map
+        dest_x, dest_y = destination
+        if not gm.in_bounds(dest_x, dest_y):
+            return []
+
+        cost = np.array(gm.tiles["walkable"], dtype=np.int8)
+        cost = np.where(cost, 1, 0).astype(np.int16)
+        door_mask = gm.tiles["dark"]["ch"] == tile_types.closed_door["dark"]["ch"]
+        cost[door_mask] = 1
+
+        graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
+        pathfinder = tcod.path.Pathfinder(graph)
+        pathfinder.add_root((self.entity.x, self.entity.y))
+        path: List[List[int]] = pathfinder.path_to((dest_x, dest_y))[1:].tolist()
+        return [(step[0], step[1]) for step in path]
+
+    def _wander(self) -> None:
+        directions = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ]
+        random.shuffle(directions)
+        for dx, dy in directions:
+            nx = self.entity.x + dx
+            ny = self.entity.y + dy
+            if not self.engine.game_map.in_bounds(nx, ny):
+                continue
+            try:
+                BumpAction(self.entity, dx, dy).perform()
+                return
+            except exceptions.Impossible:
+                continue
+        WaitAction(self.entity).perform()
+
+    def _pursue_player(self) -> None:
+        player = self.engine.player
+        destination = (player.x, player.y)
+        if self.target != destination or not self.path:
+            self.target = destination
+            self.path = self._build_path(destination)
+        if not self.path:
+            return self._wander()
+        dest_x, dest_y = self.path[0]
+        if (dest_x, dest_y) == (self.entity.x, self.entity.y):
+            self.path.pop(0)
+            return
+        dx = dest_x - self.entity.x
+        dy = dest_y - self.entity.y
+        prev_pos = (self.entity.x, self.entity.y)
+        try:
+            BumpAction(self.entity, dx, dy).perform()
+        except exceptions.Impossible:
+            self.path = []
+            return
+        if (self.entity.x, self.entity.y) == (dest_x, dest_y):
+            self.path.pop(0)
+        elif (self.entity.x, self.entity.y) == prev_pos:
+            self.path = []
+
+    def _stairs_visible(self) -> bool:
+        gamemap = self.engine.game_map
+        stairs = gamemap.downstairs_location
+        if not stairs:
+            return False
+        radius = getattr(self.entity.fighter, "fov", 0)
+        if radius <= 0:
+            return False
+        visible = compute_fov(
+            gamemap.tiles["transparent"],
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        x, y = stairs
+        return bool(visible[x, y])
+
+    def _check_fireplace_pause(self) -> bool:
+        if self.waiting_fireplace:
+            fighter = getattr(self.waiting_fireplace, "fighter", None)
+            if (
+                fighter
+                and getattr(fighter, "hp", 0) > 0
+                and self._is_adjacent_to(self.waiting_fireplace)
+            ):
+                return True
+            self.waiting_fireplace = None
+
+        fireplace = self._adjacent_fireplace()
+        if fireplace:
+            fighter = getattr(fireplace, "fighter", None)
+            if fighter and getattr(fighter, "hp", 0) > 0:
+                self.waiting_fireplace = fireplace
+                return True
+        return False
+
+    def _adjacent_fireplace(self):
+        gamemap = self.engine.game_map
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                actor = gamemap.get_actor_at_location(self.entity.x + dx, self.entity.y + dy)
+                if actor and getattr(actor, "name", "").lower() == "fire place":
+                    return actor
+        return None
+
+    def _is_adjacent_to(self, entity: Actor) -> bool:
+        return max(abs(entity.x - self.entity.x), abs(entity.y - self.entity.y)) <= 1
+
+    def _handle_player_contact(self) -> None:
+        if getattr(self.entity.fighter, "aggravated", False):
+            self._player_contact = False
+            return
+        player = self.engine.player
+        adjacent = max(abs(player.x - self.entity.x), abs(player.y - self.entity.y)) == 1
+        if adjacent and not self._player_contact:
+            messages = getattr(settings, "ADVENTURER_GREETING_MESSAGES", [])
+            if messages:
+                gm = self.engine.game_map
+                if gm.visible[self.entity.x, self.entity.y]:
+                    self.engine.message_log.add_message(random.choice(messages))
+            self._player_contact = True
+        elif not adjacent:
+            self._player_contact = False
+
+    def _check_fireplace_pause(self) -> bool:
+        if self.waiting_fireplace:
+            fighter = getattr(self.waiting_fireplace, "fighter", None)
+            if (
+                fighter
+                and getattr(fighter, "hp", 0) > 0
+                and self._is_adjacent_to(self.waiting_fireplace)
+            ):
+                return True
+            self.waiting_fireplace = None
+
+        fireplace = self._adjacent_fireplace()
+        if fireplace:
+            fighter = getattr(fireplace, "fighter", None)
+            if fighter and getattr(fighter, "hp", 0) > 0:
+                self.waiting_fireplace = fireplace
+                return True
+        return False
+
+    def _adjacent_fireplace(self):
+        gamemap = self.engine.game_map
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                x = self.entity.x + dx
+                y = self.entity.y + dy
+                actor = gamemap.get_actor_at_location(x, y)
+                if actor and getattr(actor, "name", "").lower() == "fire place":
+                    return actor
+        return None
+
+    def _is_adjacent_to(self, entity: Actor) -> bool:
+        return (
+            abs(entity.x - self.entity.x) <= 1 and abs(entity.y - self.entity.y) <= 1
+        )
+
 class SneakeEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
@@ -620,7 +920,6 @@ class SneakeEnemy(BaseAI):
                     self.entity.fighter.wait_counter -= 1
                     dest_x, dest_y = self.path2.pop(0)
                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-
 
 class Scout(BaseAI): # WORK IN PROGRESS
     def __init__(self, entity: Actor):

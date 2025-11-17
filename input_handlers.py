@@ -3,7 +3,7 @@
 from __future__ import annotations
 from tcod import libtcodpy
 import os
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+import random
 from typing import Callable, Optional, Tuple, TYPE_CHECKING, Union
 
 import tcod
@@ -15,7 +15,9 @@ from actions import (
     PickupAction,
     WaitAction,
     ToogleLightAction,
-    ThrowItemAction
+    ThrowItemAction,
+    ItemAction,
+    PassAction,
 )
 import color
 import exceptions
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from entity import Item
 
 from components.ai import Dummy
+from settings import DEBUG_MODE
 
 MOVE_KEYS = {
     # Arrow keys.
@@ -115,8 +118,8 @@ class PopupMessage(BaseEventHandler):
     def on_render(self, console: tcod.Console) -> None:
         """Render the parent and dim the result, then print the message on top."""
         self.parent.on_render(console)
-        console.tiles_rgb["fg"] //= 8
-        console.tiles_rgb["bg"] //= 8
+        console.rgb["fg"] //= 8
+        console.rgb["bg"] //= 8
 
         console.print(
             console.width // 2,
@@ -124,7 +127,7 @@ class PopupMessage(BaseEventHandler):
             self.text,
             fg=color.white,
             bg=color.black,
-            alignment=tcod.CENTER,
+            alignment=libtcodpy.CENTER,
         )
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
@@ -171,6 +174,17 @@ class EventHandler(BaseEventHandler):
         if action is None:
             return False
 
+        action = self._maybe_scramble_player_action(action)
+        actor = getattr(action, "entity", None)
+
+        if actor is self.engine.player and getattr(self.engine.player.fighter, "is_player_paralyzed", False):
+            if not isinstance(action, WaitAction):
+                self.engine.message_log.add_message(
+                    "You are paralyzed and cannot act!",
+                    color.impossible,
+                )
+                return False
+
         try:
             action.perform()
         except exceptions.Impossible as exc:
@@ -178,6 +192,10 @@ class EventHandler(BaseEventHandler):
             return False  # Skip enemy turn on exceptions.
         
         self.engine.extra_turn_manager()
+
+        if actor is self.engine.player:
+            self.engine.player.fighter.advance_player_confusion()
+            self.engine.player.fighter.advance_player_paralysis()
 
         # Move THE CLOCK
         self.engine.clock()
@@ -196,6 +214,7 @@ class EventHandler(BaseEventHandler):
         self.engine.autohealmonsters()
         self.engine.update_hunger()
         self.engine.update_poison()
+        self.engine.update_fire()
 
         # Fortify indicator
         #self.engine.update_fortify_indicator()
@@ -221,6 +240,53 @@ class EventHandler(BaseEventHandler):
         self.engine.bugfix_downstairs()
 
         return True
+
+    def _maybe_scramble_player_action(self, action: Action) -> Action:
+        player = self.engine.player
+        fighter = player.fighter
+        if getattr(action, "_confusion_override", False):
+            return action
+        if action.entity is not player or not fighter.is_player_confused:
+            return action
+        if isinstance(action, (WaitAction, PassAction)):
+            return action
+
+        self.engine.message_log.add_message(
+            "In your confusion you act unpredictably!", color.impossible
+        )
+
+        if isinstance(action, ItemAction):
+            random_action = self._random_confused_item_action(action)
+            if random_action:
+                random_action._confusion_override = True
+                return random_action
+
+        random_action = self._random_confused_movement_action()
+        random_action._confusion_override = True
+        return random_action
+
+    def _random_confused_movement_action(self) -> Action:
+        directions = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ]
+        dx, dy = random.choice(directions)
+        return BumpAction(self.engine.player, dx, dy)
+
+    def _random_confused_item_action(self, original_action: ItemAction) -> Optional[Action]:
+        inventory = self.engine.player.inventory
+        usable_items = [item for item in inventory.items if getattr(item, "consumable", None)]
+        if not usable_items:
+            return None
+        item = random.choice(usable_items)
+        target_xy = getattr(original_action, "target_xy", (self.engine.player.x, self.engine.player.y))
+        return ItemAction(self.engine.player, item, target_xy)
     
 
     def ev_mousemotion(self, event: tcod.event.MouseMotion) -> None:
@@ -550,7 +616,7 @@ class LevelUpEventHandler(AskUserEventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         player = self.engine.player
         key = event.sym
-        index = key - tcod.event.K_a
+        index = key - tcod.event.KeySym.a
 
         if 0 <= index <= 3:
             if index == 0:
@@ -651,7 +717,7 @@ class InventoryEventHandler(AskUserEventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
         player = self.engine.player
         key = event.sym
-        index = key - tcod.event.K_a
+        index = key - tcod.event.KeySym.a
 
         if 0 <= index <= 26:
             try:
@@ -726,8 +792,8 @@ class SelectIndexHandler(AskUserEventHandler):
         super().on_render(console)
         # Esto renderiza el cursor en la posición indicada
         x, y = self.engine.mouse_location
-        console.tiles_rgb["bg"][x, y] = color.white
-        console.tiles_rgb["fg"][x, y] = color.black
+        console.rgb["bg"][x, y] = color.white
+        console.rgb["fg"][x, y] = color.black
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         """Check for key movement or confirmation keys."""
@@ -818,15 +884,15 @@ class AreaRangedAttackHandler(SelectIndexHandler):
 
         x, y = self.engine.mouse_location
 
-        # Draw a rectangle around the targeted area, so the player can see the affected tiles.
-        console.draw_frame(
-            x=x - self.radius - 1,
-            y=y - self.radius - 1,
-            width=self.radius ** 2,
-            height=self.radius ** 2,
-            fg=color.red,
-            clear=False,
-        )
+        # Draw-frame call disabled to avoid revealing scroll identity before identification.
+        # console.draw_frame(
+        #     x=x - self.radius - 1,
+        #     y=y - self.radius - 1,
+        #     width=self.radius ** 2,
+        #     height=self.radius ** 2,
+        #     fg=color.red,
+        #     clear=False,
+        # )
 
     def on_index_selected(self, x: int, y: int) -> Optional[Action]:
         return self.callback((x, y))
@@ -877,9 +943,20 @@ class MainGameEventHandler(EventHandler):
         # Soltar objeto
         elif key == tcod.event.KeySym.d:
             return InventoryDropHandler(self.engine)
-        # Ver ficha del heroe
-        elif key == tcod.event.KeySym.c:
+        # Ver ficha del heroe. '@' suele ser SHIFT+2 (EN) o AltGr+2 (ES).
+        elif key == tcod.event.KeySym.AT or (
+            key == tcod.event.KeySym.N2
+            and modifier
+            & (
+                tcod.event.Modifier.LSHIFT
+                | tcod.event.Modifier.RSHIFT
+                | tcod.event.Modifier.RALT
+            )
+        ):
             return CharacterScreenEventHandler(self.engine)
+        # Cerrar puerta cercana
+        elif key == tcod.event.KeySym.c:
+            return actions.CloseDoorAction(player)
         # Inspeccionar alrededores
         elif key == tcod.event.KeySym.x or key == tcod.event.KeySym.SLASH:
             return LookHandler(self.engine)
@@ -889,7 +966,7 @@ class MainGameEventHandler(EventHandler):
             return CombatControlHandler(self.engine)
         #elif key == tcod.event.K_f:
         #    return SingleRangedAttackHandler(self.engine)
-        elif key == tcod.event.KeySym.o:
+        elif key == tcod.event.KeySym.q:
             return ToogleLightAction(player)
         # Lanzar item del inventario
         elif key == tcod.event.KeySym.t:
@@ -898,8 +975,9 @@ class MainGameEventHandler(EventHandler):
         # Debug console
         elif self.engine.debug == True:
             if key == tcod.event.KeySym.BACKSPACE:
-                import ipdb
-                return ipdb.set_trace()
+                if DEBUG_MODE == True:
+                    import ipdb
+                    return ipdb.set_trace()
 
         return action
 
@@ -916,7 +994,7 @@ class GameOverEventHandler(EventHandler):
         self.on_quit()
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> None:
-        if event.sym == tcod.event.K_ESCAPE:
+        if event.sym == tcod.event.KeySym.ESCAPE:
             self.on_quit()
     
 

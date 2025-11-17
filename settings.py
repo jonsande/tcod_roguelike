@@ -1,8 +1,15 @@
 import tcod
 
+# DEBUG MODE
+DEBUG_MODE = True
+# Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+
 # -- Tiles ------------------------------------------------
 GRAPHIC_MODE = "pseudo_ascii"
 # Forzar un estilo concreto de muro (1, 2 o 3). Usa None para dejarlo al azar.
+# TODO: si WALL_STYLE es None, ahora mismo se genera toda la mazmorra con un 
+# sólo estilo. Debería hacerse la tirada por cada nivel, de forma que pueda pasar
+# que en el nivel 2 el WALL_STYLE es 1 pero en el nivel 3 es 1, por ejemplo.
 WALL_STYLE = None
 
 if GRAPHIC_MODE == "pseudo_ascii":
@@ -25,6 +32,8 @@ if GRAPHIC_MODE == "hardcore":
     tileset_cod = "hardcore"
     tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
 
+# Configuración de audio movida a audio_settings.py
+
 # Original
 # 32x8 son el número de casillas en las que se va a dividir el png: 32 ancho x 8 de alto
 #tileset = tcod.tileset.load_tilesheet(
@@ -33,8 +42,91 @@ if GRAPHIC_MODE == "hardcore":
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = True
+GOD_MODE = False
 GOD_MODE_STEALTH = False
+
+
+# -- Player progression -------------------------------------------------------
+# Permite activar/desactivar el sistema de subida de nivel del jugador.
+# Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
+# xp en el futuro.
+PLAYER_LEVELING_ENABLED = False
+
+INTRO_MESSAGE = "After a long journey, you find the entrance to the dungeon."
+
+# -- Player starting gear -----------------------------------------------------
+# Cada entrada indica el objeto (clave en entity_factories) con el que empieza el
+# jugador. `quantity` permite añadir varias copias y `equip` marca si se intenta
+# equipar esa copia en cuanto empiece la partida.
+PLAYER_STARTING_INVENTORY = [
+    {"item": "dagger", "equip": True},
+    {"item": "leather_armor", "equip": True},
+    # {"item": "confusion_scroll", "quantity": 3},
+    # {"item": "paralisis_scroll", "quantity": 3},
+    # {"item": "lightning_scroll", "quantity": 3},
+    # {"item": "fireball_scroll", "quantity": 3},
+    # {"item": "paralysis_potion", "quantity": 3},
+]
+# Límite superior de piezas equipadas automáticamente por tipo de ranura.
+PLAYER_STARTING_EQUIP_LIMITS = {
+    "weapon": 2,
+    "armor": 2,
+    "artefact": 2,
+}
+
+# -- Dungeon structure -------------------------------------------------------
+TOTAL_FLOORS = 16
+
+MAX_DOORS_BY_LEVEL = 14
+MAX_BREAKABLE_WALLS = 8
+
+# -- Fireplaces --------------------------------------------------------------
+FIREPLACE_MIN_HP = 35
+FIREPLACE_MAX_HP = 320
+# Chance (0-1) to spawn a nearby cache item when a fireplace is placed.
+FIREPLACE_CACHE_ITEM_CHANCE = 0.15
+# Prototype names defined in entity_factories.py eligible for cache drops.
+FIREPLACE_CACHE_ITEM_IDS = [
+    "meat",
+    "triple_ration",
+    "health_potion",
+    "strength_potion",
+    "stamina_potion",
+    "dagger",
+    "dagger_plus",
+]
+# Chance (0-1) for a fireplace to drop a fireball scroll when it dies out.
+FIREPLACE_SCROLL_DROP_CHANCE = 0.01
+
+# -- Adventurer behavior -----------------------------------------------------
+ADVENTURER_COLOR = (150, 150, 150)
+ADVENTURER_CORPSE_CHAR = "%"
+ADVENTURER_CORPSE_COLOR = (100, 100, 100)
+ADVENTURER_CORPSE_NAME = "Remains of adventurer"
+# Base probability (0-1) added per floor after they descend to find their corpse.
+ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
+ADVENTURER_GREETING_MESSAGES = [
+    "Greetings, fellow explorer!",
+    "Get out of my way!",
+    "Have you checked every bookshelf? Some hide switches.",
+    "Keep your torch lit; shadows bite.",
+    "The old man said the deeper you go, the smarter the traps.",
+    "Doors whisper if you listen—sometimes they open twice.",
+    "Share the stairs whenever you need; danger awaits below.",
+    "Rumor says fireplaces hide secrets once extinguished.",
+    "Stay quiet near goblins—they hear everything.",
+    "Don't forget to rest; stamina saves lives.",
+    "If you see me running, follow—or flee.",
+    "Stairs rarely wait, but I'll take them soon.",
+]
+
+# -- Breakable wall behavior -------------------------------------------------
+# Intervalo de puntos de vida (hp mínimo, hp máximo) para cada muro rompible.
+BREAKABLE_WALL_HP_RANGE = (12, 24)
+# Probabilidad de que un muro esconda un objeto antes de romperse.
+BREAKABLE_WALL_CACHE_CHANCE = 0.07
+# Probabilidad de que, si escondía algo, lo suelte al derrumbarse.
+BREAKABLE_WALL_LOOT_CHANCE = 0.60
 
 # -- Cavern generation --------------------------------------------------------
 # Probabilidad de que un piso generado proceduralmente sea una caverna en vez de un conjunto de habitaciones.
@@ -51,10 +143,10 @@ CAVERN_SMOOTHING_STEPS = 5
 # -- Column decorations -------------------------------------------------------
 # Probabilidad de que las salas generadas (rectangulares, circulares, elípticas o en cruz) aparezcan con columnas.
 ROOM_DECORATION_CHANCE = {
-    "rectangle": 0.05,
-    "circle": 0.05,
-    "ellipse": 0.05,
-    "cross": 0.05,
+    "rectangle": 0.07,
+    "circle": 0.07,
+    "ellipse": 0.07,
+    "cross": 0.07,
 }
 
 # -- Dungeon population tables ------------------------------------------------
@@ -69,13 +161,13 @@ MAX_DEBRIS_BY_FLOOR = [
 
 # Máximo de objetos por habitación según el nivel del piso.
 MAX_ITEMS_BY_FLOOR = [
-    (1, 2),
+    (1, 1),
     (2, 1),
-    (3, 0),
-    (4, 2),
-    (6, 3),
-    (7, 2),
-    (11, 5),
+    (3, 1),
+    (4, 1),
+    (6, 1),
+    (7, 1),
+    (11, 2),
     (12, 1),
 ]
 
@@ -85,70 +177,88 @@ MAX_MONSTERS_BY_FLOOR = [
     (1, 1),
     (2, 1),
     (3, 1),
-    (4, 2),
+    (4, 1),
     (6, 0),
     (7, 2),
     (11, 2),
 ]
 
-# Configuración de botín/objetos: por cada nivel mínimo, lista de (nombre_del_item, peso).
-ITEM_CHANCES = {
-    1: [
-        ("antidote", 5), ("sand_bag", 5), ("health_potion", 5), ("posion_potion", 5),
-        ("power_potion", 5), ("stamina_potion", 5), ("confusion_potion", 5),
-        ("precission_potion", 5), ("strength_potion", 2),
-    ],
-    2: [
-        ("health_potion", 15), ("posion_potion", 15), ("power_potion", 15),
-        ("stamina_potion", 15), ("confusion_potion", 15), ("precission_potion", 15),
-        ("rock", 15), ("table", 15), ("short_sword", 5), ("short_sword_plus", 2),
-        ("long_sword", 5), ("long_sword_plus", 3), ("spear", 5), ("spear_plus", 3),
-    ],
-    3: [
-        ("poisoned_triple_ration", 10), ("triple_ration", 10), ("rock", 45),
-        ("confusion_scroll", 10), ("paralisis_scroll", 10), ("lightning_scroll", 5),
-        ("fireball_scroll", 5), ("short_sword", 5), ("short_sword_plus", 2),
-        ("long_sword", 5), ("long_sword_plus", 3), ("spear", 5), ("spear_plus", 3),
-    ],
-    4: [
-        ("confusion_scroll", 15), ("paralisis_scroll", 15), ("lightning_scroll", 10),
-        ("fireball_scroll", 5),
-    ],
-    5: [
-        ("lightning_scroll", 10), ("fireball_scroll", 10), ("long_sword", 5), ("chain_mail", 5),
-    ],
-    7: [
-        ("spear", 10), ("spear_plus", 5),
-    ],
-    8: [
-        ("short_sword", 15),
-    ],
+# Configuración de botín/objetos. Cada entrada permite controlar:
+# - min_floor: nivel mínimo en el que empieza a considerarse.
+# - max_instances: número máximo de copias (None = ilimitado).
+# - base_weight: peso base a partir de min_floor cuando no se usa weight_progression.
+# - weight_per_floor: crecimiento lineal aplicado a partir de min_floor.
+# - weight_progression: lista de (nivel, peso) que sobreescribe el peso a partir de ese nivel.
+ITEM_SPAWN_RULES = {
+    # Pociones vitales
+    "strength_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "increase_max_stamina": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "life_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "infra_vision_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(1, 100)]},
+    # Lo demás
+    "antidote": {"min_floor": 1, "weight_progression": [(1, 5)]},
+    "sand_bag": {"min_floor": 1, "weight_progression": [(1, 5)]},
+    "health_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "poison_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "power_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "stamina_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "temporal_infra_vision_potion": {"min_floor": 5, "weight_progression": [(5, 4)]},
+    "blindness_potion": {"min_floor": 1, "weight_progression": [(1, 3)]},
+    "confusion_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "paralysis_potion": {"min_floor": 4, "weight_progression": [(4, 2)]},
+    "petrification_potion": {"min_floor": 6, "weight_progression": [(6, 1)]},
+    "precission_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
+    "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
+    "short_sword": {"min_floor": 2, "weight_progression": [(2, 5), (8, 15)]},
+    "short_sword_plus": {"min_floor": 2, "weight_progression": [(2, 2)]},
+    "long_sword": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    "long_sword_plus": {"min_floor": 2, "weight_progression": [(2, 3)]},
+    "spear": {"min_floor": 2, "weight_progression": [(2, 5), (7, 10)]},
+    "spear_plus": {"min_floor": 2, "weight_progression": [(2, 3), (7, 5)]},
+    "poisoned_triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
+    "triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
+    "confusion_scroll": {"min_floor": 3, "max_instances": 6, "weight_progression": [(3, 10), (4, 15)]},
+    "paralisis_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 100), (4, 15)]},
+    "lightning_scroll": {"min_floor": 3, "max_instances": 6, "weight_progression": [(3, 5), (4, 10)]},
+    "fireball_scroll": {"min_floor": 3, "max_instances": 6, "weight_progression": [(3, 5), (5, 10)]},
+    "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
+    "goblin_tooth_amulet": {"min_floor": 7, "max_instances": 1, "weight_progression": [(7, 1)]},
+    "grial": {"min_floor": 10, "max_instances": 1, "weight_progression": [(10, 1)]},
 }
 
-# Configuración de monstruos por habitación: (nombre_del_monstruo, peso) por nivel mínimo.
-ENEMY_CHANCES = {
-    1: [
-        ("adventurer", 100), ("monkey", 20), ("fireplace", 10), ("snake", 10),
-        ("rat", 50), ("swarm_rat", 20), ("goblin", 10),
-    ],
-    2: [
-        ("monkey", 10), ("adventurer", 2), ("rat", 50), ("swarm_rat", 50), ("goblin", 50),
-    ],
-    3: [
-        ("orc", 20), ("goblin", 50),
-    ],
-    4: [
-        ("swarm_rat", 20), ("rat", 0), ("orc", 30), ("goblin", 30),
-    ],
-    5: [
-        ("true_orc", 5), ("orc", 30), ("goblin", 30), ("troll", 5),
-    ],
-    8: [
-        ("adventurer", 15), ("true_orc", 20), ("orc", 50), ("goblin", 15), ("bandit", 10),
-    ],
-    12: [
-        ("adventurer", 0),
-    ],
+# Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
+ENEMY_SPAWN_RULES = {
+    # BUG: adventurer genera un error al tomar las escaleras.
+    "adventurer": {
+        "min_floor": 1, 
+        "weight_progression": [
+            (1, 12), 
+            (2, 10), 
+            (3, 8), 
+            (4, 6)
+            ],
+    },
+    "monkey": {"min_floor": 1, "weight_progression": [(1, 20), (2, 10)]},
+    # Fireplaces: 10% chance up to floor 12, then drop 3% per floor.
+    "fireplace": {
+        "min_floor": 1,
+        "weight_progression": [
+            (1, 10),
+            (13, 7),
+            (14, 4),
+            (15, 1),
+            (16, 0),
+        ],
+    },
+    "snake": {"min_floor": 1, "weight_progression": [(1, 10)]},
+    "rat": {"min_floor": 1, "weight_progression": [(1, 50), (3, 0)]},
+    "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20)]},
+    "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 50), (3, 50), (4, 30), (5, 30), (8, 15)]},
+    "orc": {"min_floor": 3, "weight_progression": [(3, 20), (4, 30), (5, 30), (8, 50)]},
+    "true_orc": {"min_floor": 5, "weight_progression": [(5, 5), (8, 20)]},
+    "troll": {"min_floor": 5, "weight_progression": [(5, 5)]},
+    "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
 }
 
 # Configuración de escombros/decoración menor por nivel.
@@ -161,9 +271,11 @@ DEBRIS_CHANCES = {
 # -- Fixed room templates -----------------------------------------------------
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
-    "room_01": [(1, 0.08), (6, 0.08)],
-    "room_secret": [(1, 0.90), (8, 0.10)],
-    "room_door": [(1, 0.08), (5, 0.08)],
+    # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
+    # "room_01": [(1, 0.08), (6, 0.08)],
+    # "room_secret": [(1, 0.10), (8, 0.10)],
+    # "room_door": [(1, 0.08), (5, 0.08)],
+    # "room_secret_B": [(1, 0.08), (8, 0.08)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------
@@ -180,3 +292,32 @@ ROOM_MIN_SIZE_SHAPES = {
     "ellipse": 7,
     "cross": 7,
 }
+
+# Generación de mapas de habitaciones y pasillos.
+# Cada variante define el tamaño medio y el número de habitaciones del piso.
+DUNGEON_MAP_VARIANTS = [
+    {
+        "weight": 0.5,
+        "max_rooms": 40,
+        "room_min_size": 2,
+        "room_max_size": 7,
+    },
+    {
+        "weight": 0.5,
+        "max_rooms": 20,
+        "room_min_size": 3,
+        "room_max_size": 10,
+    },
+]
+
+# Permite sobreescribir la configuración anterior para pisos concretos.
+# Ejemplo: {3: [{"weight": 1.0, "max_rooms": 30, ...}]}
+DUNGEON_MAP_VARIANT_OVERRIDES = {}
+
+# Probabilidad de excavar pasadizos extra entre salas ya existentes.
+# Ajusta este valor para reducir o aumentar la cantidad de pasillos secundarios.
+# TODO: Con los valores al mínimo parece que aun así se generan demasiados pasillos
+# a veces. Esto habría que revisarlo.
+DUNGEON_EXTRA_CONNECTION_CHANCE = 0.0
+# Intentos que se hacen por cada sala para abrir conexiones extra si la tirada tiene éxito.
+DUNGEON_EXTRA_CONNECTION_ATTEMPTS = 1

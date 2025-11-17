@@ -1,78 +1,56 @@
 # Aquí generamos los modelos de entidades que existen en el juego
 
-from components.ai import HostileEnemy, Neutral, Dummy, ConfusedEnemy, HostileEnemyPlus, SneakeEnemy, SleepingEnemy, Scout, SentinelEnemy
+from components.ai import (
+    HostileEnemy,
+    Neutral,
+    Dummy,
+    ConfusedEnemy,
+    HostileEnemyPlus,
+    SneakeEnemy,
+    SleepingEnemy,
+    Scout,
+    SentinelEnemy,
+    AdventurerAI,
+)
 from components import consumable, equippable
 from components.equipment import Equipment
-from components.fighter import Fighter, Door
+from components.fighter import Fighter, Door, BreakableWallFighter
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Decoration, Obstacle
+from entity import Actor, Item, Decoration, Obstacle, Entity
 import random
 import numpy as np
-from settings import GOD_MODE, GOD_MODE_STEALTH, GRAPHIC_MODE
+import tile_types
+from settings import (
+    GOD_MODE,
+    GOD_MODE_STEALTH,
+    BREAKABLE_WALL_HP_RANGE,
+    BREAKABLE_WALL_CACHE_CHANCE,
+    BREAKABLE_WALL_LOOT_CHANCE,
+    FIREPLACE_MIN_HP,
+    FIREPLACE_MAX_HP,
+    FIREPLACE_CACHE_ITEM_CHANCE,
+    FIREPLACE_CACHE_ITEM_IDS,
+    ADVENTURER_COLOR,
+    ADVENTURER_CORPSE_CHAR,
+    ADVENTURER_CORPSE_COLOR,
+    ADVENTURER_CORPSE_NAME,
+)
 
 # OBSTACLES:
 
 door = Obstacle(
 
     char='+',
-    color=(120,120,120),
+    color=(93,59,0),
     name="Door",
     ai_cls=Dummy,
-    fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
+    fighter=Door(hp=random.randint(60,80), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
     #obstacle=Door(hp=random.randint(15,35), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
     level=Level(xp_given=1),
     inventory=Inventory(capacity=0),
     equipment=Equipment(),
 )
-
-if GRAPHIC_MODE == "ascii":
-    breakable_wall = Obstacle(
-
-        char='#',
-        # Poniendo color=None el color es transparente
-        color=None,
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
-
-if GRAPHIC_MODE == "pseudo_ascii":
-
-    breakable_wall = Obstacle(
-
-        char='√',
-        # CODEX char='#',
-        color=None,
-        # CODEX color=(170, 170, 120),
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
-
-if GRAPHIC_MODE == "hardcore":
-
-    breakable_wall = Obstacle(
-
-        char='√',
-        # CODEX char='#',
-        color=(170, 170, 120),
-        name="Suspicious wall",
-        ai_cls=Dummy,
-        fighter=Door(hp=random.randint(10,20), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=0),
-        #obstacle=Door(hp=random.randint(20,40), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=4),
-        level=Level(xp_given=2),
-        inventory=Inventory(capacity=1),
-        equipment=Equipment(),
-    )
 
 
 def color_roulette():
@@ -106,20 +84,34 @@ poisoned_triple_ration = Item(
 
 # SCROLLS
 
-scroll_options = ["Scroll named AXME ZU TIKA", "Scroll named ZAKALOM ERMIS", "Scroll named PROQUIUM PARIS", "Scroll named ELAM EBOW"]
+SCROLL_NAME_POOL = [
+    "Scroll named AXME ZU TIKA",
+    "Scroll named ZAKALOM ERMIS",
+    "Scroll named PROQUIUM PARIS",
+    "Scroll named ELAM EBOW",
+    "Scroll named OPHAR IXES",
+    "Scroll named LORUM SED",
+    "Scroll named VAS ORT FLAM",
+    "Scroll named HEC LAPIDA",
+    "Scroll named QERTU VIAL",
+    "Scroll named NEMESIS ORA",
+    "Scroll named TAVU SIRION",
+    "Scroll named KILAM NESIR",
+    "Scroll named ARKA MODR",
+    "Scroll named INU KALAN",
+    "Scroll named VEXI MUR",
+    "Scroll named OBLON RIYU",
+]
+scroll_options = SCROLL_NAME_POOL.copy()
 
 def scroll_name_roulette():
 
     global scroll_options
-    if scroll_options:
-        roulette = random.randint(0, len(scroll_options) - 1)
-        winner = scroll_options[roulette]
-        scroll_options.remove(scroll_options[roulette])
-        return winner
-    else:
-        pass
-        #print("Scroll Name Roulette fails!")
-        #raise Impossible("Scroll Name Roulette fails!")
+    if not scroll_options:
+        scroll_options = SCROLL_NAME_POOL.copy()
+    roulette = random.randint(0, len(scroll_options) - 1)
+    winner = scroll_options.pop(roulette)
+    return winner
 
 sand_bag = Item(
     char="(",
@@ -135,7 +127,7 @@ confusion_scroll = Item(
     color=color_roulette(),
     name=scroll_name_roulette(),
     id_name = "Confusion scroll",
-    consumable=consumable.ConfusionConsumable(number_of_turns=10),
+    consumable=consumable.TargetedConfusionConsumable(number_of_turns=10),
 )
 
 paralisis_scroll = Item(
@@ -151,7 +143,7 @@ lightning_scroll = Item(
     color=color_roulette(),
     name=scroll_name_roulette(),
     id_name = "Lightning scroll",
-    consumable=consumable.LightningDamageConsumable(damage=15, maximum_range=8),
+    consumable=consumable.LightningDamageConsumable(),
 )
 
 fireball_scroll = Item(
@@ -162,8 +154,16 @@ fireball_scroll = Item(
     consumable=consumable.FireballDamageConsumable(damage=12, radius=2),
 )
 
+# Breakable wall loot table (scrolls and similar findings hidden in walls)
+BREAKABLE_WALL_LOOT_TABLE = [
+    confusion_scroll,
+    paralisis_scroll,
+    lightning_scroll,
+    fireball_scroll,
+]
+
 # POTIONS:
-potion_options = [
+potion_name_options = [
     "Suspicious purple brew",
     "Smoky potion", 
     "Muddy water potion", 
@@ -173,14 +173,27 @@ potion_options = [
     "Dark potion",
     "Grey potion",
     "Bloody potion",
+    "Red potion",
+    "Stinky potion",
+    "Viscous sludge potion",
+    "Glowing gold elixir",
+    "Murky green potion",
+    "Fizzy orange brew",
+    "Clearwater solution",
+    "Shimmering silver liquid",
+    "Iridescent azure draught",
+    "Pungent sulphur philter",
+    "Bubbling teal tonic",
+    "Ashen dust suspension",
+    "Sweet floral infusion",
 ]
 
 def potion_name_roulette():
-    global potion_options
-    if potion_options:
-        roulette = random.randint(0, len(potion_options) - 1)
-        winner = potion_options[roulette]
-        potion_options.remove(winner)
+    global potion_name_options
+    if potion_name_options:
+        roulette = random.randint(0, len(potion_name_options) - 1)
+        winner = potion_name_options[roulette]
+        potion_name_options.remove(winner)
         return winner
     
     else:
@@ -193,6 +206,7 @@ health_potion = Item(
     name=potion_name_roulette(),
     id_name = "Health potion",
     consumable=consumable.HealingConsumable(amount=random.randint(1, 6) + 4),
+    throwable=True,
 )
 
 strength_potion = Item(
@@ -201,15 +215,16 @@ strength_potion = Item(
     name=potion_name_roulette(),
     id_name = "Strength potion",
     consumable=consumable.StrenghtConsumable(amount=1),
+    throwable=True,
 )
 
-posion_potion = Item(
+poison_potion = Item(
     char="!",
     color=(200, 200, 200),
     name=potion_name_roulette(),
-    id_name = "Posion potion",
-    #consumable=consumable.PosionConsumable(amount=1, counter=random.randint(6,10)),
-    consumable=consumable.PosionConsumable(amount=1, counter=8),
+    id_name = "Poison potion",
+    #consumable=consumable.PoisonConsumable(amount=1, counter=random.randint(6,10)),
+    consumable=consumable.PoisonConsumable(amount=1, counter=8),
     throwable=True,
 )
 
@@ -219,6 +234,7 @@ antidote = Item(
     name=potion_name_roulette(),
     id_name = "Antidote",
     consumable=consumable.AntidoteConsumable(),
+    throwable=True,
 )
 
 #damage_potion = Item(
@@ -241,30 +257,100 @@ power_potion = Item(
     color=(200, 200, 200),
     name=potion_name_roulette(),
     id_name = "Power brew",
-    consumable=consumable.TemporalEffectConsumable(20, 5, 'base_power', "You feel strong!", "You feel weak"),
+    consumable=consumable.TemporalEffectConsumable(
+        20,
+        5,
+        'base_power',
+    ),
+    throwable=True,
 )
 precission_potion = Item(
     char="!",
     color=(200, 200, 200),
     name=potion_name_roulette(),
     id_name = "Amphetamine brew",
-    consumable=consumable.TemporalEffectConsumable(20, 5, 'base_to_hit', "You feel sharp!", "You feel retarded!"),
+    consumable=consumable.TemporalEffectConsumable(
+        20,
+        5,
+        'base_to_hit',
+    ),
+    throwable=True,
 )
 stamina_potion = Item(
     char="!",
     color=(200, 200, 200),
     name=potion_name_roulette(),
-    id_name = "Stamina Potion",
+    id_name = "Restore stamina Potion",
     consumable=consumable.RestoreStaminaConsumable(),
+    throwable=True,
 )
+increase_max_stamina = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name = "Potion of Lasting Vigor",
+    consumable=consumable.IncreaseMaxStaminaConsumable(amount=1),
+    throwable=True,
+)
+life_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name = "Life potion",
+    consumable=consumable.IncreaseMaxHPConsumable(amount=8),
+    throwable=True,
+)
+
+infra_vision_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name="Potion of True Sight",
+    consumable=consumable.IncreaseFOVConsumable(amount=1),
+    throwable=True,
+)
+
+temporal_infra_vision_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name="Potion of Flash Sight",
+    consumable=consumable.TemporalFOVConsumable(min_turns=12, max_turns=32, amount=6),
+    throwable=True,
+)
+blindness_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name="Potion of Blinding Darkness",
+    consumable=consumable.BlindnessConsumable(amount=-32),
+    throwable=True,
+)
+
 confusion_potion = Item(
     char="!",
     color=(200, 200, 200),
     name=potion_name_roulette(),
-    id_name = "Self confusion potion",
-    consumable=consumable.SelfConfusionConsumable(random.randint(5, 10)),
+    id_name = "Confusion potion",
+    consumable=consumable.ConfusionConsumable(random.randint(12, 32)),
+    throwable=True,
 )
-# TODO: Poción "de infravisión", que al consumirla aumente en 4 el fov de la criatura que la consume. 
+paralysis_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name = "Paralysis potion",
+    consumable=consumable.ParalysisConsumable(min_turns=12, max_turns=32),
+    throwable=True,
+)
+petrification_potion = Item(
+    char="!",
+    color=(200, 200, 200),
+    name=potion_name_roulette(),
+    id_name="Petrification potion",
+    consumable=consumable.PetrifyConsumable(),
+    throwable=True,
+)
 
 # DECORATION
 
@@ -273,6 +359,18 @@ debris_a = Decoration(
     #color=(207, 63, 255),
     color=(35, 25, 35),
     name="Debris",
+)
+
+breakable_wall_rubble = Decoration(
+    char=debris_a.char,
+    color=debris_a.color,
+    name="You see a pile of rubble",
+)
+
+adventurer_corpse = Entity(
+    char=ADVENTURER_CORPSE_CHAR,
+    color=ADVENTURER_CORPSE_COLOR,
+    name=ADVENTURER_CORPSE_NAME,
 )
 
 rock = Decoration(
@@ -289,7 +387,7 @@ table = Actor(
     ai_cls=Dummy,
     equipment=Equipment(),
     #fighter=Fighter(hp=10, base_defense=1, base_power=0, recover_rate=0, fov=0),
-    fighter=Door(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=1),
+    fighter=Door(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=1, fire_resistance=-4),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=0),
 )
@@ -300,7 +398,13 @@ fireplace = Actor(
     name="Fire place",
     ai_cls=Dummy,
     equipment=Equipment(),
-    fighter=Fighter(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=3),
+    fighter=Fighter(
+        hp=random.randint(FIREPLACE_MIN_HP, FIREPLACE_MAX_HP),
+        base_defense=0,
+        base_power=0,
+        recover_rate=0,
+        fov=3,
+    ),
     inventory=Inventory(capacity=0),
     level=Level(xp_given=5),
 )
@@ -344,6 +448,68 @@ short_sword = Item(
     id_name="Short Sword",
     equippable=equippable.ShortSword()
 )
+
+# Fireplace extras
+_FIREPLACE_NEIGHBOR_OFFSETS = [
+    (-1, 0),
+    (1, 0),
+    (0, -1),
+    (0, 1),
+    (-1, -1),
+    (-1, 1),
+    (1, -1),
+    (1, 1),
+]
+
+
+def _setup_fireplace_spawn(entity: Actor) -> None:
+    _randomize_fireplace_hp(entity)
+    _maybe_spawn_fireplace_cache(entity)
+
+
+def _randomize_fireplace_hp(entity: Actor) -> None:
+    fighter = getattr(entity, "fighter", None)
+    if not fighter:
+        return
+    new_hp = random.randint(FIREPLACE_MIN_HP, FIREPLACE_MAX_HP)
+    fighter.max_hp = new_hp
+    fighter.hp = new_hp
+
+
+def _maybe_spawn_fireplace_cache(entity: Actor) -> None:
+    if random.random() >= FIREPLACE_CACHE_ITEM_CHANCE:
+        return
+    cache_items = _get_fireplace_cache_items()
+    if not cache_items:
+        return
+    gamemap = entity.gamemap
+    offsets = list(_FIREPLACE_NEIGHBOR_OFFSETS)
+    random.shuffle(offsets)
+    loot_proto = random.choice(cache_items)
+    for dx, dy in offsets:
+        x, y = entity.x + dx, entity.y + dy
+        if not gamemap.in_bounds(x, y):
+            continue
+        if not gamemap.tiles["walkable"][x, y]:
+            continue
+        if gamemap.get_blocking_entity_at_location(x, y):
+            continue
+        if any(item.x == x and item.y == y for item in gamemap.items):
+            continue
+        loot_proto.spawn(gamemap, x, y)
+        break
+
+
+def _get_fireplace_cache_items():
+    resolved = []
+    for name in FIREPLACE_CACHE_ITEM_IDS:
+        proto = globals().get(name)
+        if proto:
+            resolved.append(proto)
+    return resolved
+
+
+fireplace.on_spawn = _setup_fireplace_spawn
 
 short_sword_plus = Item(
     char="/", 
@@ -391,6 +557,7 @@ leather_armor = Item(
     char="[",
     color=(139, 69, 19),
     name="Leather armor",
+    id_name="Leather armor",
     equippable=equippable.LeatherArmor(),
     info=f"Stealth penalty: 1"
 )
@@ -398,7 +565,8 @@ leather_armor = Item(
 chain_mail = Item(
     char="[", 
     color=(139, 69, 19), 
-    name="Chain Mail", 
+    name="Chain Mail",
+    id_name="Chain mail",
     equippable=equippable.ChainMail()
 )
 
@@ -431,15 +599,15 @@ def inv_roulette(monster_type, amount):
     if monster_type == "Giant rat":
         choices = [meat]
     if monster_type == "Goblin":
-        choices = [meat, dagger, posion_potion]
+        choices = [meat, dagger, poison_potion]
     if monster_type == "Orc":
         choices = [dagger, power_potion, health_potion]
     if monster_type == "True Orc":
-        choices = [short_sword, power_potion, health_potion, confusion_scroll, posion_potion]
+        choices = [short_sword, power_potion, health_potion, confusion_scroll, poison_potion]
     if monster_type == "Bandit":
-        choices = [short_sword, precission_potion, stamina_potion, posion_potion, dagger]
-    if monster_type == "Adventurer Unique":
-        choices = [long_sword, health_potion, health_potion]
+        choices = [short_sword, precission_potion, stamina_potion, poison_potion, dagger]
+    # if monster_type == "Adventurer Unique":
+    #     choices = [long_sword, health_potion, health_potion]
 
     inventory = []
 
@@ -478,9 +646,66 @@ def drop_roulette(chances, inventory):
                 pass
                 
 
+
+class BreakableWallFactory:
+    """Factory that generates individualized breakable walls when spawning."""
+
+    def __init__(self):
+        self.loot_table = BREAKABLE_WALL_LOOT_TABLE
+
+    def spawn(self, gamemap, x: int, y: int):
+        char, color = self._resolve_graphics(gamemap, x, y)
+        fighter = BreakableWallFighter(
+            hp=self._roll_hp(),
+            base_defense=0,
+            base_power=0,
+            recover_rate=0,
+            base_armor_value=0,
+            loot_drop_chance=BREAKABLE_WALL_LOOT_CHANCE,
+        )
+        inventory = self._build_inventory()
+        obstacle = Obstacle(
+            char=char,
+            color=color,
+            name="Suspicious wall",
+            ai_cls=Dummy,
+            fighter=fighter,
+            level=Level(xp_given=2),
+            inventory=inventory,
+            equipment=Equipment(),
+        )
+        obstacle.spawn_coord = (x, y)
+        obstacle.place(x, y, gamemap)
+        return obstacle
+
+    def _roll_hp(self) -> int:
+        minimum, maximum = BREAKABLE_WALL_HP_RANGE
+        return random.randint(minimum, maximum)
+
+    def _build_inventory(self) -> Inventory:
+        stash = []
+        if random.random() <= BREAKABLE_WALL_CACHE_CHANCE:
+            stash.append(random.choice(self.loot_table))
+        capacity = len(stash)
+        return Inventory(capacity=capacity, items=list(stash))
+
+    def _resolve_graphics(self, gamemap, x: int, y: int):
+        try:
+            tile = gamemap.tiles[x, y]
+            char_code = int(tile["light"]["ch"])
+            fg = tuple(int(c) for c in tile["light"]["fg"])
+        except Exception:
+            char_code = int(tile_types.breakable_wall["light"]["ch"])
+            fg = tuple(int(c) for c in tile_types.breakable_wall["light"]["fg"])
+        return chr(char_code), fg
+
+
+breakable_wall = BreakableWallFactory()
+
 # CREATURES
 
 player_hp = 999 if GOD_MODE else 32
+player_max_stamina = 999 if GOD_MODE else 3
 player_satiety = 999 if GOD_MODE else 28
 player_stealth = 100 if GOD_MODE_STEALTH else 1
 
@@ -503,35 +728,38 @@ player = Actor(
         critical_chance=1,
         satiety=player_satiety,
         stamina=3, 
-        max_stamina=3,
-        poison_resistance=1
+        max_stamina=player_max_stamina,
+        poison_resistance=1,
+        super_memory=False,
+        lamp_on=True,
     ),
     inventory=Inventory(capacity=20),
     level=Level(level_up_base=20), # Default: 200
 )
 
 adventurer = Actor(
-    char="@",
-    color=(210, 210, 210),
+    char="@", 
+    color=ADVENTURER_COLOR,
     name="Adventurer",
-    ai_cls=Neutral,
+    ai_cls=AdventurerAI,
+    #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
     equipment=Equipment(),
     fighter=Fighter(hp=30, base_defense=2, base_power=0, recover_rate=0, fov=6, dmg_mod = (1, 4)),
     inventory=Inventory(capacity=20),
     level=Level(level_up_base=20),
 )
 
-adventurer_unique = Actor(
-    char="@",
-    color=(210, 210, 210),
-    name="Adventurer",
+# adventurer_unique = Actor(
+#     char="@",
+#     color=(210, 210, 210),
+#     name="Adventurer",
 
-    ai_cls=Neutral,
-    equipment=Equipment(),
-    fighter=Fighter(hp=32, base_defense=5, base_power=4, recover_rate=0, fov=0, dmg_mod = (1, 4)),
-    inventory=Inventory(capacity=1, items=inv_roulette("Adventurer Unique", 3)),
-    level=Level(xp_given=50),
-)
+#     ai_cls=Neutral,
+#     equipment=Equipment(),
+#     fighter=Fighter(hp=32, base_defense=5, base_power=4, recover_rate=0, fov=0, dmg_mod = (1, 4)),
+#     inventory=Inventory(capacity=1, items=inv_roulette("Adventurer Unique", 3)),
+#     level=Level(xp_given=50),
+# )
 
 rat = Actor(
     char="r",
@@ -596,6 +824,7 @@ goblin = Actor(
         aggressivity=5, 
         stamina=3, 
         max_stamina=3,
+        poison_resistance=6,
         action_time_cost=7,
         woke_ai_cls=HostileEnemy
     ),

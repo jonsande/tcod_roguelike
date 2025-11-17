@@ -10,7 +10,6 @@ import random
 sauron_exists = False
 grial_exists = False
 goblin_amulet_exists = False
-adventurer_unique_exists = False
 
 
 fireplace_counter = 0
@@ -22,22 +21,6 @@ goblin_amulet_floor = random.randint(2,8)
 
 # Colocamos entidades especiales
 def place_uniques(floor, center_of_last_room, dungeon):
-
-    # Neutrales:
-    if floor == 8:
-
-        if center_of_last_room != (0,0):
-
-            # ESTO HAY QUE HACERLO SIN VARIABLES GLOBALES
-            global adventurer_unique_exists
-            if adventurer_unique_exists == True:
-                pass
-            else:
-                entity_factories.adventurer_unique.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
-                adventurer_unique_exists = True
-    else:
-        pass
-
 
     # Artefactos:
 

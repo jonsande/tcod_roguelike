@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from components.base_component import BaseComponent
+from settings import PLAYER_LEVELING_ENABLED
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -35,8 +36,17 @@ class Level(BaseComponent):
         y = self.level_up_factor
         return self.level_up_base + (x * y)
 
+    def _leveling_disabled_for_player(self) -> bool:
+        if PLAYER_LEVELING_ENABLED:
+            return False
+
+        engine_player = getattr(self.engine, "player", None)
+        return engine_player is not None and self.parent is engine_player
+
     @property
     def requires_level_up(self) -> bool:
+        if self._leveling_disabled_for_player():
+            return False
         return self.current_xp > self.experience_to_next_level
 
     def add_xp(self, xp: int) -> None:
@@ -44,6 +54,10 @@ class Level(BaseComponent):
             return
 
         self.current_xp += xp
+
+        # Evita mostrar mensajes de experiencia mientras el leveling del jugador esté desactivado.
+        if self._leveling_disabled_for_player():
+            return
 
         self.engine.message_log.add_message(f"You gain {xp} experience points.")
 
@@ -53,6 +67,9 @@ class Level(BaseComponent):
             )
 
     def increase_level(self) -> None:
+        if self._leveling_disabled_for_player():
+            return
+
         self.current_xp -= self.experience_to_next_level
 
         self.current_level += 1

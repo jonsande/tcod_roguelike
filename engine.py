@@ -7,8 +7,9 @@ import random
 
 import lzma
 import pickle
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Sequence, Tuple
 
+import tcod
 from tcod.context import Context
 from tcod.console import Console
 from tcod.map import compute_fov
@@ -22,6 +23,7 @@ from message_log import MessageLog
 import color
 import render_functions
 from entity import Actor
+from render_order import RenderOrder
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -29,8 +31,11 @@ if TYPE_CHECKING:
     
 #import gc
 import components.fighter
-#import entity_factories
+import entity_factories
 from components.ai import Dummy
+
+AnimationGlyph = Tuple[int, int, str, Tuple[int, int, int]]
+AnimationFrame = Tuple[List[AnimationGlyph], float]
 
 
 # Calendario:
@@ -41,6 +46,23 @@ class Engine:
 
     game_map: GameMap
     game_world: GameWorld
+
+    _FIREPLACE_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
+        (255, 200, 80),
+        (255, 170, 0),
+        (255, 145, 40),
+        (255, 110, 10),
+        (255, 220, 120),
+    )
+    _FIREPLACE_CHAR: str = "*"
+    _FIREPLACE_SCROLL_CHANCE: float = settings.FIREPLACE_SCROLL_DROP_CHANCE
+    _ADVENTURER_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
+        (255, 255, 200),
+        (240, 220, 160),
+        (255, 245, 180),
+        (230, 200, 150),
+        (255, 255, 230),
+    )
 
     def __init__(self, player: Actor, debug: bool = False):
         self.message_log = MessageLog()
@@ -56,6 +78,7 @@ class Engine:
         self.center_room_array = []
         self.identified_items = []
         self.debug = debug
+        self._animation_queue: List[List[AnimationFrame]] = []
 
     def clock(self):
         """
@@ -181,17 +204,21 @@ class Engine:
             self.game_map.explored[:] = True
             return
 
-        if self.game_world.current_floor == 1:
+        if self.player.fighter.is_blind:
+            radius = 1
+        elif self.game_world.current_floor == 1:
             radius = 90
         else:
-            #radius = random.randint(4,5) + self.player.fighter.fov
-            #radius = random.randint(self.player.fighter.fov - 1, self.player.fighter.fov)
-            #radius = self.player.fov
-            
-            #radius = random.randint(0, 1) + entity_factories.player.fighter.fov
-            radius = random.randint(0, 1) + self.player.fighter.fov
-            #print(f"radius: {radius}")
+            # Efecto "titilar" de la lámpara, farol, linterna.
+            radius = max(0, random.randint(0, 1) + self.player.fighter.fov)
 
+            # Aquí intentamos quitar el efecto titilar si
+            # la lámpara está apagada.
+            # No funciona el if porque no coge o no actualiza
+            # el valor de la instancia sino que sólo usa el 
+            # por defecto de su clase
+            # if self.player.fighter.lamp_on == True:
+                #radius = random.randint(0, 1) + self.player.fighter.fov
 
         """Recompute the visible area based on the players point of view."""
         self.game_map.visible[:] = compute_fov(
@@ -204,18 +231,24 @@ class Engine:
 
 
 
+        self._apply_fireplace_effects()
+
         # If a tile is "visible" it should be added to "explored".
         self.game_map.explored |= self.game_map.visible
 
-        # Esto hace el efecto sombra. Comentar entero para usar el sistema
-        # de "memoria" típico.
-        """
-        self.game_map.explored[:] = compute_fov(
-            self.game_map.tiles['transparent'],
-            (self.player.x, self.player.y),
-            #radius = random.randint(5,6)
-            radius + 2
-        )"""
+        # Esto hace el efecto sombra.
+        # Si la super_memory es True, el personaje recuerda lo visto
+        # y el mapa se dibuja usando el sistema de "memoria" típico.
+        if self.player.fighter.super_memory == False:
+            memory_radius = radius + 2
+            if self.player.fighter.is_blind:
+                memory_radius = radius
+            self.game_map.explored[:] = compute_fov(
+                self.game_map.tiles['transparent'],
+                (self.player.x, self.player.y),
+                #radius = random.randint(5,6)
+                memory_radius
+            )
 
 
     def update_fov_alt(self) -> None:
@@ -235,6 +268,7 @@ class Engine:
             #radius = random.randint(3,5)
             radius
         )
+        self._apply_fireplace_effects()
         # If a tile is "visible" it should be added to "explored".
         self.game_map.explored |= self.game_map.visible
 
@@ -246,6 +280,92 @@ class Engine:
         #    #radius = random.randint(5,6)
         #    radius + 3
         #)
+
+    def _apply_fireplace_effects(self) -> None:
+        """Make fireplaces flicker and illuminate nearby tiles if the player has line of sight."""
+        gamemap = getattr(self, "game_map", None)
+        if not gamemap or not getattr(gamemap, "entities", None):
+            return
+
+        fireplaces = []
+        adventurers = []
+        for entity in gamemap.entities:
+            if not entity:
+                continue
+            name = getattr(entity, "name", None)
+            if not name:
+                continue
+            if name.lower() == "fire place":
+                fireplaces.append(entity)
+            elif name.lower() == "adventurer":
+                adventurers.append(entity)
+        if not fireplaces and not adventurers:
+            return
+
+        transparent = gamemap.tiles["transparent"]
+        los_radius = max(gamemap.width, gamemap.height)
+        player_los = compute_fov(
+            transparent,
+            (self.player.x, self.player.y),
+            los_radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+
+        for fireplace in fireplaces:
+            if not player_los[fireplace.x, fireplace.y]:
+                continue
+
+            fighter = getattr(fireplace, "fighter", None)
+            base_radius = getattr(fighter, "fov", 3) if fighter else 3
+            base_radius = max(1, base_radius - 1)
+            flicker_offset = random.randint(-1, 1)
+            radius = max(1, base_radius + flicker_offset)
+
+            fireplace.color = random.choice(self._FIREPLACE_FLICKER_COLORS)
+            fireplace.char = self._FIREPLACE_CHAR
+
+            light_mask = compute_fov(
+                transparent,
+                (fireplace.x, fireplace.y),
+                radius,
+                algorithm=constants.FOV_SHADOW,
+            )
+            gamemap.visible |= light_mask
+
+        for adventurer in adventurers:
+            if not player_los[adventurer.x, adventurer.y]:
+                continue
+            fighter = getattr(adventurer, "fighter", None)
+            if not fighter:
+                continue
+            base_radius = max(1, getattr(fighter, "fov", 4))
+            flicker_offset = random.randint(-1, 1)
+            radius = max(1, base_radius + flicker_offset)
+            adventurer.color = random.choice(self._ADVENTURER_FLICKER_COLORS)
+            light_mask = compute_fov(
+                transparent,
+                (adventurer.x, adventurer.y),
+                radius,
+                algorithm=constants.FOV_SHADOW,
+            )
+            gamemap.visible |= light_mask
+
+    def _tick_fireplace(self, fireplace: Actor, fighter: components.fighter.Fighter) -> None:
+        if fighter.hp <= 0:
+            return
+        fighter.hp -= 1
+        if fighter.hp > 0:
+            return
+        if self.game_map.visible[fireplace.x, fireplace.y]:
+            self.message_log.add_message("A fireplace dies out.", color.status_effect_applied)
+        if random.random() < self._FIREPLACE_SCROLL_CHANCE:
+            entity_factories.fireball_scroll.spawn(self.game_map, fireplace.x, fireplace.y)
+        fireplace.char = "%"
+        fireplace.color = (90, 90, 90)
+        fireplace.name = "Remains of fireplace"
+        fireplace.blocks_movement = False
+        fireplace.ai = None
+        fireplace.render_order = RenderOrder.CORPSE
 
 
     def autohealmonsters(self):
@@ -267,13 +387,37 @@ class Engine:
     def bugfix_downstairs(self):
 
         from entity import Decoration
-        stairs = Decoration(
-            x=self.game_map.downstairs_location[0], 
-            y=self.game_map.downstairs_location[1], 
-            char='>', 
-            color=(50,50,40), 
-            name="Downstairs")
-        stairs.spawn(self.game_map, stairs.x, stairs.y)
+        if not self.game_map.downstairs_location:
+            return
+
+        x, y = self.game_map.downstairs_location
+        down_exists = False
+        for entity in list(self.game_map.entities):
+            if entity.x != x or entity.y != y:
+                continue
+
+            name = getattr(entity, "name", None)
+            if not name:
+                continue
+            name_lower = name.lower()
+            if isinstance(entity, Decoration) and name_lower == "downstairs":
+                if down_exists:
+                    self.game_map.entities.discard(entity)
+                else:
+                    down_exists = True
+                continue
+
+            if isinstance(entity, Decoration):
+                self.game_map.entities.discard(entity)
+
+        if not down_exists:
+            stairs = Decoration(
+                x=x,
+                y=y,
+                char='>',
+                color=(50,50,40),
+                name="Downstairs")
+            stairs.spawn(self.game_map, stairs.x, stairs.y)
 
 
     def spawn_monsters_upstairs(self):
@@ -347,6 +491,15 @@ class Engine:
             if actor.fighter.is_poisoned:
                 actor.fighter.poisoned()
 
+    def update_fire(self):
+        for entity in set(self.game_map.entities):
+            fighter = getattr(entity, "fighter", None)
+            if fighter and getattr(fighter, "is_burning", False):
+                fighter.update_fire()
+            name = getattr(entity, "name", "")
+            if name and name.lower() == "fire place" and fighter:
+                self._tick_fireplace(entity, fighter)
+
 
     def update_center_rooms_array(self, room_list):
         self.center_room_array = room_list
@@ -397,13 +550,18 @@ class Engine:
                 print("[DEBUG]: ", attribute)
                 print("[DEBUG]: ", message_down)
                 if turns <= 0:
-                    self.message_log.add_message(f"{message_down}", color.red)
+                    end_color = color.red if amount >= 0 else color.status_effect_applied
+                    self.message_log.add_message(f"{message_down}", end_color)
                     if attribute == 'base_power':
                         self.player.fighter.base_power -= amount
                     if attribute == 'base_to_hit':
                         self.player.fighter.base_to_hit -= amount
                     if attribute == 'base_stealth':
                         self.player.fighter.base_stealth -= amount
+                    if attribute == 'fov':
+                        self.player.fighter.fov -= amount
+                        if amount < 0:
+                            self.player.fighter.is_blind = False
 
                     #temporal_effects.pop(i)
                     effects_to_remove.append(self.temporal_effects[i])
@@ -472,7 +630,7 @@ class Engine:
                 defense=self.player.fighter.defense
             )
 
-        # Fortity indicator
+        # Fortify indicator
         #if self.player.fighter.can_fortify == True and self.player.fighter.fortified == True:
         if self.player.fighter.fortified == True:
             #render_functions.render_fortify_indicator(console)
@@ -484,3 +642,29 @@ class Engine:
         save_data = lzma.compress(pickle.dumps(self))
         with open(filename, "wb") as f:
             f.write(save_data)
+
+    def queue_animation(self, frames: List[AnimationFrame]) -> None:
+        if frames:
+            self._animation_queue.append(frames)
+
+    def play_queued_animations(self, context: Context, console: Console) -> None:
+        if not self._animation_queue:
+            return
+        while self._animation_queue:
+            animation = self._animation_queue.pop(0)
+            for glyphs, duration in animation:
+                console.clear()
+                self.render(console)
+                self._draw_animation_glyphs(console, glyphs)
+                context.present(console)
+                delay_ms = max(1, int(max(duration, 0.01) * 1000))
+                tcod.sys_sleep_milli(delay_ms)
+
+    def _draw_animation_glyphs(self, console: Console, glyphs: Sequence[AnimationGlyph]) -> None:
+        game_map = self.game_map
+        for x, y, char, fg in glyphs:
+            if not game_map.in_bounds(x, y):
+                continue
+            if not game_map.visible[x, y]:
+                continue
+            console.print(x=x, y=y, string=char, fg=fg)

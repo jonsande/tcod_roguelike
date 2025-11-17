@@ -39,7 +39,7 @@ def main() -> None:
         screen_width,
         screen_heigth,
         tileset=tileset,
-        title="Yet Another Roguelike",
+        title="Adventurers!",
         vsync=True,
     ) as context:
         #root_console = tcod.Console(screen_width, screen_heigth, order="F")   # DEPRECATED
@@ -49,6 +49,9 @@ def main() -> None:
                 root_console.clear()
                 handler.on_render(console=root_console)
                 context.present(root_console)
+                engine = getattr(handler, "engine", None)
+                if engine:
+                    engine.play_queued_animations(context, root_console)
 
                 try:
                     for event in tcod.event.wait():

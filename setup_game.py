@@ -6,25 +6,109 @@ import copy
 import lzma
 import pickle
 import traceback
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 import tcod
 
 import color
 from engine import Engine
 import entity_factories
+from equipment_types import EquipmentType
 import input_handlers
 from game_map import GameWorld
+from audio import ambient_sound
+from settings import (
+    INTRO_MESSAGE,
+    PLAYER_STARTING_EQUIP_LIMITS,
+    PLAYER_STARTING_INVENTORY,
+)
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from entity import Actor, Item
     import uniques
 
 
 
 # Load the background image and remove the alpha channel.
 background_image = tcod.image.load("data/menu_background.png")[:, :, :3]
+
+
+_EQUIPMENT_SLOT_NAMES = {
+    EquipmentType.WEAPON: "weapon",
+    EquipmentType.ARMOR: "armor",
+    EquipmentType.ARTEFACT: "artefact",
+}
+
+
+def _normalize_inventory_entry(
+    entry: Union[str, Dict[str, object]]
+) -> Dict[str, object]:
+    if isinstance(entry, str):
+        return {"item": entry}
+
+    if isinstance(entry, dict) and "item" in entry:
+        return entry
+
+    raise ValueError(f"Invalid PLAYER_STARTING_INVENTORY entry: {entry!r}")
+
+
+def _slot_name_for_item(item: "Item") -> str:
+    equipment_type = item.equippable.equipment_type
+    return _EQUIPMENT_SLOT_NAMES.get(equipment_type, equipment_type.name.lower())
+
+
+def _resolve_factory_item(item_name: str):
+    try:
+        return getattr(entity_factories, item_name)
+    except AttributeError as exc:  # pragma: no cover - configuration-time error
+        raise ValueError(
+            f"Unknown starting item '{item_name}' in PLAYER_STARTING_INVENTORY."
+        ) from exc
+
+
+def _add_starting_items(player: "Actor") -> None:
+    """Populate the player's inventory and equip requested items."""
+    items_to_equip: Dict[str, List["Item"]] = {}
+
+    for raw_entry in PLAYER_STARTING_INVENTORY:
+        entry = _normalize_inventory_entry(raw_entry)
+        item_name = entry["item"]
+        quantity = int(entry.get("quantity", 1))
+        equip_flag = bool(entry.get("equip", False))
+
+        if quantity <= 0:
+            raise ValueError(
+                f"Starting item '{item_name}' must have quantity >= 1 (got {quantity})."
+            )
+
+        prototype = _resolve_factory_item(item_name)
+
+        for idx in range(quantity):
+            item = copy.deepcopy(prototype)
+            item.parent = player.inventory
+            player.inventory.items.append(item)
+
+            should_equip = equip_flag and idx == 0
+            if should_equip:
+                if item.equippable is None:
+                    raise ValueError(
+                        f"Starting item '{item_name}' is not equippable but `equip` is True."
+                    )
+                slot_name = _slot_name_for_item(item)
+                items_to_equip.setdefault(slot_name, []).append(item)
+
+    for slot_name, items in items_to_equip.items():
+        limit = PLAYER_STARTING_EQUIP_LIMITS.get(slot_name, 2)
+        if len(items) > limit:
+            raise ValueError(
+                f"Too many items configured to start equipped for slot '{slot_name}'. "
+                f"Limit is {limit}, got {len(items)}."
+            )
+
+        for item in items[:limit]:
+            player.equipment.toggle_equip(item, add_message=False)
 
 
 def new_game() -> Engine:
@@ -53,6 +137,9 @@ def new_game() -> Engine:
     #    max_rooms = 30
 
     import random
+    # TODO: comprobar si estos valores de room_max_size, room_min_size
+    # y max_rooms se están aplicando o no a la hora de generar un mapa,
+    # o si se están aplicando los establecidos en settings.py
     room_max_size = random.randint(7, 13)
     room_min_size = 4
     max_rooms = random.randint(10, 30)
@@ -72,47 +159,14 @@ def new_game() -> Engine:
         map_height=map_height,
     )
 
-    # Esta es la primera vez que se genera el mapa y el fov:
-    engine.game_world.generate_floor()
+    # El primer piso ya se ha generado y el jugador ha sido colocado.
     engine.update_fov()
 
     engine.message_log.add_message(
-        "After a long journey, you find the entrance to the dungeon.", color.welcome_text
+        INTRO_MESSAGE, color.welcome_text
     )
 
-    dagger = copy.deepcopy(entity_factories.dagger)
-    leather_armor = copy.deepcopy(entity_factories.leather_armor)
-    sand_bag = copy.deepcopy(entity_factories.sand_bag)
-    poison_potion = copy.deepcopy(entity_factories.posion_potion)
-    poison_potion2 = copy.deepcopy(entity_factories.posion_potion)
-    power_potion = copy.deepcopy(entity_factories.power_potion)
-    power_potion2 = copy.deepcopy(entity_factories.power_potion)
-
-
-    # Aquí se asigna el inventario del jugador como el "padre" del objeto dagger. 
-    # Esto significa que la daga ahora "pertenece" al inventario del jugador o está 
-    # almacenada en él.
-    dagger.parent = player.inventory
-    leather_armor.parent = player.inventory
-    sand_bag.parent = player.inventory
-    poison_potion.parent = player.inventory
-    poison_potion2.parent = player.inventory
-    # power_potion.parent = player.inventory
-    # power_potion2.parent = player.inventory
-
-
-    player.inventory.items.append(dagger)
-    player.equipment.toggle_equip(dagger, add_message=False)
-
-    player.inventory.items.append(leather_armor)
-    player.equipment.toggle_equip(leather_armor, add_message=False)
-
-    player.inventory.items.append(poison_potion)
-    player.inventory.items.append(poison_potion2)
-    # player.inventory.items.append(power_potion)
-    # player.inventory.items.append(power_potion2)
-
-
+    _add_starting_items(player)
 
     return engine
 
@@ -122,6 +176,9 @@ def load_game(filename: str) -> Engine:
     with open(filename, "rb") as f:
         engine = pickle.loads(lzma.decompress(f.read()))
     assert isinstance(engine, Engine)
+    game_world = getattr(engine, "game_world", None)
+    if game_world:
+        ambient_sound.play_for_floor(game_world.current_floor)
     return engine
 
 #def load_floor(filename: str) -> Engine:
@@ -142,7 +199,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height // 2 - 4,
-            "YET ANOTHER ROGUELIKE",
+            "ADVENTURERS!",
             fg=color.menu_title,
             #alignment=tcod.CENTER,   # DEPRECATED
             alignment=libtcodpy.CENTER,

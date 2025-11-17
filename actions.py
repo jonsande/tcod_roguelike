@@ -6,18 +6,43 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import color
 from entity import Actor
 import exceptions
 import random
+from settings import DEBUG_MODE
+from audio import play_player_footstep, play_door_open_sound, play_door_close_sound
 
 if TYPE_CHECKING:
     from engine import Engine
     from entity import Actor, Entity, Item
 
 from color import bcolors
+
+POTION_IDENTIFICATION_EXCEPTIONS = {
+    "Antidote",
+    "Potion of Flash Sight",
+    "Potion of True Sight",
+    "Amphetamine brew",
+}
+PRECISION_POTION_ID = "Amphetamine brew"
+POTION_IDENTIFICATION_DESCRIPTIONS = {
+    "Health potion": "{target} parece recuperar sus heridas.",
+    "Strength potion": "Los músculos de {target} se tensan con nueva fuerza.",
+    "Poison potion": "La piel de {target} adquiere un matiz enfermizo.",
+    "Power brew": "{target} aprieta los puños con furia renovada.",
+    "Restore stamina Potion": "{target} respira con energía renovada.",
+    "Potion of Lasting Vigor": "{target} mantiene una postura más firme.",
+    "Life potion": "{target} parece más resistente.",
+    "Potion of True Sight": "Los ojos de {target} centellean con visión aguda.",
+    "Potion of Flash Sight": "{target} examina el entorno con rapidez febril.",
+    "Potion of Blinding Darkness": "{target} palpa el aire a ciegas.",
+    "Confusion potion": "{target} luce completamente desorientado.",
+    "Self paralysis potion": "{target} queda rígido como una estatua.",
+    "Petrification potion": "{target} se vuelve de piedra.",
+}
 
 
 # la clase padre 'acción'
@@ -138,10 +163,16 @@ class TakeStairsAction(Action):
         Take the stairs, if any exist at the entity's location.
         """
 
-        # Pasar de nivel otorga experiencia
-        #for e in self.engine.game_map.downstairs_location:
-            #if (self.entity.x, self.entity.y) == e:
-        if (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location:
+        at_downstairs = (
+            self.engine.game_map.downstairs_location
+            and (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location
+        )
+        at_upstairs = (
+            self.engine.game_map.upstairs_location
+            and (self.entity.x, self.entity.y) == self.engine.game_map.upstairs_location
+        )
+
+        if at_downstairs:
 
             # TIME SYSTEM
             # Bajar escaleras gasta puntos de tiempo
@@ -175,11 +206,27 @@ class TakeStairsAction(Action):
             # Reinicia el contador para la generación de monstruos
             self.engine.spawn_monsters_counter = 0
 
-            self.engine.game_world.generate_floor()
-            
+            if not self.engine.game_world.advance_floor():
+                raise exceptions.Impossible("You can't descend any further.")
+
             self.engine.message_log.add_message(
                 "You descend the staircase.", color.descend
                 )
+        elif at_upstairs:
+
+            self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+            if self.engine.debug == True:
+                print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TakeStairsAction (ascend)")
+                print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+
+            if not self.engine.game_world.retreat_floor():
+                raise exceptions.Impossible("You can't ascend any further.")
+
+            self.engine.spawn_monsters_counter = 0
+
+            self.engine.message_log.add_message(
+                "You ascend the staircase.", color.ascend
+            )
         else:
             raise exceptions.Impossible("There are no stairs here.")
 
@@ -231,11 +278,27 @@ class ThrowItemAction(Action):
         if self.item.throwable == False:
             raise exceptions.Impossible("You can't throw this")
 
-        target = self.target_actor
+        dest_x, dest_y = self.target_xy
 
-        if not target:
+        if not self.engine.game_map.in_bounds(dest_x, dest_y):
             raise exceptions.Impossible("Invalid target")
-        
+
+        if not self.engine.game_map.visible[dest_x, dest_y]:
+            raise exceptions.Impossible("You cannot target a location you cannot see.")
+
+        max_distance = 4 + self.entity.fighter.base_power
+        if self.entity.distance(dest_x, dest_y) > max_distance:
+            raise exceptions.Impossible("That target is too far away.")
+
+        path = self._compute_throw_path(self.entity.x, self.entity.y, dest_x, dest_y)
+        self._animate_throw(path)
+
+        target = self.target_actor
+        if self._is_potion(self.item):
+            self._handle_potion_throw(target, dest_x, dest_y)
+            self._spend_throw_cost()
+            return
+
         if self.entity.fighter.stamina <= 0:
             self.engine.message_log.add_message("You are exhausted!", color.red)
             raise exceptions.Impossible("")
@@ -247,7 +310,11 @@ class ThrowItemAction(Action):
             self.entity.equipment.toggle_equip(self.item)
 
         # Colocar el objeto lanzado en la casilla del objetivo
-        self.engine.player.inventory.throw(self.item, self.target_actor.x, self.target_actor.y)
+        self.entity.inventory.throw(self.item, dest_x, dest_y)
+
+        if not target:
+            self._spend_throw_cost()
+            return
 
         # Mecánica backstab/stealth/sigilo (beta)
         # Bonificador al impacto
@@ -383,29 +450,190 @@ class ThrowItemAction(Action):
                 f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})"
             )
 
-        # Con cada ataque gastamos 1 de stamina
-        self.entity.fighter.stamina -= 1
+        self._spend_throw_cost()
 
-        # TIME SYSTEM
-        # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
-        #self.entity.fighter.current_energy_points -= 10
+
+    def _is_potion(self, item: Item) -> bool:
+        return getattr(item, "char", None) == "!" and item.consumable is not None
+
+    def _handle_potion_throw(self, target: Optional[Actor], dest_x: int, dest_y: int) -> None:
+        self.engine.message_log.add_message(
+            f"You throw the {self.item.name}. The vial shatters on impact!",
+            color.orange,
+        )
+        if target:
+            self._apply_potion_effect(target)
+        else:
+            self.item.consumable.consume()
+
+    def _apply_potion_effect(self, target: Actor) -> None:
+        consumable = self.item.consumable
+        if not consumable:
+            return
+
+        potion_id = getattr(self.item, "id_name", self.item.name)
+        adjustments = self._temporarily_reduce_duration(consumable, potion_id)
+        previously_identified = getattr(self.item, "identified", False)
+        original_name = self.item.name
+        blocked_by_exception = potion_id in POTION_IDENTIFICATION_EXCEPTIONS
+        allow_identification = not blocked_by_exception
+        special_message = "The creature's pupils dilate." if potion_id == PRECISION_POTION_ID else None
+        effect_applied = True
+        previous_suppression = getattr(consumable, "_suppress_effect_messages", False)
+        consumable._suppress_effect_messages = (
+            potion_id == PRECISION_POTION_ID and target is not self.engine.player
+        )
+        consumable._effect_message_emitted = False
+
+        try:
+            if potion_id == "Poison potion":
+                effect_applied = self._apply_poison_splash(target, consumable)
+            else:
+                action = ItemAction(target, self.item, (target.x, target.y))
+                consumable.activate(action)
+        except exceptions.Impossible:
+            effect_applied = False
+        finally:
+            self._restore_duration(consumable, adjustments)
+            consumable._suppress_effect_messages = previous_suppression
+
+        potion_identified_now = bool(getattr(self.item, "identified", False))
+        effect_described = getattr(consumable, "_effect_message_emitted", False)
+
+        if potion_id == "Poison potion" and not effect_applied:
+            allow_identification = False
+
+        if not effect_applied:
+            allow_identification = False
+
+        if not allow_identification:
+            self.item.name = original_name
+            self.item.identified = previously_identified
+            if special_message and potion_id == PRECISION_POTION_ID:
+                self.engine.message_log.add_message(special_message, color.status_effect_applied)
+            elif not previously_identified:
+                self.engine.message_log.add_message(
+                    "No parece que la sustancia le afecte a esa criatura.",
+                    color.impossible,
+                )
+            return
+
+        if special_message and potion_id == PRECISION_POTION_ID:
+            self.engine.message_log.add_message(
+                special_message,
+                color.status_effect_applied,
+            )
+
+        if not previously_identified and potion_identified_now:
+            if not effect_described:
+                self._log_identification_description(potion_id, target)
+            self.engine.message_log.add_message(
+                "The potion has been identified.",
+                color.status_effect_applied,
+            )
+
+    def _temporarily_reduce_duration(self, consumable, potion_id: str) -> dict:
+        adjustments = {}
+        if hasattr(consumable, "number_of_turns"):
+            original = consumable.number_of_turns
+            consumable.number_of_turns = max(1, original // 2)
+            adjustments["number_of_turns"] = original
+        if hasattr(consumable, "min_turns"):
+            original_min = consumable.min_turns
+            consumable.min_turns = max(1, original_min // 2)
+            adjustments["min_turns"] = original_min
+        if hasattr(consumable, "max_turns"):
+            original_max = consumable.max_turns
+            reduced_max = max(1, original_max // 2)
+            if hasattr(consumable, "min_turns"):
+                reduced_max = max(consumable.min_turns, reduced_max)
+            consumable.max_turns = reduced_max
+            adjustments["max_turns"] = original_max
+        if potion_id == "Poison potion":
+            if hasattr(consumable, "counter"):
+                original_counter = consumable.counter
+                consumable.counter = max(1, original_counter // 2)
+                adjustments["counter"] = original_counter
+            if hasattr(consumable, "amount"):
+                original_amount = consumable.amount
+                consumable.amount = max(1, original_amount // 2)
+                adjustments["amount"] = original_amount
+        return adjustments
+
+    def _restore_duration(self, consumable, adjustments: dict) -> None:
+        for attr, value in adjustments.items():
+            setattr(consumable, attr, value)
+        return
+
+    def _apply_poison_splash(self, target: Actor, consumable) -> bool:
+        amount = getattr(consumable, "amount", 1)
+        target.fighter.poisons_on_hit = True
+
+        if target.fighter.poison_resistance >= amount:
+            if self.item.consumable:
+                self.item.consumable.consume()
+            return False
+
+        action = ItemAction(target, self.item, (target.x, target.y))
+        consumable.activate(action)
+        target.fighter.poisons_on_hit = True
+        return True
+
+    def _log_identification_description(self, potion_id: str, target: Actor) -> None:
+        template = POTION_IDENTIFICATION_DESCRIPTIONS.get(potion_id)
+        if template:
+            self.engine.message_log.add_message(
+                template.format(target=target.name),
+                color.status_effect_applied,
+            )
+        else:
+            self.engine.message_log.add_message(
+                f"{target.name} reacciona al efecto de la poción.",
+                color.status_effect_applied,
+            )
+
+    def _spend_throw_cost(self) -> None:
+        self.entity.fighter.stamina -= 1
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
         if self.engine.debug == True:
-            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MeleeAction")
-            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+            print(
+                f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in ThrowItemAction"
+            )
+            print(
+                f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left."
+            )
 
+    def _compute_throw_path(self, x0: int, y0: int, x1: int, y1: int) -> List[Tuple[int, int]]:
+        path: List[Tuple[int, int]] = []
+        dx = abs(x1 - x0)
+        dy = -abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy
+        x, y = x0, y0
+        while not (x == x1 and y == y1):
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x += sx
+            if e2 <= dx:
+                err += dx
+                y += sy
+            path.append((x, y))
+        return path
 
-        # Con cada ataque reducimos 1 el defense bonus acumulado
-
-        if self.entity.fighter.to_defense_counter > 1:
-            self.entity.fighter.base_defense -= 1
-            self.entity.fighter.to_defense_counter -= 1
-
-        # ...o reducimos a 0 el defense bonus acumulado
-        #if self.entity.fighter.to_defense_counter >= 1:
-        #    self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
-        #    self.entity.fighter.to_defense_counter = 0
-
+    def _animate_throw(self, path: List[Tuple[int, int]]) -> None:
+        if not path:
+            return
+        frames = []
+        total = len(path)
+        for index, (x, y) in enumerate(path):
+            if not self.engine.game_map.in_bounds(x, y):
+                continue
+            char = "*" if index < total - 1 else "o"
+            frames.append(([(x, y, char, color.orange)], 0.03))
+        if frames:
+            self.engine.queue_animation(frames)
 
 class MeleeAction(ActionWithDirection):
 
@@ -426,6 +654,9 @@ class MeleeAction(ActionWithDirection):
 
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
+
+        if self.entity is self.engine.player and getattr(target, "name", "").lower() == "adventurer":
+            target.fighter.aggravated = True
         
         if self.entity.fighter.stamina <= 0:
             self.engine.message_log.add_message("You are exhausted!", color.red)
@@ -620,6 +851,7 @@ class MovementAction(ActionWithDirection):
         dest_x, dest_y = self.dest_xy
         game_map = self.engine.game_map
         door_opened = False
+        player_moved = False
 
         if not game_map.in_bounds(dest_x, dest_y):
             raise exceptions.Impossible("That way is blocked.")
@@ -634,6 +866,7 @@ class MovementAction(ActionWithDirection):
         if door_opened:
             if self.entity is self.engine.player:
                 self.engine.message_log.add_message("You open the door.", color.descend)
+                play_door_open_sound()
         else:
             # Si en MELEE
             if self.entity.fighter.is_in_melee:
@@ -648,15 +881,17 @@ class MovementAction(ActionWithDirection):
                     self.entity.fighter.to_hit_counter -= 1
 
                 self.entity.move(self.dx, self.dy)            
+                player_moved = True
             
             # Si no en MELEE 
             else:
-                # Reseteamos BONIFICADOR a la defensa
+                # Reseteamos BONIFICACIÓN a la defensa
                 if self.entity.fighter.to_defense_counter > 0:
                     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
                     self.entity.fighter.to_defense_counter = 0
 
                 self.entity.move(self.dx, self.dy)
+                player_moved = True
 
         # Reseteamos toda BONIFICACIÓN
 
@@ -678,11 +913,69 @@ class MovementAction(ActionWithDirection):
             self.entity.fighter.stamina += 1
             #print(f"{self.entity.name}: stamina: {self.entity.fighter.stamina}")
 
+        if player_moved and self.entity is self.engine.player:
+            play_player_footstep()
+
         # TIME SYSTEM
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
         print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MovementAction")
         print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+
+
+class OpenDoorAction(ActionWithDirection):
+    def __init__(self, entity: Actor, dx: int, dy: int, door: Actor):
+        super().__init__(entity, dx, dy)
+        self.door = door
+
+    def perform(self) -> None:
+        fighter = getattr(self.door, "fighter", None)
+        if not fighter or not hasattr(fighter, "set_open"):
+            raise exceptions.Impossible("You can't open that.")
+        if fighter.is_open:
+            raise exceptions.Impossible("The door is already open.")
+        fighter.set_open(True)
+        if self.entity is self.engine.player:
+            self.engine.message_log.add_message("You open the door.", color.descend)
+            play_door_open_sound()
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+
+
+class CloseDoorAction(Action):
+    _NEIGHBOR_DELTAS = [
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+        (-1, -1),
+        (-1, 1),
+        (1, -1),
+        (1, 1),
+    ]
+
+    def perform(self) -> None:
+        gamemap = self.engine.game_map
+        px, py = self.entity.x, self.entity.y
+        open_doors = [
+            (px + dx, py + dy)
+            for dx, dy in self._NEIGHBOR_DELTAS
+            if gamemap.in_bounds(px + dx, py + dy)
+            and gamemap.is_open_door(px + dx, py + dy)
+        ]
+
+        if not open_doors:
+            raise exceptions.Impossible("There is no open door nearby.")
+
+        target_x, target_y = open_doors[0]
+        blocker = gamemap.get_blocking_entity_at_location(target_x, target_y)
+        if blocker:
+            raise exceptions.Impossible("Something blocks the doorway.")
+
+        gamemap.close_door(target_x, target_y)
+        if self.entity is self.engine.player:
+            self.engine.message_log.add_message("You close the door.", color.descend)
+            play_door_close_sound()
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
 
 
 class WaitAction(Action):
@@ -822,18 +1115,33 @@ class PassAction(Action):
     
 class ToogleLightAction(Action):
     def perform(self):
-        print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
+        if DEBUG_MODE:
+            print(f"DEBUG: PLAYER FOV: {self.engine.player.fighter.fov}")
+
+        # if self.engine.player.fighter.lamp_on == False:
+        #     self.engine.player.fighter.lamp_on == True
+        #     self.engine.player.fighter.fov += 4
+        #     self.engine.player.fighter.base_stealth += 1
+        #     self.engine.message_log.add_message("You turn ON your lamp", color.descend)
+        #     return 0
+        # if self.engine.player.fighter.lamp_on == True:
+        #     self.engine.player.fighter.lamp_on == False
+        #     self.engine.player.fighter.fov -= 4
+        #     self.engine.player.fighter.base_stealth -= 1
+        #     self.engine.message_log.add_message("You turn OFF your lamp", color.enemy_die)
+        #     return 0
+        
         if self.engine.player.fighter.fov == 6:
             self.engine.player.fighter.base_stealth += 1
             self.engine.player.fighter.fov = 1
             #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
-            self.engine.message_log.add_message("You turn off your lamp", color.descend)
+            self.engine.message_log.add_message("You turn OFF your lamp", color.descend)
             return 0
         if self.engine.player.fighter.fov == 1:
             self.engine.player.fighter.fov = 6
             self.engine.player.fighter.base_stealth -= 1
             #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
-            self.engine.message_log.add_message("You turn on your lamp", color.descend)
+            self.engine.message_log.add_message("You turn ON your lamp", color.enemy_die)
             return 0
     
 
@@ -845,9 +1153,19 @@ class ToogleLightAction(Action):
 class BumpAction(ActionWithDirection):
 
     def perform(self) -> None:
-        if self.target_actor:
-            return MeleeAction(self.entity, self.dx, self.dy).perform()
-
-        else:
-            return MovementAction(self.entity, self.dx, self.dy).perform()
-        
+        target = self.target_actor
+        if target:
+            self_name = getattr(self.entity, "name", "").lower()
+            target_name = getattr(target, "name", "").lower()
+            if self_name == "adventurer" and target_name == "adventurer":
+                return WaitAction(self.entity).perform()
+            if getattr(target, "name", "").lower() == "door":
+                fighter = getattr(target, "fighter", None)
+                if fighter and hasattr(fighter, "set_open"):
+                    if getattr(fighter, "is_open", False):
+                        target = None
+                    else:
+                        return OpenDoorAction(self.entity, self.dx, self.dy, target).perform()
+            if target:
+                return MeleeAction(self.entity, self.dx, self.dy).perform()
+        return MovementAction(self.entity, self.dx, self.dy).perform()

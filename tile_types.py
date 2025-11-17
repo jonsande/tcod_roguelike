@@ -125,7 +125,7 @@ if GRAPHIC_MODE == "pseudo_ascii":
             )
         breakable_wall = new_tile(
             walkable=False,
-            transparent=False,
+            transparent=False, #Para que no sea translúcida esta tiene que ser TRUE!!! (No sé por qué)
             light=light,
             dark=dark,
         )
@@ -157,6 +157,12 @@ if GRAPHIC_MODE == "pseudo_ascii":
         transparent=True,
         dark=(ord(">"), (25, 25, 25), (5, 5, 5)),
         light=(ord(">"), (50,50,40), (6,9,3)),
+    )
+    up_stairs = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("<"), (25, 25, 25), (5, 5, 5)),
+        light=(ord("<"), (50,50,40), (6,9,3)),
     )
 
 elif GRAPHIC_MODE == "ascii":
@@ -305,6 +311,12 @@ elif GRAPHIC_MODE == "ascii":
         light=(ord(">"), (50,50,40), (6,9,3)),
         #render_order=render_order.RenderOrder.STAIRS,
     )
+    up_stairs = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("<"), (25, 25, 25), (5, 5, 5)),
+        light=(ord("<"), (50,50,40), (6,9,3)),
+    )
 
 else:
 
@@ -449,6 +461,12 @@ else:
         dark=(ord(" "), (0,0,0), (0,0,0)),
         light=(ord(">"), (50,50,40), (6,9,3)),
         #render_order=render_order.RenderOrder.STAIRS,
+    )
+    up_stairs = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("<"), (25, 25, 25), (5, 5, 5)),
+        light=(ord("<"), (50,50,40), (6,9,3)),
     )
     wall_colors = {
         1: ((ord('√'), (170,170,120), (0,0,0)), (ord('√'), (39,7,47), (5,5,5))),

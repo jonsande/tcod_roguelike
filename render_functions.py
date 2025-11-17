@@ -14,12 +14,28 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
         return ""
 
-    names = ", ".join(
+    names = [
         entity.name for entity in game_map.entities if entity.x == x and entity.y == y
-    )
+    ]
 
-    #return names.capitalize()
-    return names
+    # Remove duplicates while preserving order.
+    seen = set()
+    unique_names = []
+    for name in names:
+        lowered = name.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        unique_names.append(name)
+
+    tile_descriptions = []
+    if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+        tile_descriptions.append("There are upstairs")
+    if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+        tile_descriptions.append("There are downstairs")
+
+    descriptions = unique_names + tile_descriptions
+    return ", ".join(descriptions)
 
 
 def render_bar(

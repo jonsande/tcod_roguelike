@@ -70,6 +70,9 @@ class Entity:
         clone.y = y
         clone.parent = gamemap
         gamemap.entities.add(clone)
+        on_spawn = getattr(clone, "on_spawn", None)
+        if callable(on_spawn):
+            on_spawn(clone)
         return clone
 
     
@@ -292,5 +295,4 @@ class Obstacle(Entity):
     def is_alive(self) -> bool:
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
-
 

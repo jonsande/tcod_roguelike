@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Tuple, TYPE_CHECKING
+import copy
+import random
+import numpy as np
 
 import color
 from components.base_component import BaseComponent
@@ -16,8 +19,122 @@ x = 0
 turns = 0
 gainance = 0
 
+
+class FireStatusMixin:
+    """Shared fire-damage logic for any component that can burn."""
+
+    def _init_fire_status(self, fire_resistance: int = 1):
+        self.fire_resistance = fire_resistance
+        self.is_burning = False
+        self.burning_damage = 0
+
+    def apply_fire_damage(self, amount: int, ignite_chance: float = 0.5) -> None:
+        damage = max(0, amount)
+        if damage <= 0:
+            return
+        self.take_damage(damage)
+        if getattr(self, "hp", 0) <= 0:
+            self._extinguish_fire(silent=True)
+            return
+        chance = ignite_chance if ignite_chance is not None else 0.5
+        if random.random() < chance:
+            self._ignite(damage)
+
+    def _ignite(self, base_damage: int) -> None:
+        next_damage = base_damage - getattr(self, "fire_resistance", 1)
+        if next_damage <= 0:
+            return
+        if getattr(self, "is_burning", False):
+            self.burning_damage = max(self.burning_damage, next_damage)
+            return
+        self.is_burning = True
+        self.burning_damage = next_damage
+        self._fire_message(
+            "You are engulfed in flames!",
+            "{name} is engulfed in flames!",
+            player_color=color.red,
+            creature_color=color.status_effect_applied,
+        )
+
+    def update_fire(self) -> None:
+        if not getattr(self, "is_burning", False):
+            return
+        damage = self.burning_damage
+        if damage <= 0:
+            self._extinguish_fire()
+            return
+        self._fire_tick_message(damage)
+        self.take_damage(damage)
+        if getattr(self, "hp", 0) <= 0:
+            self._extinguish_fire(silent=True)
+            return
+        next_damage = damage - getattr(self, "fire_resistance", 1)
+        self.burning_damage = next_damage
+        if next_damage <= 0:
+            self._extinguish_fire()
+
+    def _extinguish_fire(self, silent: bool = False) -> None:
+        was_burning = getattr(self, "is_burning", False)
+        self.is_burning = False
+        self.burning_damage = 0
+        if not was_burning or silent:
+            return
+        self._fire_message(
+            "The flames around you go out.",
+            "The flames around {name} go out.",
+            player_color=color.orange,
+            creature_color=color.orange,
+        )
+
+    def _fire_message(
+        self,
+        player_text: str,
+        creature_text: str,
+        player_color: Tuple[int, int, int] = color.orange,
+        creature_color: Tuple[int, int, int] = color.orange,
+    ) -> None:
+        entity = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not entity or not engine:
+            return
+        if entity is engine.player:
+            engine.message_log.add_message(player_text, player_color)
+            return
+        try:
+            visible = engine.game_map.visible[entity.x, entity.y]
+        except Exception:
+            visible = False
+        if visible:
+            engine.message_log.add_message(
+                creature_text.format(name=entity.name),
+                creature_color,
+            )
+
+    def _fire_tick_message(self, damage: int) -> None:
+        entity = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not entity or not engine:
+            return
+        msg = "{name} is scorched for {damage} fire damage!"
+        target_name = "You" if entity is engine.player else entity.name
+        if entity is engine.player:
+            engine.message_log.add_message(
+                f"You take {damage} fire damage!",
+                color.red,
+            )
+        else:
+            try:
+                visible = engine.game_map.visible[entity.x, entity.y]
+            except Exception:
+                visible = False
+            if visible:
+                engine.message_log.add_message(
+                    msg.format(name=entity.name, damage=damage),
+                    color.red,
+                )
+
 from components.ai import HostileEnemy
-class Fighter(BaseComponent):
+class Fighter(FireStatusMixin, BaseComponent):
 
     parent: Actor
 
@@ -58,6 +175,9 @@ class Fighter(BaseComponent):
             poisoned_counter: int = 0,
             poison_dmg: int = 0,
             poison_resistance: int = 0,
+            super_memory: bool = False,
+            lamp_on: bool = False,
+            fire_resistance: int = 1,
             ):
         self.max_hp = hp
         self._hp = hp
@@ -85,6 +205,8 @@ class Fighter(BaseComponent):
         self.to_power_counter = to_power_counter
         self.to_defense_counter = to_defense_couter
         self.critical_chance = critical_chance + luck
+        self.super_memory = super_memory
+        self.lamp_on = lamp_on
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -103,10 +225,15 @@ class Fighter(BaseComponent):
         self.poisoned_counter = poisoned_counter
         self.poison_dmg = poison_dmg
 
+        self._init_fire_status(fire_resistance)
+
         # Resistances
         self.poison_resistance = poison_resistance
-
-        
+        self.is_blind = False
+        self.is_player_confused = False
+        self.player_confusion_turns = 0
+        self.is_player_paralyzed = False
+        self.player_paralysis_turns = 0
 
     @property
     def hp(self) -> int:
@@ -305,6 +432,12 @@ class Fighter(BaseComponent):
 
         #self.engine.player.fighter.is_in_melee = False
 
+        name = getattr(self.parent, "name", "")
+        is_adventurer = bool(name and name.lower() == "adventurer")
+        adventurer_loot = []
+        if is_adventurer:
+            adventurer_loot = [copy.deepcopy(item) for item in self.parent.inventory.items]
+
         if self.engine.player is self.parent:
             death_message = "You died!"
             death_message_color = color.player_die
@@ -323,6 +456,9 @@ class Fighter(BaseComponent):
         self.engine.message_log.add_message(death_message, death_message_color)
 
         self.engine.player.level.add_xp(self.parent.level.xp_given)
+
+        if is_adventurer:
+            self.engine.game_world.register_adventurer_descent(adventurer_loot)
 
         return 0
     
@@ -366,39 +502,20 @@ class Fighter(BaseComponent):
         self.hp -= amount
 
         
-    # ESTA FUNC TIENE QUE SER SUSTITUIDA POR gain_temporal_bounus() de más abajo
-    def gain_temporal_power(self, turns, amount):
-
-        self.base_power += amount
-        self.temporal_effects = True
-
-        self.engine.message_log.add_message(
-            f"You feel strong!",
-            color.status_effect_applied,
-        )
-        import input_handlers
-        input_handlers.number_of_turns = turns
-        input_handlers.amount_affected = amount
-
-    def gain_temporal_bonus(self, turns, amount, attribute, message_hi, message_down):
+    def gain_temporal_bonus(self, turns, amount, attribute, message_down):
 
         if attribute == 'base_power':
             self.base_power += amount
-        if attribute == 'base_to_hit':
+        elif attribute == 'base_to_hit':
             self.base_to_hit += amount
-        if attribute == 'base_stealth':
+        elif attribute == 'base_stealth':
             self.base_stealth += amount
+        elif attribute == 'fov':
+            self.fov += amount
+            if amount < 0:
+                self.is_blind = True
 
         self.temporal_effects = True
-
-        self.engine.message_log.add_message(
-            f"{message_hi}",
-            color.status_effect_applied,
-        )
-        #import input_handlers
-        #input_handlers.number_of_turns = turns
-        #input_handlers.amount_affected = amount
-
         self.engine.manage_temporal_effects(turns, amount, attribute, message_down)
     
     def decrease_power(self, amount: int):
@@ -410,8 +527,58 @@ class Fighter(BaseComponent):
     def gain_power(self, amount: int):
         self.base_power += amount
 
+    def apply_player_confusion(self, turns: int) -> None:
+        self.is_player_confused = True
+        self.player_confusion_turns = max(1, turns)
+
+    def apply_player_paralysis(self, turns: int) -> None:
+        self.is_player_paralyzed = True
+        self.player_paralysis_turns = max(1, turns)
+        self.engine.message_log.add_message(
+            "You cannot move; your body is paralyzed!",
+            color.status_effect_applied,
+        )
+
+    def advance_player_paralysis(self) -> None:
+        if not getattr(self, "is_player_paralyzed", False):
+            return
+        self.player_paralysis_turns -= 1
+        if self.player_paralysis_turns <= 0:
+            self.is_player_paralyzed = False
+            self.player_paralysis_turns = 0
+            self.engine.message_log.add_message(
+                "You can move again.", color.status_effect_applied
+            )
+
+    def clear_player_paralysis(self) -> None:
+        if getattr(self, "is_player_paralyzed", False):
+            self.is_player_paralyzed = False
+            self.player_paralysis_turns = 0
+            self.engine.message_log.add_message(
+                "You can move again.", color.status_effect_applied
+            )
+
+    def advance_player_confusion(self) -> None:
+        if not self.is_player_confused:
+            return
+        self.player_confusion_turns -= 1
+        if self.player_confusion_turns <= 0:
+            self.is_player_confused = False
+            self.player_confusion_turns = 0
+            self.engine.message_log.add_message(
+                "You are no longer confused.", color.status_effect_applied
+            )
+
+    def clear_player_confusion(self) -> None:
+        if self.is_player_confused:
+            self.is_player_confused = False
+            self.player_confusion_turns = 0
+            self.engine.message_log.add_message(
+                "You are no longer confused.", color.status_effect_applied
+            )
+
         
-class Door(BaseComponent):
+class Door(FireStatusMixin, BaseComponent):
 
     parent: Obstacle
 
@@ -442,6 +609,7 @@ class Door(BaseComponent):
             is_poisoned: bool = False,
             #poisoned_counter: int = 0,
             #poison_dmg: int = 0,
+            fire_resistance: int = 1,
             ):
         self.max_hp = hp
         self._hp = hp
@@ -469,6 +637,12 @@ class Door(BaseComponent):
         self.fortified = fortified
         
         self.is_poisoned = is_poisoned
+        self._init_fire_status(fire_resistance)
+        self.is_open = False
+        self.closed_char = "+"
+        self.open_char = "-"
+        self.closed_color = (93, 59, 0)
+        self.open_color = (200, 200, 120)
 
 
     @property
@@ -572,41 +746,42 @@ class Door(BaseComponent):
                     
                     return 0
 
+    def sync_with_tile(self) -> None:
+        tile = self.engine.game_map.tiles[self.parent.x, self.parent.y]
+        self.is_open = bool(np.array_equal(tile, tile_types.open_door))
+        self._apply_state(update_tile=False)
+
+    def set_open(self, open_state: bool) -> None:
+        if self.is_open == open_state:
+            return
+        self.is_open = open_state
+        self._apply_state(update_tile=True)
+
+    def _apply_state(self, update_tile: bool = True) -> None:
+        char = self.open_char if self.is_open else self.closed_char
+        color_value = self.open_color if self.is_open else self.closed_color
+        self.parent.char = char
+        self.parent.color = color_value
+        self.parent.blocks_movement = not self.is_open
+        if update_tile:
+            tile = tile_types.open_door if self.is_open else tile_types.closed_door
+            self.engine.game_map.tiles[self.parent.x, self.parent.y] = tile
 
     def die(self) -> None:
         death_message = f"{self.parent.name} is down!"
         death_message_color = color.enemy_die
 
-        self.parent.char = '"'
-        #self.parent.color = (200,200,200)
-        self.parent.blocks_movement = False
-        self.parent.ai = None
-        self.parent.name = f"remains of {self.parent.name}"
-        self.parent.render_order = RenderOrder.CORPSE
-
-        
-        # Si la puerta es destruida, cambia el tile de su posición
-        # por un tile que no bloquee la visión
-        """
-        die_x = self.parent.spawn_coord[0]
-        die_y = self.parent.spawn_coord[1]
-
-        import tile_types
-        print(self.engine.game_map.tiles[die_x, die_y])
-        print(self.parent.spawn_coord)
-
-        self.engine.game_map.tiles[die_x, die_y] = tile_types.floor        
-        #dungeon.tiles[die_x, die_y] = tile_types.floor
-        """
-
         print(death_message)
         self.engine.message_log.add_message(death_message, death_message_color)
-        if hasattr(self.parent, "x") and hasattr(self.parent, "y"):
-            self.engine.game_map.tiles[self.parent.x, self.parent.y] = tile_types.floor
-
+        gamemap = self.engine.game_map
+        x, y = self.parent.x, self.parent.y
+        gamemap.tiles[x, y] = tile_types.floor
+        gamemap.entities.discard(self.parent)
         self.engine.player.level.add_xp(self.parent.level.xp_given)
-
-        return self.drop_loot()
+        self.drop_loot()
+        import entity_factories
+        entity_factories.breakable_wall_rubble.spawn(gamemap, x, y)
+        return None
 
 
     def heal(self, amount: int) -> int:
@@ -640,20 +815,6 @@ class Door(BaseComponent):
     def take_damage(self, amount: int) -> None:
         self.hp -= amount
     
-
-    def gain_temporal_power(self, turns, amount):
-
-        self.base_power += amount
-        self.temporal_effects = True
-
-        self.engine.message_log.add_message(
-            f"You feel strong!",
-            color.status_effect_applied,
-        )
-        import input_handlers
-        input_handlers.number_of_turns = turns
-        input_handlers.amount_affected = amount
-
     
     def decrease_power(self, amount: int):
         self.base_power -= amount
@@ -661,3 +822,120 @@ class Door(BaseComponent):
 
     def restore_power(self, amount: int):
         self.base_power += amount
+
+
+class BreakableWallFighter(FireStatusMixin, BaseComponent):
+    parent: Obstacle
+
+    def __init__(
+        self,
+        hp: int,
+        base_defense: int = 0,
+        base_power: int = 0,
+        recover_rate: int = 0,
+        base_armor_value: int = 0,
+        loot_drop_chance: float = 0.25,
+        current_time_points: int = 0,
+        action_time_cost: int = 10,
+        fire_resistance: int = 1,
+    ):
+        self.max_hp = hp
+        self._hp = hp
+        self.base_defense = base_defense
+        self.base_power = base_power
+        self.recover_rate = recover_rate
+        self.base_armor_value = base_armor_value
+        self.loot_drop_chance = loot_drop_chance
+        self.current_time_points = current_time_points
+        self.action_time_cost = action_time_cost
+        self.is_poisoned = False
+        self.poisoned_counter = 0
+        self.poison_dmg = 0
+        self.aggravated = False
+        self.stamina = 0
+        self.dmg_mod = (0, 1)
+        self._init_fire_status(fire_resistance)
+
+    @property
+    def hp(self) -> int:
+        return self._hp
+
+    @hp.setter
+    def hp(self, value: int) -> None:
+        self._hp = max(0, min(value, self.max_hp))
+        if self._hp == 0:
+            self.die()
+
+    @property
+    def defense(self) -> int:
+        return self.base_defense + self.defense_bonus
+
+    @property
+    def power(self) -> int:
+        return self.base_power + self.power_bonus
+
+    @property
+    def armor_value(self) -> int:
+        return self.base_armor_value + self.armor_value_bonus
+
+    @property
+    def defense_bonus(self) -> int:
+        if self.parent.equipment:
+            return self.parent.equipment.defense_bonus
+        return 0
+
+    @property
+    def power_bonus(self) -> int:
+        if self.parent.equipment:
+            return self.parent.equipment.power_bonus
+        return 0
+
+    @property
+    def armor_value_bonus(self) -> int:
+        if self.parent.equipment:
+            return self.parent.equipment.armor_value_bonus
+        return 0
+
+    def heal(self, amount: int) -> int:
+        if self.hp == self.max_hp:
+            return 0
+        new_hp_value = min(self.hp + amount, self.max_hp)
+        amount_recovered = new_hp_value - self.hp
+        self.hp = new_hp_value
+        return amount_recovered
+
+    def take_damage(self, amount: int) -> None:
+        self.hp -= amount
+
+    def drop_loot(self) -> None:
+        inventory = getattr(self.parent.inventory, "items", None)
+        if not inventory:
+            return None
+        if random.random() > self.loot_drop_chance:
+            return None
+
+        loot = random.choice(inventory)
+        loot.spawn(self.gamemap, self.parent.x, self.parent.y)
+        try:
+            inventory.remove(loot)
+        except ValueError:
+            pass
+        return None
+
+    def die(self) -> None:
+        x, y = self.parent.x, self.parent.y
+        gamemap = self.engine.game_map
+        death_message = f"The {self.parent.name.lower()} collapses!"
+        self.engine.message_log.add_message(death_message, color.enemy_die)
+        gamemap.tiles[x, y] = tile_types.floor
+        self.parent.ai = None
+        self.parent.blocks_movement = False
+
+        self.drop_loot()
+        self.engine.player.level.add_xp(self.parent.level.xp_given)
+
+        gamemap.entities.discard(self.parent)
+
+        import entity_factories
+
+        entity_factories.breakable_wall_rubble.spawn(gamemap, x, y)
