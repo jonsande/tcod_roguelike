@@ -12,8 +12,8 @@ grial_exists = False
 goblin_amulet_exists = False
 
 
-fireplace_counter = 0
-fireplace_exist = False
+campfire_counter = 0
+campfire_exist = False
 
 # Asignamos nivel en que generar el artefacto
 #grial_floor = random.randint(8, 12)
@@ -66,21 +66,21 @@ def place_uniques(floor, center_of_last_room, dungeon):
 
     # Especiales:
 
-    ## Fire place
+    ## Campfire
     """
     if floor > 1 and floor < 12:
         if center_of_last_room != (0, 0):
-            global fireplace_counter
-            if fireplace_counter == floor:     
+            global campfire_counter
+            if campfire_counter == floor:     
                 if random.randint(1,12) >= 1:
-                    fireplace_counter += 1                    
-                    entity_factories.fireplace.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                    campfire_counter += 1                    
+                    entity_factories.campfire.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
     """
     """
     if floor == 2:
         if center_of_last_room != (0, 0):
-            global fireplace_exist
-            if fireplace_exist == False:
-                entity_factories.fireplace.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
-                fireplace_exist = True
+            global campfire_exist
+            if campfire_exist == False:
+                entity_factories.campfire.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                campfire_exist = True
     """

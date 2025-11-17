@@ -21,6 +21,7 @@ from actions import (
 )
 import color
 import exceptions
+from entity import Chest
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -778,6 +779,77 @@ class InventoryDropHandler(InventoryEventHandler):
         return actions.DropItem(self.engine.player, item)
 
 
+class ChestLootHandler(AskUserEventHandler):
+    """Handler to inspect and loot an opened chest."""
+
+    TITLE = "Contenido del cofre"
+
+    def __init__(self, engine: Engine, chest: Chest):
+        super().__init__(engine)
+        self.chest = chest
+        if self.chest.open():
+            self.engine.message_log.add_message("You open the chest.", color.descend)
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        items = list(self.chest.inventory.items)
+        height = max(3, len(items) + 2)
+        width = 40
+        x = 1
+        y = 1
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        if not items:
+            console.print(x + 1, y + 1, "(Vacío)")
+            return
+
+        for index, item in enumerate(items):
+            key = chr(ord("a") + index)
+            console.print(x + 1, y + index + 1, f"({key}) {item.name}")
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+        items = list(self.chest.inventory.items)
+
+        if key in {
+            tcod.event.KeySym.ESCAPE,
+            tcod.event.KeySym.RETURN,
+            tcod.event.KeySym.KP_ENTER,
+        }:
+            return self.on_exit()
+
+        index = key - tcod.event.KeySym.a
+        if 0 <= index < len(items):
+            self._take_item(items[index])
+        return None
+
+    def _take_item(self, item: Item) -> None:
+        inventory = self.engine.player.inventory
+        if len(inventory.items) >= inventory.capacity:
+            self.engine.message_log.add_message("Your inventory is full.", color.impossible)
+            return
+        try:
+            self.chest.inventory.items.remove(item)
+        except ValueError:
+            return
+        inventory.items.append(item)
+        item.parent = inventory
+        self.engine.message_log.add_message(f"You take the {item.name}.", color.descend)
+
+    def on_exit(self) -> Optional[ActionOrHandler]:
+        return actions.OpenChestAction(self.engine.player, self.chest)
+
+
 class SelectIndexHandler(AskUserEventHandler):
     """Handles asking the user for an index on the map."""
 
@@ -918,6 +990,9 @@ class MainGameEventHandler(EventHandler):
         # Moverse
         if key in MOVE_KEYS:
             dx, dy = MOVE_KEYS[key]
+            chest_handler = self._maybe_open_chest(player, dx, dy)
+            if chest_handler:
+                return chest_handler
             action = BumpAction(player, dx, dy)
         # Bajar escaleras
         elif key == tcod.event.KeySym.SPACE:
@@ -980,6 +1055,14 @@ class MainGameEventHandler(EventHandler):
                     return ipdb.set_trace()
 
         return action
+
+    def _maybe_open_chest(self, player, dx: int, dy: int) -> Optional[ActionOrHandler]:
+        dest_x = player.x + dx
+        dest_y = player.y + dy
+        blocker = self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y)
+        if isinstance(blocker, Chest) and not blocker.is_open:
+            return ChestLootHandler(self.engine, blocker)
+        return None
 
 
 class GameOverEventHandler(EventHandler):

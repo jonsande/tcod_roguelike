@@ -655,8 +655,9 @@ class MeleeAction(ActionWithDirection):
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
 
-        if self.entity is self.engine.player and getattr(target, "name", "").lower() == "adventurer":
-            target.fighter.aggravated = True
+        target_ai = getattr(target, "ai", None)
+        if target_ai and hasattr(target_ai, "on_attacked"):
+            target_ai.on_attacked(self.entity)
         
         if self.entity.fighter.stamina <= 0:
             self.engine.message_log.add_message("You are exhausted!", color.red)
@@ -938,6 +939,18 @@ class OpenDoorAction(ActionWithDirection):
         if self.entity is self.engine.player:
             self.engine.message_log.add_message("You open the door.", color.descend)
             play_door_open_sound()
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+
+
+class OpenChestAction(Action):
+    def __init__(self, entity: Actor, chest):
+        super().__init__(entity)
+        self.chest = chest
+
+    def perform(self) -> None:
+        if not self.chest:
+            raise exceptions.Impossible("There is nothing to open.")
+        self.chest.open()
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
 
 

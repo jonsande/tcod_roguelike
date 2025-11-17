@@ -146,12 +146,12 @@ class LongSwordPlus(Equippable):
 
 class Spear(Equippable):
     def __init__(self) -> None:
-        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5)
+        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5, to_hit_bonus=1)
 
 
 class SpearPlus(Equippable):
     def __init__(self) -> None:
-        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5+random.randint(1, 3))
+        super().__init__(equipment_type=EquipmentType.WEAPON, power_bonus=5+random.randint(1, 3), to_hit_bonus=1)
 
 
 class LeatherArmor(Equippable):

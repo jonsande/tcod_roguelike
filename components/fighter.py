@@ -9,6 +9,7 @@ import color
 from components.base_component import BaseComponent
 from render_order import RenderOrder
 import tile_types
+import loot_tables
 
 if TYPE_CHECKING:
     from entity import Actor, Obstacle
@@ -357,28 +358,21 @@ class Fighter(FireStatusMixin, BaseComponent):
     #    self.current_energy_points += self.energy_points
 
     def drop_loot(self):
-        import entity_factories
-        max_drop = self.parent.inventory.capacity
-
-        if max_drop <= 0:
-
+        inventory_component = getattr(self.parent, "inventory", None)
+        if not inventory_component:
             return 0
-        
-        else:
+        if inventory_component.capacity <= 0:
+            return 0
 
-            if self.parent.name == "Adventurer" and self.parent.fighter.hp == 32:
-                chances = 12
+        items_to_drop = list(getattr(inventory_component, "items", []) or [])
+        for item in items_to_drop:
+            item.spawn(self.gamemap, self.parent.x, self.parent.y)
 
-            else:
-                chances = 1 + self.engine.player.fighter.luck
-                inventory = self.parent.inventory.items # Esto devuelve una lista
+        special_loot = loot_tables.roll_special_drop(getattr(self.parent, "name", ""))
+        if special_loot:
+            special_loot.spawn(self.gamemap, self.parent.x, self.parent.y)
 
-            try:
-                loot = entity_factories.drop_roulette(chances, inventory)
-                loot.spawn(self.gamemap, self.parent.x, self.parent.y)
-
-            except AttributeError:
-                pass
+        return 0
 
     def die(self) -> None:
 
@@ -726,25 +720,22 @@ class Door(FireStatusMixin, BaseComponent):
 
 
     def drop_loot(self):
-            import entity_factories
-            max_drop = self.parent.inventory.capacity
-
-            if max_drop <= 0:
-
+            inventory_component = getattr(self.parent, "inventory", None)
+            if not inventory_component:
                 return 0
-            
-            else:
 
-                chances = 1
-                inventory = self.parent.inventory.items # Esto devuelve una lista
+            if inventory_component.capacity <= 0:
+                return 0
 
-                try:
-                    loot = entity_factories.drop_roulette(chances, inventory)
-                    loot.spawn(self.gamemap, self.parent.x, self.parent.y)
+            items_to_drop = list(getattr(inventory_component, "items", []) or [])
+            for item in items_to_drop:
+                item.spawn(self.gamemap, self.parent.x, self.parent.y)
 
-                except AttributeError:
-                    
-                    return 0
+            special_loot = loot_tables.roll_special_drop(getattr(self.parent, "name", ""))
+            if special_loot:
+                special_loot.spawn(self.gamemap, self.parent.x, self.parent.y)
+
+            return 0
 
     def sync_with_tile(self) -> None:
         tile = self.engine.game_map.tiles[self.parent.x, self.parent.y]

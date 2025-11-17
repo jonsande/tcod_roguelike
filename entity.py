@@ -296,3 +296,50 @@ class Obstacle(Entity):
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
 
+
+class Chest(Entity):
+    def __init__(
+        self,
+        *,
+        x: int = 0,
+        y: int = 0,
+        char: str = "C",
+        open_char: str = "c",
+        color: Tuple[int, int, int] = (184, 134, 11),
+        name: str = "Chest",
+        inventory: Optional["Inventory"] = None,
+        is_open: bool = False,
+    ):
+        if inventory is None:
+            from components.inventory import Inventory as _Inventory
+
+            inventory = _Inventory(capacity=0, items=[])
+
+        super().__init__(
+            x=x,
+            y=y,
+            char=open_char if is_open else char,
+            color=color,
+            name=name,
+            blocks_movement=not is_open,
+            render_order=RenderOrder.ITEM,
+        )
+        self.closed_char = char
+        self.open_char = open_char
+        self.is_open = is_open
+        self.inventory = inventory
+        self.inventory.parent = self
+
+    def open(self) -> bool:
+        if self.is_open:
+            return False
+        self.is_open = True
+        self.blocks_movement = False
+        self.char = self.open_char
+        self.name = "Open chest"
+        return True
+
+    def add_item(self, item: Item) -> None:
+        """Add an item to the chest inventory."""
+        self.inventory.items.append(item)
+        item.parent = self.inventory

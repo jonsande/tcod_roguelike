@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from entity import Entity
     
 import random
-from fixed_maps import template, temple, three_doors
+import fixed_maps
 
 CLOSED_DOOR_CHAR = tile_types.closed_door["dark"]["ch"]
 OPEN_DOOR_CHAR = tile_types.open_door["dark"]["ch"]
@@ -417,18 +417,20 @@ class GameWorld:
 
         if floor == 1:
             return generate_town, {}
-        if floor == 6:
-            return generate_fixed_dungeon, {
-                "map": temple,
-                "walls": tile_types.wall_v1,
-                "walls_special": tile_types.wall_v2,
-            }
-        if floor == 11:
-            return generate_fixed_dungeon, {
-                "map": three_doors,
-                "walls": tile_types.wall_v2,
-                "walls_special": tile_types.wall_v1,
-            }
+        fixed_layout = settings.FIXED_DUNGEON_LAYOUTS.get(floor)
+        if fixed_layout:
+            map_name = fixed_layout.get("map")
+            template = getattr(fixed_maps, map_name, None) if map_name else None
+            if template:
+                walls_name = fixed_layout.get("walls")
+                walls = getattr(tile_types, walls_name, tile_types.wall) if walls_name else tile_types.wall
+                special_name = fixed_layout.get("walls_special")
+                walls_special = getattr(tile_types, special_name, walls) if special_name else walls
+                return generate_fixed_dungeon, {
+                    "map": template,
+                    "walls": walls,
+                    "walls_special": walls_special,
+                }
 
         if random.random() < settings.CAVERN_SPAWN_CHANCE:
             return generate_cavern, {}

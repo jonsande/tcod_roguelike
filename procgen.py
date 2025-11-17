@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set
+from typing import Any, Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set
 from collections import Counter, defaultdict
 import heapq
+import copy
 from game_map import GameMap, GameMapTown
 import tile_types
 import random
@@ -48,6 +49,10 @@ max_items_by_floor = settings.MAX_ITEMS_BY_FLOOR
 # Monstruos máximos por habitación
 # Nivel mazmorra | nº monstruos
 max_monsters_by_floor = settings.MAX_MONSTERS_BY_FLOOR
+
+chest_spawn_chances = settings.CHEST_SPAWN_CHANCES
+chest_item_count_by_floor = settings.CHEST_ITEM_COUNT_BY_FLOOR
+chest_loot_tables = settings.CHEST_LOOT_TABLES
 
 
 def _resolve_entity_table(table_config):
@@ -207,6 +212,16 @@ def get_max_value_for_floor(
         else:
             current_value = value
 
+    return current_value
+
+
+def get_floor_value(entries: List[Tuple[int, Any]], floor: int, default: Any) -> Any:
+    """Return the last configured value whose floor requirement is <= current floor."""
+    current_value = default
+    for floor_minimum, value in entries:
+        if floor_minimum > floor:
+            break
+        current_value = value
     return current_value
 
 
@@ -507,6 +522,74 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
             entity.name,
             context,
         )
+
+
+def _select_chest_loot_table(floor: int) -> List[Tuple[str, float]]:
+    if not chest_loot_tables:
+        return []
+    selected: List[Tuple[str, float]] = []
+    for min_floor in sorted(chest_loot_tables.keys()):
+        if min_floor > floor:
+            break
+        selected = chest_loot_tables[min_floor]
+    return selected
+
+
+def _build_chest_loot(floor: int) -> List[Entity]:
+    loot_entries = _select_chest_loot_table(floor)
+    if not loot_entries:
+        return []
+    min_items, max_items = get_floor_value(chest_item_count_by_floor, floor, (0, 0))
+    if max_items <= 0 or min_items > max_items:
+        return []
+    count = random.randint(min_items, max_items)
+    keys = [entry[0] for entry in loot_entries]
+    weights = [float(entry[1]) for entry in loot_entries]
+    chosen_keys = random.choices(keys, weights=weights, k=count)
+    loot: List[Entity] = []
+    for key in chosen_keys:
+        prototype = getattr(entity_factories, key, None)
+        if not prototype:
+            continue
+        loot.append(copy.deepcopy(prototype))
+    return loot
+
+
+def maybe_place_chest(
+    dungeon: GameMap,
+    floor_number: int,
+    rooms: Optional[List] = None,
+) -> None:
+    chance = get_floor_value(chest_spawn_chances, floor_number, 0.0)
+    if chance <= 0 or random.random() > chance:
+        return
+
+    def pick_location() -> Optional[Tuple[int, int]]:
+        if rooms:
+            room = random.choice(rooms)
+            return room.random_location()
+        for _ in range(20):
+            x = random.randint(1, dungeon.width - 2)
+            y = random.randint(1, dungeon.height - 2)
+            if dungeon.tiles["walkable"][x, y]:
+                return (x, y)
+        return None
+
+    for _ in range(50):
+        coords = pick_location()
+        if not coords:
+            continue
+        x, y = coords
+        if not _can_place_entity(dungeon, x, y):
+            continue
+        loot = _build_chest_loot(floor_number)
+        chest_entity = entity_factories.chest.spawn(dungeon, x, y)
+        entity_factories.fill_chest_with_items(chest_entity, loot)
+        if __debug__:
+            print(f"DEBUG: Generando... Chest en x={x} y={y}")
+        return
+    if __debug__:
+        print(f"DEBUG: Failed to place chest en floor {floor_number}")
 
 
 def tunnel_between(
@@ -1186,6 +1269,7 @@ def generate_fixed_dungeon(
                 if __debug__:
                     print("WARNING: Fixed dungeon template has no guaranteed path between upstairs and downstairs.")
 
+    maybe_place_chest(dungeon, floor_number, rooms)
     ensure_breakable_tiles(dungeon)
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_fixed_dungeon")
@@ -1299,6 +1383,7 @@ def generate_cavern(
         dungeon.downstairs_location = None
 
     populate_cavern(dungeon, floor_number)
+    maybe_place_chest(dungeon, floor_number)
 
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):
@@ -1482,6 +1567,7 @@ def generate_dungeon(
     ensure_breakable_tiles(dungeon)
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_dungeon")
+    maybe_place_chest(dungeon, floor_number, rooms)
     dungeon.center_rooms = list(rooms_array)
     return dungeon
 
@@ -1634,6 +1720,7 @@ def generate_town(
     rooms.append(new_room)
     # rooms.append(new_room2)
 
+    maybe_place_chest(dungeon, floor_number, rooms)
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):
             raise RuntimeError("Town generation failed to connect starting area with stairs.")

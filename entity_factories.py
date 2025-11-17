@@ -1,5 +1,7 @@
 # Aquí generamos los modelos de entidades que existen en el juego
 
+from typing import List
+
 from components.ai import (
     HostileEnemy,
     Neutral,
@@ -17,20 +19,21 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Decoration, Obstacle, Entity
+from entity import Actor, Item, Decoration, Obstacle, Entity, Chest
 import random
 import numpy as np
 import tile_types
+import loot_tables
 from settings import (
     GOD_MODE,
     GOD_MODE_STEALTH,
     BREAKABLE_WALL_HP_RANGE,
     BREAKABLE_WALL_CACHE_CHANCE,
     BREAKABLE_WALL_LOOT_CHANCE,
-    FIREPLACE_MIN_HP,
-    FIREPLACE_MAX_HP,
-    FIREPLACE_CACHE_ITEM_CHANCE,
-    FIREPLACE_CACHE_ITEM_IDS,
+    CAMPFIRE_MIN_HP,
+    CAMPFIRE_MAX_HP,
+    CAMPFIRE_CACHE_ITEM_CHANCE,
+    CAMPFIRE_CACHE_ITEM_IDS,
     ADVENTURER_COLOR,
     ADVENTURER_CORPSE_CHAR,
     ADVENTURER_CORPSE_COLOR,
@@ -52,6 +55,21 @@ door = Obstacle(
     equipment=Equipment(),
 )
 
+chest = Chest(
+    char="C",
+    open_char="c",
+    color=(184, 134, 11),
+    name="Chest",
+    inventory=Inventory(capacity=12, items=[]),
+)
+
+
+def fill_chest_with_items(chest_entity: Chest, items: List[Item]) -> None:
+    """Replace the contents of a chest with the provided items."""
+    chest_entity.inventory.items = []
+    for item in items:
+        chest_entity.add_item(item)
+
 
 def color_roulette():
     winner = list(np.random.choice(range(256), size=3))
@@ -67,6 +85,7 @@ meat = Item(
     id_name = "Meat",
     consumable=consumable.FoodConsumable(amount=8)
 )
+loot_tables.register_loot_item("meat", meat)
 triple_ration = Item(
     char="%",
     color=(153,97,0),
@@ -74,6 +93,7 @@ triple_ration = Item(
     id_name = "Triple ration",
     consumable=consumable.FoodConsumable(amount=15)
 )
+loot_tables.register_loot_item("triple_ration", triple_ration)
 poisoned_triple_ration = Item(
     char="%",
     color=(153,97,0),
@@ -121,6 +141,7 @@ sand_bag = Item(
     uses=3,
     consumable=consumable.BlindConsumable(number_of_turns=2),
 )
+loot_tables.register_loot_item("sand_bag", sand_bag)
 
 confusion_scroll = Item(
     char="~",
@@ -129,6 +150,7 @@ confusion_scroll = Item(
     id_name = "Confusion scroll",
     consumable=consumable.TargetedConfusionConsumable(number_of_turns=10),
 )
+loot_tables.register_loot_item("confusion_scroll", confusion_scroll)
 
 paralisis_scroll = Item(
     char="~",
@@ -208,6 +230,7 @@ health_potion = Item(
     consumable=consumable.HealingConsumable(amount=random.randint(1, 6) + 4),
     throwable=True,
 )
+loot_tables.register_loot_item("health_potion", health_potion)
 
 strength_potion = Item(
     char="!",
@@ -227,6 +250,7 @@ poison_potion = Item(
     consumable=consumable.PoisonConsumable(amount=1, counter=8),
     throwable=True,
 )
+loot_tables.register_loot_item("poison_potion", poison_potion)
 
 antidote = Item(
     char="!",
@@ -264,6 +288,7 @@ power_potion = Item(
     ),
     throwable=True,
 )
+loot_tables.register_loot_item("power_potion", power_potion)
 precission_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -276,6 +301,7 @@ precission_potion = Item(
     ),
     throwable=True,
 )
+loot_tables.register_loot_item("precission_potion", precission_potion)
 stamina_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -284,6 +310,7 @@ stamina_potion = Item(
     consumable=consumable.RestoreStaminaConsumable(),
     throwable=True,
 )
+loot_tables.register_loot_item("stamina_potion", stamina_potion)
 increase_max_stamina = Item(
     char="!",
     color=(200, 200, 200),
@@ -392,14 +419,14 @@ table = Actor(
     level=Level(xp_given=0),
 )
 
-fireplace = Actor(
+campfire = Actor(
     char="x",
     color=(255,170,0),
-    name="Fire place",
+    name="Campfire",
     ai_cls=Dummy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=random.randint(FIREPLACE_MIN_HP, FIREPLACE_MAX_HP),
+        hp=random.randint(CAMPFIRE_MIN_HP, CAMPFIRE_MAX_HP),
         base_defense=0,
         base_power=0,
         recover_rate=0,
@@ -409,7 +436,7 @@ fireplace = Actor(
     level=Level(xp_given=5),
 )
 
-#fireplace = Entity(char="x", color=(218,52,99), name="Fireplace", blocks_movement=False)
+#campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
 
 
 # EQUIPPABLES
@@ -430,6 +457,7 @@ dagger = Item(
     equippable=equippable.Dagger(),
     throwable=True
 )
+loot_tables.register_loot_item("dagger", dagger)
 
 dagger_plus = Item(
     char="/", 
@@ -438,6 +466,7 @@ dagger_plus = Item(
     id_name="Dagger (good)",
     equippable=equippable.DaggerPlus()
 )
+loot_tables.register_loot_item("dagger_plus", dagger_plus)
 
 #sword = Item(char="/", color=(0, 191, 255), name="Sword", equippable=equippable.Sword())
 
@@ -448,9 +477,10 @@ short_sword = Item(
     id_name="Short Sword",
     equippable=equippable.ShortSword()
 )
+loot_tables.register_loot_item("short_sword", short_sword)
 
-# Fireplace extras
-_FIREPLACE_NEIGHBOR_OFFSETS = [
+# Campfire extras
+_CAMPFIRE_NEIGHBOR_OFFSETS = [
     (-1, 0),
     (1, 0),
     (0, -1),
@@ -462,28 +492,28 @@ _FIREPLACE_NEIGHBOR_OFFSETS = [
 ]
 
 
-def _setup_fireplace_spawn(entity: Actor) -> None:
-    _randomize_fireplace_hp(entity)
-    _maybe_spawn_fireplace_cache(entity)
+def _setup_campfire_spawn(entity: Actor) -> None:
+    _randomize_campfire_hp(entity)
+    _maybe_spawn_campfire_cache(entity)
 
 
-def _randomize_fireplace_hp(entity: Actor) -> None:
+def _randomize_campfire_hp(entity: Actor) -> None:
     fighter = getattr(entity, "fighter", None)
     if not fighter:
         return
-    new_hp = random.randint(FIREPLACE_MIN_HP, FIREPLACE_MAX_HP)
+    new_hp = random.randint(CAMPFIRE_MIN_HP, CAMPFIRE_MAX_HP)
     fighter.max_hp = new_hp
     fighter.hp = new_hp
 
 
-def _maybe_spawn_fireplace_cache(entity: Actor) -> None:
-    if random.random() >= FIREPLACE_CACHE_ITEM_CHANCE:
+def _maybe_spawn_campfire_cache(entity: Actor) -> None:
+    if random.random() >= CAMPFIRE_CACHE_ITEM_CHANCE:
         return
-    cache_items = _get_fireplace_cache_items()
+    cache_items = _get_campfire_cache_items()
     if not cache_items:
         return
     gamemap = entity.gamemap
-    offsets = list(_FIREPLACE_NEIGHBOR_OFFSETS)
+    offsets = list(_CAMPFIRE_NEIGHBOR_OFFSETS)
     random.shuffle(offsets)
     loot_proto = random.choice(cache_items)
     for dx, dy in offsets:
@@ -500,16 +530,16 @@ def _maybe_spawn_fireplace_cache(entity: Actor) -> None:
         break
 
 
-def _get_fireplace_cache_items():
+def _get_campfire_cache_items():
     resolved = []
-    for name in FIREPLACE_CACHE_ITEM_IDS:
+    for name in CAMPFIRE_CACHE_ITEM_IDS:
         proto = globals().get(name)
         if proto:
             resolved.append(proto)
     return resolved
 
 
-fireplace.on_spawn = _setup_fireplace_spawn
+campfire.on_spawn = _setup_campfire_spawn
 
 short_sword_plus = Item(
     char="/", 
@@ -518,6 +548,7 @@ short_sword_plus = Item(
     id_name="Short Sword (good)",
     equippable=equippable.ShortSwordPlus()
 )
+loot_tables.register_loot_item("short_sword_plus", short_sword_plus)
 
 long_sword = Item(
     char="/", 
@@ -543,6 +574,7 @@ spear = Item(
     equippable=equippable.Spear(),
     throwable=True
 )
+loot_tables.register_loot_item("spear", spear)
 
 spear_plus = Item(
     char="/", 
@@ -552,6 +584,7 @@ spear_plus = Item(
     equippable=equippable.SpearPlus(),
     throwable=True
 )
+loot_tables.register_loot_item("spear_plus", spear_plus)
 
 leather_armor = Item(
     char="[",
@@ -561,6 +594,7 @@ leather_armor = Item(
     equippable=equippable.LeatherArmor(),
     info=f"Stealth penalty: 1"
 )
+loot_tables.register_loot_item("leather_armor", leather_armor)
 
 chain_mail = Item(
     char="[", 
@@ -569,6 +603,7 @@ chain_mail = Item(
     id_name="Chain mail",
     equippable=equippable.ChainMail()
 )
+loot_tables.register_loot_item("chain_mail", chain_mail)
 
 # ARTEFACTS
 
@@ -587,65 +622,6 @@ goblin_tooth_amulet = Item(
     id_name="Xzy, the goblin tooth amulet",
     equippable=equippable.GoblinAmulet()
 )
-
-# INVENTORIES AND MONSTER DROPS
-
-def inv_roulette(monster_type, amount):
-
-    """
-    monster_type: monster name; amount: amount of max items in inventory 
-    """
-
-    if monster_type == "Giant rat":
-        choices = [meat]
-    if monster_type == "Goblin":
-        choices = [meat, dagger, poison_potion]
-    if monster_type == "Orc":
-        choices = [dagger, power_potion, health_potion]
-    if monster_type == "True Orc":
-        choices = [short_sword, power_potion, health_potion, confusion_scroll, poison_potion]
-    if monster_type == "Bandit":
-        choices = [short_sword, precission_potion, stamina_potion, poison_potion, dagger]
-    # if monster_type == "Adventurer Unique":
-    #     choices = [long_sword, health_potion, health_potion]
-
-    inventory = []
-
-    for i in range(1, amount+1):
-        inventory.append(random.choice(choices))
-
-    #print(f"{monster_type} inventory: {inventory}")
-    
-    return inventory
-
-
-def drop_roulette(chances, inventory):
-
-    """
-    Triggered when the monster dies.
-    """
-
-    choices = []
-
-    if inventory:
-        for i in inventory:
-            choices.append(i)
-
-        #print(f"Drop roulette choices: {choices}")
-
-    # Las chances se deciden en el drop_loot() de fighter.py
-    #chances = 10
-    if choices:
-
-        if random.randint(1, 12) <= chances:
-            return random.choice(choices)  
-        else:   
-            if random.randint(1, 12) <= 1:
-                return meat
-            else:
-                pass
-                
-
 
 class BreakableWallFactory:
     """Factory that generates individualized breakable walls when spawning."""
@@ -745,7 +721,7 @@ adventurer = Actor(
     #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
     equipment=Equipment(),
     fighter=Fighter(hp=30, base_defense=2, base_power=0, recover_rate=0, fov=6, dmg_mod = (1, 4)),
-    inventory=Inventory(capacity=20),
+    inventory=Inventory(capacity=20, items=loot_tables.build_monster_inventory("Adventurer", amount=4)),
     level=Level(level_up_base=20),
 )
 
@@ -757,7 +733,7 @@ adventurer = Actor(
 #     ai_cls=Neutral,
 #     equipment=Equipment(),
 #     fighter=Fighter(hp=32, base_defense=5, base_power=4, recover_rate=0, fov=0, dmg_mod = (1, 4)),
-#     inventory=Inventory(capacity=1, items=inv_roulette("Adventurer Unique", 3)),
+#     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Adventurer Unique", 3)),
 #     level=Level(xp_given=50),
 # )
 
@@ -780,7 +756,7 @@ rat = Actor(
         action_time_cost=7,
         luck=0,
     ),
-    inventory=Inventory(capacity=1, items=inv_roulette("Giant rat", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Giant rat", amount=1)),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )
@@ -815,20 +791,20 @@ goblin = Actor(
     #ai_cls=Scout,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=8, 
-        base_defense=2, 
+        hp=random.randint(7,10), 
+        base_defense=2,
         base_power=3, 
         recover_rate=1, 
         fov=random.randint(4, 6), 
         dmg_mod = (1, 2), 
         aggressivity=5, 
-        stamina=3, 
+        stamina=random.randint(2,4),
         max_stamina=3,
         poison_resistance=6,
         action_time_cost=7,
         woke_ai_cls=HostileEnemy
     ),
-    inventory=Inventory(capacity=1, items=inv_roulette("Goblin", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
     level=Level(xp_given=3),
 )
 
@@ -875,7 +851,7 @@ orc = Actor(
         action_time_cost=10,
         woke_ai_cls=HostileEnemy
     ),
-    inventory=Inventory(capacity=1, items=inv_roulette("Orc", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Orc", 1)),
     level=Level(xp_given=5),
 )
 
@@ -898,7 +874,7 @@ true_orc = Actor(
         max_stamina=4,
         woke_ai_cls=HostileEnemy
         ),
-    inventory=Inventory(capacity=2, items=inv_roulette("True Orc", 2)),
+    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("True Orc", 2)),
     level=Level(xp_given=10),
 )
 
@@ -964,7 +940,7 @@ bandit = Actor(
         base_stealth=3, 
         base_to_hit=2,
     ),
-    inventory=Inventory(capacity=2, items=inv_roulette("Bandit", 2)),
+    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Bandit", 2)),
     level=Level(xp_given=14),
 )
 
@@ -985,7 +961,7 @@ sentinel = Actor(
         max_stamina=3,
         action_time_cost=10,
     ),
-    inventory=Inventory(capacity=1, items=inv_roulette("Giant rat", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Giant rat", 1)),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )

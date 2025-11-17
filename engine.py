@@ -47,15 +47,15 @@ class Engine:
     game_map: GameMap
     game_world: GameWorld
 
-    _FIREPLACE_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
+    _CAMPFIRE_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
         (255, 200, 80),
         (255, 170, 0),
         (255, 145, 40),
         (255, 110, 10),
         (255, 220, 120),
     )
-    _FIREPLACE_CHAR: str = "*"
-    _FIREPLACE_SCROLL_CHANCE: float = settings.FIREPLACE_SCROLL_DROP_CHANCE
+    _CAMPFIRE_CHAR: str = "*"
+    _CAMPFIRE_SCROLL_CHANCE: float = settings.CAMPFIRE_SCROLL_DROP_CHANCE
     _ADVENTURER_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
         (255, 255, 200),
         (240, 220, 160),
@@ -231,7 +231,7 @@ class Engine:
 
 
 
-        self._apply_fireplace_effects()
+        self._apply_campfire_effects()
 
         # If a tile is "visible" it should be added to "explored".
         self.game_map.explored |= self.game_map.visible
@@ -268,7 +268,7 @@ class Engine:
             #radius = random.randint(3,5)
             radius
         )
-        self._apply_fireplace_effects()
+        self._apply_campfire_effects()
         # If a tile is "visible" it should be added to "explored".
         self.game_map.explored |= self.game_map.visible
 
@@ -281,13 +281,13 @@ class Engine:
         #    radius + 3
         #)
 
-    def _apply_fireplace_effects(self) -> None:
-        """Make fireplaces flicker and illuminate nearby tiles if the player has line of sight."""
+    def _apply_campfire_effects(self) -> None:
+        """Make campfires flicker and illuminate nearby tiles if the player has line of sight."""
         gamemap = getattr(self, "game_map", None)
         if not gamemap or not getattr(gamemap, "entities", None):
             return
 
-        fireplaces = []
+        campfires = []
         adventurers = []
         for entity in gamemap.entities:
             if not entity:
@@ -295,11 +295,11 @@ class Engine:
             name = getattr(entity, "name", None)
             if not name:
                 continue
-            if name.lower() == "fire place":
-                fireplaces.append(entity)
+            if name.lower() == "campfire":
+                campfires.append(entity)
             elif name.lower() == "adventurer":
                 adventurers.append(entity)
-        if not fireplaces and not adventurers:
+        if not campfires and not adventurers:
             return
 
         transparent = gamemap.tiles["transparent"]
@@ -311,22 +311,22 @@ class Engine:
             algorithm=constants.FOV_SHADOW,
         )
 
-        for fireplace in fireplaces:
-            if not player_los[fireplace.x, fireplace.y]:
+        for campfire in campfires:
+            if not player_los[campfire.x, campfire.y]:
                 continue
 
-            fighter = getattr(fireplace, "fighter", None)
+            fighter = getattr(campfire, "fighter", None)
             base_radius = getattr(fighter, "fov", 3) if fighter else 3
             base_radius = max(1, base_radius - 1)
             flicker_offset = random.randint(-1, 1)
             radius = max(1, base_radius + flicker_offset)
 
-            fireplace.color = random.choice(self._FIREPLACE_FLICKER_COLORS)
-            fireplace.char = self._FIREPLACE_CHAR
+            campfire.color = random.choice(self._CAMPFIRE_FLICKER_COLORS)
+            campfire.char = self._CAMPFIRE_CHAR
 
             light_mask = compute_fov(
                 transparent,
-                (fireplace.x, fireplace.y),
+                (campfire.x, campfire.y),
                 radius,
                 algorithm=constants.FOV_SHADOW,
             )
@@ -350,22 +350,22 @@ class Engine:
             )
             gamemap.visible |= light_mask
 
-    def _tick_fireplace(self, fireplace: Actor, fighter: components.fighter.Fighter) -> None:
+    def _tick_campfire(self, campfire: Actor, fighter: components.fighter.Fighter) -> None:
         if fighter.hp <= 0:
             return
         fighter.hp -= 1
         if fighter.hp > 0:
             return
-        if self.game_map.visible[fireplace.x, fireplace.y]:
-            self.message_log.add_message("A fireplace dies out.", color.status_effect_applied)
-        if random.random() < self._FIREPLACE_SCROLL_CHANCE:
-            entity_factories.fireball_scroll.spawn(self.game_map, fireplace.x, fireplace.y)
-        fireplace.char = "%"
-        fireplace.color = (90, 90, 90)
-        fireplace.name = "Remains of fireplace"
-        fireplace.blocks_movement = False
-        fireplace.ai = None
-        fireplace.render_order = RenderOrder.CORPSE
+        if self.game_map.visible[campfire.x, campfire.y]:
+            self.message_log.add_message("A campfire dies out.", color.status_effect_applied)
+        if random.random() < self._CAMPFIRE_SCROLL_CHANCE:
+            entity_factories.fireball_scroll.spawn(self.game_map, campfire.x, campfire.y)
+        campfire.char = "%"
+        campfire.color = (90, 90, 90)
+        campfire.name = "Remains of campfire"
+        campfire.blocks_movement = False
+        campfire.ai = None
+        campfire.render_order = RenderOrder.CORPSE
 
 
     def autohealmonsters(self):
@@ -497,8 +497,8 @@ class Engine:
             if fighter and getattr(fighter, "is_burning", False):
                 fighter.update_fire()
             name = getattr(entity, "name", "")
-            if name and name.lower() == "fire place" and fighter:
-                self._tick_fireplace(entity, fighter)
+            if name and name.lower() == "campfire" and fighter:
+                self._tick_campfire(entity, fighter)
 
 
     def update_center_rooms_array(self, room_list):
@@ -512,7 +512,7 @@ class Engine:
         for obj in set(self.game_map.actors) - {self.player}:
             # Lo que tienen en común todos los objetos rompibles
             # que no son enemigos es que tienen la ia_cls "Dummy".
-            #if obj.is_alive and obj.name != "Door" and obj.name != "Suspicious wall" and obj.name != "Table" and obj.name != "Fire place":
+            #if obj.is_alive and obj.name != "Door" and obj.name != "Suspicious wall" and obj.name != "Table" and obj.name != "Campfire":
             #if obj.is_alive and self.is_dummy_object(obj):
             
             if isinstance(obj, Actor) and obj.is_alive and obj.ai_cls != components.ai.Dummy:

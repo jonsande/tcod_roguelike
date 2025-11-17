@@ -20,9 +20,73 @@ if TYPE_CHECKING:
 
 class BaseAI(Action):
 
-
     def perform(self) -> None:
         raise NotImplementedError()
+
+    def on_attacked(self, attacker: "Actor") -> None:
+        """Called when another actor performs a melee attack against this entity."""
+        fighter = getattr(self.entity, "fighter", None)
+        if fighter:
+            fighter.aggravated = True
+
+    def _is_adventurer(self, actor: "Actor") -> bool:
+        name = getattr(actor, "name", "")
+        return bool(name and name.lower() == "adventurer")
+
+    def _potential_targets(self) -> List["Actor"]:
+        engine = getattr(self, "engine", None)
+        if not engine:
+            return []
+
+        targets: List["Actor"] = []
+        player = getattr(engine, "player", None)
+        if player and player is not self.entity:
+            fighter = getattr(player, "fighter", None)
+            if fighter and getattr(fighter, "hp", 0) > 0:
+                targets.append(player)
+
+        if self._is_adventurer(self.entity):
+            return targets
+
+        gamemap = getattr(engine, "game_map", None)
+        if not gamemap:
+            return targets
+
+        for actor in gamemap.actors:
+            if (
+                not actor
+                or actor is self.entity
+                or actor is player
+                or not self._is_adventurer(actor)
+            ):
+                continue
+            fighter = getattr(actor, "fighter", None)
+            if fighter and getattr(fighter, "hp", 0) > 0:
+                targets.append(actor)
+        return targets
+
+    def _select_target(self) -> Optional["Actor"]:
+        targets = self._potential_targets()
+        if not targets:
+            return None
+
+        player = getattr(self.engine, "player", None)
+
+        def sort_key(actor: "Actor") -> Tuple[int, int]:
+            distance = max(
+                abs(actor.x - self.entity.x), abs(actor.y - self.entity.y)
+            )
+            is_player = 0 if player and actor is player else 1
+            return distance, is_player
+
+        return min(targets, key=sort_key)
+
+    def _describe_target(self, target: "Actor") -> str:
+        player = getattr(self.engine, "player", None)
+        if player and target is player:
+            return "you"
+        name = getattr(target, "name", "")
+        return name or "someone"
 
     def get_path_to(self, dest_x: int, dest_y: int) -> List[Tuple[int, int]]:
         """Compute and return a path to the target position.
@@ -53,7 +117,6 @@ class BaseAI(Action):
         # Convert from List[List[int]] to List[Tuple[int, int]].
         return [(index[0], index[1]) for index in path]
     
-
 class ConfusedEnemy(BaseAI):
     """
     A confused enemy will stumble around aimlessly for a given number of turns, then revert back to its previous AI.
@@ -96,7 +159,6 @@ class ConfusedEnemy(BaseAI):
             # Its possible the actor will just bump into the wall, wasting a turn.
             return BumpAction(self.entity, direction_x, direction_y,).perform()
         
-
 class SelfConfused(BaseAI):
 
     def __init__(
@@ -135,7 +197,6 @@ class SelfConfused(BaseAI):
             # Its possible the actor will just bump into the wall, wasting a turn.
             return BumpAction(self.entity, direction_x, direction_y,).perform()
 
-
 class ParalizeEnemy(BaseAI):
     """
     Se paraliza a la criatura.
@@ -170,7 +231,6 @@ class ParalizeEnemy(BaseAI):
             # return BumpAction(self.entity, direction_x, direction_y,).perform()
             return WaitAction(self.entity).perform()
 
-
 wait_counter = 0
 class HostileEnemyPlus(BaseAI):
     def __init__(self, entity: Actor):
@@ -181,7 +241,9 @@ class HostileEnemyPlus(BaseAI):
 
     def perform(self) -> None:
 
-        target = self.engine.player
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -211,11 +273,8 @@ class HostileEnemyPlus(BaseAI):
         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
         if self.entity.fighter.aggravated == False:
 
-            # Esto para evitar errores en caso de que el STEALTH tenga valor negativo
-            if self.engine.player.fighter.stealth < 0:
-                engage_rng = random.randint(0, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
-            else:
-                engage_rng = random.randint(0, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth  # - random.randint(0, self.engine.player.fighter.stealth)
+            target_stealth = getattr(target.fighter, "stealth", 0)
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth
         else:
             engage_rng = random.randint(0, 3) + self.entity.fighter.fov
 
@@ -314,7 +373,6 @@ class HostileEnemyPlus(BaseAI):
         Mirar en esta misma página el final de la classe ConfusedEnemy
         """
 
-
 class HostileEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
@@ -324,7 +382,9 @@ class HostileEnemy(BaseAI):
 
     def perform(self) -> None:
 
-        target = self.engine.player
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -372,17 +432,12 @@ class HostileEnemy(BaseAI):
         if self.entity.fighter.aggravated == False:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
 
-            # Esto para evitar errores en caso de que el STEALTH tenga valor negativo
-            if self.engine.player.fighter.stealth < 0:
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
+            target_stealth = getattr(target.fighter, "stealth", 0)
+            if target_stealth < 0:
+                stealth_penalty = target_stealth
             else:
-                # engage_rng = 1d3 + fov enemigo - 1d(player stealth)
-                # BUG: esto está devolviendo un error:
-                # ValueError: empty range for randrange() (1, 1, 0)
-                # Parece que se soluciona sustituyendo esto... 
-                #engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(1, self.engine.player.fighter.stealth)
-                # Por esto:
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
+                stealth_penalty = random.randint(0, target_stealth)
+            engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
 
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
@@ -452,7 +507,6 @@ class HostileEnemy(BaseAI):
         Mirar en esta misma página el final de la classe ConfusedEnemy
         """
 
-
 class SleepingEnemy(BaseAI):
 
     def __init__(self, entity: Actor):
@@ -460,7 +514,15 @@ class SleepingEnemy(BaseAI):
 
     def perform(self) -> None:
 
-        sleeping_dice = random.randint(2,12) - self.engine.player.fighter.luck
+        target = self._select_target()
+        if not target:
+            return PassAction(self.entity).perform()
+        target_fighter = getattr(target, "fighter", None)
+        if not target_fighter:
+            return PassAction(self.entity).perform()
+
+        target_luck = getattr(target_fighter, "luck", 0)
+        sleeping_dice = random.randint(2,12) - target_luck
 
         if sleeping_dice > 10:
             woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
@@ -477,14 +539,17 @@ class SleepingEnemy(BaseAI):
             if self.engine.game_map.visible[self.entity.x, self.entity.y]:
                 
                 sneak_dice = random.randint(1, 6)
-                sneak_final = sneak_dice - self.engine.player.fighter.stealth
-                #print(f"SNEAK ROLL: {sneak_dice}")
-                break_point = 3 + random.randint(0, self.engine.player.fighter.luck)
+                sneak_final = sneak_dice - getattr(target_fighter, "stealth", 0)
+                target_luck_bonus = (
+                    random.randint(0, target_luck) if target_luck > 0 else 0
+                )
+                break_point = 3 + target_luck_bonus
                 
                 if sneak_final > break_point:
                 #if sneak_final == 666:   # DEBUG
+                    target_desc = self._describe_target(target)
                     self.engine.message_log.add_message(
-                        f"The {self.entity.name} notices you! ({sneak_final}VS{break_point})",
+                        f"The {self.entity.name} notices {target_desc}! ({sneak_final}VS{break_point})",
                         color.orange
                         )
                     #woke_ai = HostileEnemy(self.entity)
@@ -493,14 +558,14 @@ class SleepingEnemy(BaseAI):
                     #self.entity.name = self.entity.name + " (!)"
                     
                 else:
+                    target_desc = self._describe_target(target)
                     self.engine.message_log.add_message(
-                        f"The {self.entity.name} doesn't notice you (sleeping). ({sneak_final}VS{break_point})"
+                        f"The {self.entity.name} doesn't notice {target_desc} (sleeping). ({sneak_final}VS{break_point})"
                         )
                     return PassAction(self.entity).perform()
             else:
                 return PassAction(self.entity).perform()
      
- 
 class Neutral(BaseAI):
 
     # Actualmente un personaje con IA "Neutral" camina derecho
@@ -556,9 +621,9 @@ class Neutral(BaseAI):
         self._last_hp = current_hp
         return WaitAction(self.entity).perform()
 
-
 class AdventurerAI(BaseAI):
-    """Adventurers wander between rooms, rest when exhausted, and stay neutral unless provoked."""
+    """Adventurers wander between rooms, rest when exhausted, stay neutral unless provoked,
+    take stairs, enjoy campfires and sometimes talk."""
 
     def __init__(self, entity: Actor):
         super().__init__(entity)
@@ -567,22 +632,28 @@ class AdventurerAI(BaseAI):
         self.current_room: Optional[Tuple[int, int]] = None
         self.room_centers: List[Tuple[int, int]] = []
         self.stalled_turns: int = 0
-        self.waiting_fireplace = None
+        self.waiting_campfire = None
         self._player_contact = False
+        self._combat_path: List[Tuple[int, int]] = []
+        self._combat_target: Optional[Tuple[int, int]] = None
+        self._aggressor: Optional[Actor] = None
+        self._relevant_greetings_remaining: int = getattr(
+            settings, "ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES", 2
+        )
 
     def perform(self) -> None:
         if getattr(self.entity.fighter, "stamina", 1) <= 0:
             return WaitAction(self.entity).perform()
 
         if getattr(self.entity.fighter, "aggravated", False):
-            return self._pursue_player()
+            return self._pursue_enemy()
 
         centers = getattr(self.engine, "center_room_array", None) or []
         if centers and not self.room_centers:
             self.room_centers = [tuple(c) for c in centers if c]
             self.current_room = self._nearest_room_center()
 
-        if self._check_fireplace_pause():
+        if self._check_campfire_pause():
             self._handle_player_contact()
             return WaitAction(self.entity).perform()
 
@@ -658,6 +729,8 @@ class AdventurerAI(BaseAI):
         if getattr(self.entity.fighter, "aggravated", False):
             self.path = []
             self.stalled_turns = 0
+            self._combat_path = []
+            self._combat_target = None
             return
         self.stalled_turns += 1
         if self.stalled_turns >= 2:
@@ -724,17 +797,26 @@ class AdventurerAI(BaseAI):
                 continue
         WaitAction(self.entity).perform()
 
-    def _pursue_player(self) -> None:
-        player = self.engine.player
-        destination = (player.x, player.y)
-        if self.target != destination or not self.path:
-            self.target = destination
-            self.path = self._build_path(destination)
-        if not self.path:
+    def _pursue_enemy(self) -> None:
+        target_actor = self._resolve_aggressor()
+        if not target_actor:
+            self.entity.fighter.aggravated = False
+            self._aggressor = None
+            self._combat_path = []
+            self._combat_target = None
+            self._handle_player_contact()
+            return WaitAction(self.entity).perform()
+
+        destination = (target_actor.x, target_actor.y)
+        if self._combat_target != destination or not self._combat_path:
+            self._combat_target = destination
+            self._combat_path = self._build_path(destination)
+        if not self._combat_path:
+            self._handle_player_contact()
             return self._wander()
-        dest_x, dest_y = self.path[0]
+        dest_x, dest_y = self._combat_path[0]
         if (dest_x, dest_y) == (self.entity.x, self.entity.y):
-            self.path.pop(0)
+            self._combat_path.pop(0)
             return
         dx = dest_x - self.entity.x
         dy = dest_y - self.entity.y
@@ -742,12 +824,12 @@ class AdventurerAI(BaseAI):
         try:
             BumpAction(self.entity, dx, dy).perform()
         except exceptions.Impossible:
-            self.path = []
+            self._combat_path = []
             return
         if (self.entity.x, self.entity.y) == (dest_x, dest_y):
-            self.path.pop(0)
+            self._combat_path.pop(0)
         elif (self.entity.x, self.entity.y) == prev_pos:
-            self.path = []
+            self._combat_path = []
 
     def _stairs_visible(self) -> bool:
         gamemap = self.engine.game_map
@@ -766,38 +848,56 @@ class AdventurerAI(BaseAI):
         x, y = stairs
         return bool(visible[x, y])
 
-    def _check_fireplace_pause(self) -> bool:
-        if self.waiting_fireplace:
-            fighter = getattr(self.waiting_fireplace, "fighter", None)
+    def _check_campfire_pause(self) -> bool:
+        if self.waiting_campfire:
+            fighter = getattr(self.waiting_campfire, "fighter", None)
             if (
                 fighter
                 and getattr(fighter, "hp", 0) > 0
-                and self._is_adjacent_to(self.waiting_fireplace)
+                and self._is_adjacent_to(self.waiting_campfire)
             ):
                 return True
-            self.waiting_fireplace = None
+            self.waiting_campfire = None
 
-        fireplace = self._adjacent_fireplace()
-        if fireplace:
-            fighter = getattr(fireplace, "fighter", None)
+        campfire = self._adjacent_campfire()
+        if campfire:
+            fighter = getattr(campfire, "fighter", None)
             if fighter and getattr(fighter, "hp", 0) > 0:
-                self.waiting_fireplace = fireplace
+                self.waiting_campfire = campfire
                 return True
         return False
 
-    def _adjacent_fireplace(self):
+    def _adjacent_campfire(self):
         gamemap = self.engine.game_map
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 if dx == 0 and dy == 0:
                     continue
                 actor = gamemap.get_actor_at_location(self.entity.x + dx, self.entity.y + dy)
-                if actor and getattr(actor, "name", "").lower() == "fire place":
+                if actor and getattr(actor, "name", "").lower() == "campfire":
                     return actor
         return None
 
     def _is_adjacent_to(self, entity: Actor) -> bool:
         return max(abs(entity.x - self.entity.x), abs(entity.y - self.entity.y)) <= 1
+
+    def _next_greeting_message(self) -> Optional[str]:
+        relevant = getattr(settings, "ADVENTURER_GREETING_MESSAGES", [])
+        irrelevant = getattr(
+            settings, "ADVENTURER_IRRELEVANT_GREETING_MESSAGES", []
+        )
+
+        if self._relevant_greetings_remaining > 0 and relevant:
+            self._relevant_greetings_remaining -= 1
+            return random.choice(relevant)
+
+        if irrelevant:
+            return random.choice(irrelevant)
+
+        if relevant:
+            return random.choice(relevant)
+
+        return None
 
     def _handle_player_contact(self) -> None:
         if getattr(self.entity.fighter, "aggravated", False):
@@ -806,35 +906,35 @@ class AdventurerAI(BaseAI):
         player = self.engine.player
         adjacent = max(abs(player.x - self.entity.x), abs(player.y - self.entity.y)) == 1
         if adjacent and not self._player_contact:
-            messages = getattr(settings, "ADVENTURER_GREETING_MESSAGES", [])
-            if messages:
-                gm = self.engine.game_map
-                if gm.visible[self.entity.x, self.entity.y]:
-                    self.engine.message_log.add_message(random.choice(messages))
+            gm = self.engine.game_map
+            if gm.visible[self.entity.x, self.entity.y]:
+                message = self._next_greeting_message()
+                if message:
+                    self.engine.message_log.add_message(message)
             self._player_contact = True
         elif not adjacent:
             self._player_contact = False
 
-    def _check_fireplace_pause(self) -> bool:
-        if self.waiting_fireplace:
-            fighter = getattr(self.waiting_fireplace, "fighter", None)
+    def _check_campfire_pause(self) -> bool:
+        if self.waiting_campfire:
+            fighter = getattr(self.waiting_campfire, "fighter", None)
             if (
                 fighter
                 and getattr(fighter, "hp", 0) > 0
-                and self._is_adjacent_to(self.waiting_fireplace)
+                and self._is_adjacent_to(self.waiting_campfire)
             ):
                 return True
-            self.waiting_fireplace = None
+            self.waiting_campfire = None
 
-        fireplace = self._adjacent_fireplace()
-        if fireplace:
-            fighter = getattr(fireplace, "fighter", None)
+        campfire = self._adjacent_campfire()
+        if campfire:
+            fighter = getattr(campfire, "fighter", None)
             if fighter and getattr(fighter, "hp", 0) > 0:
-                self.waiting_fireplace = fireplace
+                self.waiting_campfire = campfire
                 return True
         return False
 
-    def _adjacent_fireplace(self):
+    def _adjacent_campfire(self):
         gamemap = self.engine.game_map
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
@@ -843,7 +943,7 @@ class AdventurerAI(BaseAI):
                 x = self.entity.x + dx
                 y = self.entity.y + dy
                 actor = gamemap.get_actor_at_location(x, y)
-                if actor and getattr(actor, "name", "").lower() == "fire place":
+                if actor and getattr(actor, "name", "").lower() == "campfire":
                     return actor
         return None
 
@@ -851,6 +951,33 @@ class AdventurerAI(BaseAI):
         return (
             abs(entity.x - self.entity.x) <= 1 and abs(entity.y - self.entity.y) <= 1
         )
+
+    def _resolve_aggressor(self) -> Optional[Actor]:
+        if self._is_valid_enemy(self._aggressor):
+            return self._aggressor
+        return None
+
+    def _is_valid_enemy(self, actor: Optional[Actor]) -> bool:
+        if not actor:
+            return False
+        fighter = getattr(actor, "fighter", None)
+        if not fighter or getattr(fighter, "hp", 0) <= 0:
+            return False
+        if getattr(actor, "gamemap", None) is not self.engine.game_map:
+            return False
+        return True
+
+    def on_attacked(self, attacker: Actor) -> None:
+        super().on_attacked(attacker)
+        if not attacker:
+            return
+        if getattr(attacker, "gamemap", None) is not self.engine.game_map:
+            return
+        self._aggressor = attacker
+        self._combat_path = []
+        self._combat_target = None
+        self.waiting_campfire = None
+        self._player_contact = False
 
 class SneakeEnemy(BaseAI):
     def __init__(self, entity: Actor):
@@ -861,7 +988,9 @@ class SneakeEnemy(BaseAI):
 
     def perform(self) -> None:
 
-        target = self.engine.player
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -873,10 +1002,12 @@ class SneakeEnemy(BaseAI):
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
 
             # Esto para evitar errores en caso de que el STEALTH tenga valor negativo
-            if self.engine.player.fighter.stealth < 0:
-                engage_rng = random.randint(0, 1) + self.entity.fighter.fov - self.engine.player.fighter.stealth
+            target_stealth = getattr(target.fighter, "stealth", 0)
+            if target_stealth < 0:
+                stealth_penalty = target_stealth
             else:
-                engage_rng = random.randint(0, 1) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
+                stealth_penalty = random.randint(0, target_stealth)
+            engage_rng = random.randint(0, 1) + self.entity.fighter.fov - stealth_penalty
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
             engage_rng = 1 + self.entity.fighter.fov
@@ -931,7 +1062,9 @@ class Scout(BaseAI): # WORK IN PROGRESS
 
     def perform(self) -> None:
 
-        target = self.engine.player
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -943,10 +1076,12 @@ class Scout(BaseAI): # WORK IN PROGRESS
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
 
             # Esto para evitar errores en caso de que el STEALTH tenga valor negativo
-            if self.engine.player.fighter.stealth < 0:
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - self.engine.player.fighter.stealth
+            target_stealth = getattr(target.fighter, "stealth", 0)
+            if target_stealth < 0:
+                stealth_penalty = target_stealth
             else:
-                engage_rng = random.randint(1, 3) + self.entity.fighter.fov - random.randint(0, self.engine.player.fighter.stealth)
+                stealth_penalty = random.randint(0, target_stealth)
+            engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
             engage_rng = random.randint(1, 3) + self.entity.fighter.fov
@@ -1011,7 +1146,6 @@ class Scout(BaseAI): # WORK IN PROGRESS
                     #print("IndexError: pop from empty list")
                     WaitAction(self.entity).perform()
                     
-
 class SentinelEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
@@ -1020,7 +1154,9 @@ class SentinelEnemy(BaseAI):
 
     def perform(self) -> None:
 
-        target = self.engine.player
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -1035,7 +1171,6 @@ class SentinelEnemy(BaseAI):
         else:
             return WaitAction(self.entity).perform()
 
-
 # Objetos rompibles, como mesas:
 from entity import Obstacle
 class Dummy(BaseAI):
@@ -1046,12 +1181,12 @@ class Dummy(BaseAI):
 
     def perform(self) -> None:
         
-        if self.entity.name == "Fire place":
+        if self.entity.name == "Campfire":
 
             player = self.engine.player
-            fireplace = self.entity
-            dx = player.x - fireplace.x
-            dy = player.y - fireplace.y
+            campfire = self.entity
+            dx = player.x - campfire.x
+            dy = player.y - campfire.y
             distance = max(abs(dx), abs(dy))  # Chebyshev distance.
 
             if distance <= 1:
@@ -1062,4 +1197,4 @@ class Dummy(BaseAI):
                         color.health_recovered
                     )
 
-            #if self.engine.game_map.visible[fireplace.x, fireplace.y]:
+            #if self.engine.game_map.visible[campfire.x, campfire.y]:
