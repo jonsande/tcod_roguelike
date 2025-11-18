@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 # Load the background image and remove the alpha channel.
-background_image = tcod.image.load("data/menu_background.png")[:, :, :3]
+background_image = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
 
 
 _EQUIPMENT_SLOT_NAMES = {

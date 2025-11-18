@@ -24,7 +24,7 @@ PLAYER_FOOTSTEP_SOUNDS = [
     "data/audio/sfx/walk/talmarc/walk_tarmac_8.ogg",
     "data/audio/sfx/walk/talmarc/walk_tarmac_9.ogg",
 ]
-PLAYER_FOOTSTEP_VOLUME = 0.1  # 0.0 - 1.0
+PLAYER_FOOTSTEP_VOLUME = 0.3  # 0.0 - 1.0
 
 # Door interactions ----------------------------------------------------------
 DOOR_OPEN_SOUND_ENABLED = True
@@ -39,7 +39,7 @@ DOOR_OPEN_SOUNDS = [
     "data/audio/sfx/doors/open_10.ogg",
     
 ]
-DOOR_OPEN_VOLUME = 0.15
+DOOR_OPEN_VOLUME = 0.25
 
 DOOR_CLOSE_SOUND_ENABLED = True
 DOOR_CLOSE_SOUNDS = [
@@ -55,4 +55,4 @@ DOOR_CLOSE_SOUNDS = [
     "data/audio/sfx/doors/close_9.ogg",
     "data/audio/sfx/doors/close_10.ogg",
 ]
-DOOR_CLOSE_VOLUME = 0.15
+DOOR_CLOSE_VOLUME = 0.25

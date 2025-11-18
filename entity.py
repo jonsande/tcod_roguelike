@@ -321,7 +321,7 @@ class Chest(Entity):
             char=open_char if is_open else char,
             color=color,
             name=name,
-            blocks_movement=not is_open,
+            blocks_movement=True,
             render_order=RenderOrder.ITEM,
         )
         self.closed_char = char
@@ -334,9 +334,16 @@ class Chest(Entity):
         if self.is_open:
             return False
         self.is_open = True
-        self.blocks_movement = False
         self.char = self.open_char
         self.name = "Open chest"
+        return True
+
+    def close(self) -> bool:
+        if not self.is_open:
+            return False
+        self.is_open = False
+        self.char = self.closed_char
+        self.name = "Chest"
         return True
 
     def add_item(self, item: Item) -> None:

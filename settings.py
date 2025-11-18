@@ -2,32 +2,41 @@ import tcod
 from random import randint
 
 # -- GRAPHICS ------------------------------------------------
+# NOTA: cargas data/graphics/bob20x20.png con tcod.tileset.CHARMAP_CP437, así que cada casilla del PNG se asigna a un código CP437 y no a una tecla física del teclado.
+# Como la hoja tiene 16 columnas, el índice del tile se calcula index = x + y * 16 (tomando x y y desde 0, con x=0 en la primera columna y y=0 en la primera fila). Ese índice se usa para buscar el código Unicode real: codepoint = tcod.tileset.CHARMAP_CP437[index] y glyph = chr(codepoint).
+# Por ejemplo: supongamos x=1, y=12: index = 1 + 12*16 = 193, codepoint = 193 y el carácter correspondiente es '╣' (U+2563). En el código lo puedes usar como ord('╣'), '\u2563' o incluso tcod.tileset.CHARMAP_CP437[193] al definir el graphic del tile.
+# Muchos de esos símbolos no existen como tecla dedicada, por lo que siempre es mejor referirte a ellos por su código (número CP437/Unicode) o pegando el símbolo literal. Si necesitas revisar otros índices, un snippet como el siguiente te imprime cualquier casilla:
+# Se pueden copiar los símbolos aquí: 
+# https://en.wikipedia.org/wiki/Code_page_437
+# https://es.wikipedia.org/wiki/P%C3%A1gina_de_c%C3%B3digos_437
+
 GRAPHIC_MODE = "pseudo_ascii"
 
 if GRAPHIC_MODE == "pseudo_ascii":
     tileset_cod = "pseudo_ascii"
     # 16x16 son el número de casillas en las que se va a dividir el png: 16 ancho x 16 de alto
-    tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+    tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20_chest_3.png", 16, 16, tcod.tileset.CHARMAP_CP437)
 
 if GRAPHIC_MODE == "ascii":
     tileset_cod = "ascii"
-    tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 64, 64)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 60, 58)
-    #tileset = tcod.tileset.load_truetype_font("data/PxPlus_IBM_CGAthin.ttf", 128, 128)
-    #tileset = tcod.tileset.load_truetype_font("data/Terminus.ttf", 64, 64)
-    #tileset = tcod.tileset.set_truetype_font("data/Terminus.ttf", 128, 128)
-    #tileset = tcod.tileset.load_truetype_font("data/square.ttf", 64, 64)
-    #tileset = tcod.tileset.load_truetype_font("data/white-rabbit.regular.ttf", 128, 128)
+    #tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+    
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 64, 64)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 60, 58)
+    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/Terminus.ttf", 64, 64)
+    #tileset = tcod.tileset.set_truetype_font("data/graphics/Terminus.ttf", 128, 128)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/square.ttf", 64, 64)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/white-rabbit.regular.ttf", 128, 128)
 
 if GRAPHIC_MODE == "hardcore":
     tileset_cod = "hardcore"
-    tileset = tcod.tileset.load_tilesheet("data/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+    tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
 
 # Original
 # 32x8 son el número de casillas en las que se va a dividir el png: 32 ancho x 8 de alto
 #tileset = tcod.tileset.load_tilesheet(
-#    "data/dejavu10x10_gs_tc_2x.png", 32, 8, tcod.tileset.CHARMAP_TCOD
+#    "data/graphics/dejavu10x10_gs_tc_2x.png", 32, 8, tcod.tileset.CHARMAP_TCOD
 #)
 
 # -- Audio settings ------------------------------------------------------
@@ -35,9 +44,9 @@ if GRAPHIC_MODE == "hardcore":
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = True
+GOD_MODE = False
 GOD_MODE_STEALTH = False
-DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+DEBUG_MODE = False # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 
 # -- Game settings ------------------------------------------------------
 
@@ -56,11 +65,11 @@ PLAYER_LEVELING_ENABLED = False
 PLAYER_STARTING_INVENTORY = [
     {"item": "dagger", "equip": True},
     {"item": "leather_armor", "equip": True},
-    # {"item": "confusion_scroll", "quantity": 3},
+    {"item": "dagger", "quantity": 3},
     # {"item": "paralisis_scroll", "quantity": 3},
     # {"item": "lightning_scroll", "quantity": 3},
     # {"item": "fireball_scroll", "quantity": 3},
-    # {"item": "paralysis_potion", "quantity": 3},
+    # {"item": "poison_potion", "quantity": 4},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -116,14 +125,14 @@ DEBRIS_CHANCES = {
 # -- Chest generation -------------------------------------------------
 # Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
 CHEST_SPAWN_CHANCES = [
-    (1, 100),
-    (2, 100),
+    (1, 1),
+    (2, 1),
     (4, 0.40),
     (8, 0.50),
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 CHEST_ITEM_COUNT_BY_FLOOR = [
-    (1, (1, 2)),
+    (1, (9, 10)),
     (4, (2, 3)),
     (8, (2, 4)),
 ]
@@ -374,7 +383,7 @@ ENEMY_SPAWN_RULES = {
         "min_floor": 1, 
         "weight_progression": [
             (1, 10),
-            (2, 8),
+            (2, 100),
             (3, 7),
             (4, 6),
             ],

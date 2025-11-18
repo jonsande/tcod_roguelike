@@ -1,7 +1,7 @@
 
 # Python + tcod roguelike
 
-![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/YetAnotherRoguelike_gameplay.png?raw=true)
+![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/YetAnotherRoguelike_gameplay.png?raw=true)
 
 Experimental traditional roguelike with procedural level generation, pathfinding, raycasting FOV, stealth system... Based on "Yet another roguelike tutorial - Written on Python 3 and TCOD" (https://rogueliketutorials.com/tutorials/tcod/v2/).
 

@@ -1,13 +1,27 @@
 from __future__ import annotations
 
-from typing import Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING
 
 import color
+from render_order import RenderOrder
 
 if TYPE_CHECKING:
     from tcod import Console
     from engine import Engine
     from game_map import GameMap
+
+
+def _unique_names(names: List[str]) -> List[str]:
+    """Return the unique names while preserving their original order."""
+    seen: set[str] = set()
+    unique_names: List[str] = []
+    for name in names:
+        lowered = name.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        unique_names.append(name)
+    return unique_names
 
 
 def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
@@ -18,24 +32,34 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
         entity.name for entity in game_map.entities if entity.x == x and entity.y == y
     ]
 
-    # Remove duplicates while preserving order.
-    seen = set()
-    unique_names = []
-    for name in names:
-        lowered = name.lower()
-        if lowered in seen:
-            continue
-        seen.add(lowered)
-        unique_names.append(name)
-
-    tile_descriptions = []
+    tile_descriptions: List[str] = []
     if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
         tile_descriptions.append("There are upstairs")
     if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
         tile_descriptions.append("There are downstairs")
 
-    descriptions = unique_names + tile_descriptions
-    return ", ".join(descriptions)
+    return ", ".join(_unique_names(names) + tile_descriptions)
+
+
+def get_items_and_features_at_location(x: int, y: int, game_map: GameMap) -> str:
+    if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
+        return ""
+
+    item_names = [
+        entity.name
+        for entity in game_map.entities
+        if entity.x == x
+        and entity.y == y
+        and entity.render_order == RenderOrder.ITEM
+    ]
+
+    tile_descriptions: List[str] = []
+    if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+        tile_descriptions.append("There are upstairs")
+    if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+        tile_descriptions.append("There are downstairs")
+
+    return ", ".join(_unique_names(item_names) + tile_descriptions)
 
 
 def render_bar(
@@ -133,6 +157,22 @@ def render_names_at_mouse_location(
     console.print(x=x, y=y, string=names_at_mouse_location, bg=color.black, fg=color.white)
     
 
+def render_player_tile_info(console: Console, engine: Engine, x: int = 1, y: int = 0) -> None:
+    """Render the names of items or stairs that share the player's tile."""
+    names_at_player_location = get_items_and_features_at_location(
+        x=engine.player.x, y=engine.player.y, game_map=engine.game_map
+    )
+
+    if not names_at_player_location:
+        return
+
+    console.print(
+        x=x,
+        y=y,
+        string=names_at_player_location,
+        bg=color.black,
+        fg=color.white,
+    )
 """
 def render_names_at_mouse_location_alt(
     console: Console, x: int, y: int, engine: Engine

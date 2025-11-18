@@ -94,7 +94,7 @@ class PickupAction(Action):
                 # TIME SYSTEM
                 #self.entity.fighter.current_energy_points -= 10
                 self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-                if self.engine.debug == True:
+                if DEBUG_MODE:
                     print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in PickupAction")
                     print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
@@ -194,7 +194,8 @@ class TakeStairsAction(Action):
                         # Las entidades dummie también cuentan, pues
                         # la idea es dar puntos por no hacer ruido.
                         unaware_enemies += 1
-                        print(f"DEBUG: {entity.name} aggravated: {entity.fighter.aggravated}")
+                        if self.engine.debug == True:
+                            print(f"DEBUG: {entity.name} aggravated: {entity.fighter.aggravated}")
 
                 print(f"DEBUG: Unaware_enemies = {unaware_enemies}")
 
@@ -312,6 +313,9 @@ class ThrowItemAction(Action):
         # Colocar el objeto lanzado en la casilla del objetivo
         self.entity.inventory.throw(self.item, dest_x, dest_y)
 
+        # Bugfix: reset mouse location after throwing an item
+        self.engine.mouse_location = (0, 0)
+
         if not target:
             self._spend_throw_cost()
             return
@@ -346,21 +350,17 @@ class ThrowItemAction(Action):
 
                     poison_roll = random.randint(1, 6)
 
-                    if poison_roll >= 1:
+                    if poison_roll > 1:
 
                         if self.entity is self.engine.player:
-
                             print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
-
-                            self.engine.message_log.add_message(
-                                f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
+                            self._add_combat_message(
+                                f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color, self.entity, target
                             )
                         else:
-
                             print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
-
-                            self.engine.message_log.add_message(
-                                f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
+                            self._add_combat_message(
+                                f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color, self.entity, self.engine.player
                             )
 
                         target.fighter.is_poisoned = True
@@ -380,7 +380,7 @@ class ThrowItemAction(Action):
                         if self.engine.debug == True:
                             print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
 
-                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+                        self._add_combat_message("Successful stealth attack!", damage_color, self.entity, target)
                         
                         # Experiencia extra
                         if self.entity == self.engine.player:
@@ -397,8 +397,8 @@ class ThrowItemAction(Action):
                 
                 print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
 
-                self.engine.message_log.add_message(
-                    f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
+                self._add_combat_message(
+                    f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color, self.entity, target
                 )
 
                 target.fighter.hp -= damage
@@ -421,8 +421,8 @@ class ThrowItemAction(Action):
 
                 print(f"{attack_desc} but does no damage.")
 
-                self.engine.message_log.add_message(
-                    f"{attack_desc} but does no damage."
+                self._add_combat_message(
+                    f"{attack_desc} but does no damage.", damage_color, self.entity, target
                 )
         
         # Si no impacta:
@@ -461,7 +461,7 @@ class ThrowItemAction(Action):
             f"You throw the {self.item.name}. The vial shatters on impact!",
             color.orange,
         )
-        if target:
+        if target and self.is_dummy_object(target.ai) == False:
             self._apply_potion_effect(target)
         else:
             self.item.consumable.consume()
@@ -637,10 +637,6 @@ class ThrowItemAction(Action):
 
 class MeleeAction(ActionWithDirection):
 
-    # def is_door_object(self, obj):
-    #     from components.fighter import Door  # Importa la clase Door
-    #     return isinstance(obj, Door)  # Comprueba si obj es una instancia de Door
-    
     def is_dummy_object(self, obj):
         #from components.fighter import Door  # Importa la clase Door
         from components.ai import Dummy
@@ -652,6 +648,21 @@ class MeleeAction(ActionWithDirection):
 
         target = self.target_actor
 
+        # Comprobar si atacante y/o objetivo son visibles para el jugador
+        # Útil para impresión de mensajes y más.
+        if self.engine.game_map.visible[target.x, target.y] == False:
+            target_invisible = True
+            target_visible = False
+        else:
+            target_invisible = False
+            target_visible = True
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            attacker_invisible = True
+            attacker_visible = False
+        else:
+            attacker_visible = True
+            attacker_invisible = False
+
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
 
@@ -660,7 +671,8 @@ class MeleeAction(ActionWithDirection):
             target_ai.on_attacked(self.entity)
         
         if self.entity.fighter.stamina <= 0:
-            self.engine.message_log.add_message("You are exhausted!", color.red)
+            if target_visible or attacker_visible:
+                self.engine.message_log.add_message("You are exhausted!", color.red)
             raise exceptions.Impossible("")
         
         hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
@@ -702,15 +714,17 @@ class MeleeAction(ActionWithDirection):
                     if poison_roll >= 1:
 
                         if self.entity is self.engine.player:
-                            print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
-                            self.engine.message_log.add_message(
-                                f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
-                            )
+                            if target_visible or attacker_visible:
+                                print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
+                                self.engine.message_log.add_message(
+                                    f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
+                                )
                         else:
-                            print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
-                            self.engine.message_log.add_message(
-                                f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
-                            )
+                            if target_visible or attacker_visible:
+                                print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                                self.engine.message_log.add_message(
+                                    f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
+                                )
 
                         target.fighter.is_poisoned = True
                         target.fighter.poisoned_counter += 5
@@ -726,12 +740,13 @@ class MeleeAction(ActionWithDirection):
                     if target.fighter.aggravated == False:
 
                         damage = (damage + self.entity.fighter.luck) * 2
-                        
+
                         if self.engine.debug == True:
                             print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
-                       
-                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
-                        
+
+                        if target_visible or attacker_visible:
+                            self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+
                         # Experiencia extra
                         if self.entity == self.engine.player:
                             if self.engine.debug == True:
@@ -771,10 +786,12 @@ class MeleeAction(ActionWithDirection):
                     #print(f"power_hits_counter: {power_hits_counter}")
                     #print(f"base_power: {self.entity.fighter.base_power}")
 
-                print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
-                self.engine.message_log.add_message(
-                    f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
-                )
+                if target_visible or attacker_visible:
+                    print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
+                    self.engine.message_log.add_message(
+                        f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color
+                    )
+
                 target.fighter.hp -= damage
 
             # Si no hace daño
@@ -792,14 +809,19 @@ class MeleeAction(ActionWithDirection):
                     # reseteamos el contador de bonificación
                     #self.entity.fighter.to_hit_counter = 0
 
-
-                print(f"{attack_desc} but does no damage.")
-                self.engine.message_log.add_message(
-                    f"{attack_desc} but does no damage."
-                )
+                if target_visible or attacker_visible:
+                    print(f"{attack_desc} but does no damage.")
+                    self.engine.message_log.add_message(
+                        f"{attack_desc} but does no damage.", damage_color
+                    )
         
         # Si no impacta:
         else:
+
+            if self.entity is self.engine.player:
+                damage_color = color.health_recovered
+            else:
+                damage_color = color.red
 
             # Reseteamos la BONIFICACIÓN
             if self.entity.fighter.to_hit_counter > 0:
@@ -818,10 +840,11 @@ class MeleeAction(ActionWithDirection):
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
 
-            print(f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})")
-            self.engine.message_log.add_message(
-                f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})"
-            )
+            if target_visible or attacker_visible:
+                print(f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})")
+                self.engine.message_log.add_message(
+                    f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})", damage_color
+                )
 
         # Con cada ataque gastamos 1 de stamina
         self.entity.fighter.stamina -= 1
@@ -830,8 +853,8 @@ class MeleeAction(ActionWithDirection):
         # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in MeleeAction")
-        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} time points in MeleeAction")
+        print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} time points left.")
 
 
         # Con cada ataque reducimos 1 el defense bonus acumulado
@@ -866,7 +889,7 @@ class MovementAction(ActionWithDirection):
 
         if door_opened:
             if self.entity is self.engine.player:
-                self.engine.message_log.add_message("You open the door.", color.descend)
+                self.engine.message_log.add_message("You open the door.", color.white)
                 play_door_open_sound()
         else:
             # Si en MELEE
@@ -937,7 +960,7 @@ class OpenDoorAction(ActionWithDirection):
             raise exceptions.Impossible("The door is already open.")
         fighter.set_open(True)
         if self.entity is self.engine.player:
-            self.engine.message_log.add_message("You open the door.", color.descend)
+            self.engine.message_log.add_message("You open the door.", color.white)
             play_door_open_sound()
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
 

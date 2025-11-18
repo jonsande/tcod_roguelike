@@ -422,7 +422,8 @@ class Engine:
 
     def spawn_monsters_upstairs(self):
         
-        #print(f"DEBUG: >>>>>>>>>>>>>>>> DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}")
+        if settings.DEBUG_MODE:
+            print(f"DEBUG: DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}", color.red)
 
         self.spawn_monsters_counter = self.spawn_monsters_counter + 1
 
@@ -430,24 +431,25 @@ class Engine:
 
         total = self.spawn_monsters_counter + dice
 
-        if self.debug == True:
-            print("DEGUB: self.spawn_monsters_counter = ", self.spawn_monsters_counter)
-            print("DEGUB: Spawn monsters dice (1d20) = ", dice)
-            print("DEGUB: Total = ", total)
+        if settings.DEBUG_MODE:
+            print("DEBUG: self.spawn_monsters_counter = ", self.spawn_monsters_counter)
+            print("DEBUG: Spawn monsters dice (1d20) = ", dice)
+            print("DEBUG: Total = ", total)
 
         if total >= 130:
 
             spawn_chance = random.randint(1,6)
 
-            if self.debug == True:
-                    print(f"DEGUB: spawn chance dice: {spawn_chance}")
+            if settings.DEBUG_MODE:
+                    print(f"DEBUG: spawn chance dice: {spawn_chance}")
 
             if spawn_chance >= 5:
 
                 amount = random.randint(1, 3)
 
-                if self.debug == True:
-                    print(f"DEGUB: New monsters upstairs! ({amount})")
+                if settings.DEBUG_MODE:
+                    from color import bcolors
+                    print(f"{bcolors.WARNING}DEBUG: New monsters upstairs! ({amount}){bcolors.ENDC}")
 
                 from entity_factories import monster_roulette, orc, goblin, snake, true_orc
                 for i in range(amount):
@@ -614,12 +616,18 @@ class Engine:
             location=(61, 42),
             )
         
+        render_functions.render_player_tile_info(
+            console=console,
+            engine=self,
+            x=1,
+            y=0,
+        )
+
         # Inspección de objetos
         render_functions.render_names_at_mouse_location(
             #console=console, x=51, y=37, engine=self
             console=console, x=1, y=1, engine=self
         )
-        
 
         # Combat mode indicator:
         if self.player.fighter.is_in_melee == True:

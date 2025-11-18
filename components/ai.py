@@ -248,6 +248,13 @@ class HostileEnemyPlus(BaseAI):
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
 
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            self_invisible = True
+            self_visible = False
+        else:
+            self_invisible = False
+            self_visible = True
+
         """
         if self.engine.game_map.visible[self.entity.x, self.entity.y]:
             if distance <= 1:
@@ -283,7 +290,11 @@ class HostileEnemyPlus(BaseAI):
 
             if self.entity.fighter.aggravated == False:
                 self.entity.fighter.aggravated = True
-                self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                else:
+                    if settings.DEBUG_MODE:
+                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -299,12 +310,17 @@ class HostileEnemyPlus(BaseAI):
 
             if self.entity.fighter.aggravated == False:
                 self.entity.fighter.aggravated = True
-                self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                else:
+                    if settings.DEBUG_MODE:
+                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
  
             # Si se queda sin estamina:
             if self.entity.fighter.stamina == 0:
 
-                self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
                
                 self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
                 dest_x, dest_y = self.path_to_origin.pop(0)
@@ -389,9 +405,14 @@ class HostileEnemy(BaseAI):
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
 
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            self_invisible = True
+            self_visible = False
+        else:
+            self_invisible = False
+            self_visible = True
         
-        # TO DO: PATROL SYSTEM
-
+        # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
 
         # ENGAGE SYSTEM (ORIGINAL)
         # Los enemigos persiguen al PJ en busca de melee en
@@ -451,7 +472,11 @@ class HostileEnemy(BaseAI):
             #self.engine.player.fighter.is_in_melee = False
             if self.entity.fighter.aggravated == False:
                 self.entity.fighter.aggravated = True
-                self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                else:
+                    if settings.DEBUG_MODE:
+                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -468,7 +493,8 @@ class HostileEnemy(BaseAI):
             #self.engine.player.fighter.is_in_melee = True
 
             if self.entity.fighter.stamina == 0:
-                self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
                 return WaitAction(self.entity).perform()
             else:
                 return MeleeAction(self.entity, dx, dy).perform()
@@ -1132,7 +1158,7 @@ class Scout(BaseAI): # WORK IN PROGRESS
                             #self.engine.game_map.visible
                             self.engine.message_log.add_message(
                                 f"You hear footsteps!",
-                                color.red
+                                color.descend
                                 )
                             
                         return MovementAction(self.entity, to_x - self.entity.x, to_y - self.entity.y).perform()

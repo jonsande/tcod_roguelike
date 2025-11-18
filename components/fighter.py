@@ -393,8 +393,9 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.parent.name = f"remains of {self.parent.name}"
         self.parent.render_order = RenderOrder.CORPSE
 
-        print(death_message)
-        self.engine.message_log.add_message(death_message, death_message_color)
+        if self.engine.game_map.visible[self.parent.x, self.parent.y]:
+            print(death_message)
+            self.engine.message_log.add_message(death_message, death_message_color)
 
         self.engine.player.level.add_xp(self.parent.level.xp_given)
 

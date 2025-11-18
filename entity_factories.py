@@ -24,6 +24,7 @@ import random
 import numpy as np
 import tile_types
 import loot_tables
+from equipment_types import EquipmentType
 from settings import (
     GOD_MODE,
     GOD_MODE_STEALTH,
@@ -56,9 +57,13 @@ door = Obstacle(
 )
 
 chest = Chest(
-    char="C",
-    open_char="c",
-    color=(184, 134, 11),
+    char="ε",
+    open_char="ε",
+    color=(82, 58, 39),
+    #color=(255, 255, 255),
+    #char="φ",
+    #open_char="φ",
+    #color=(32, 38, 19),
     name="Chest",
     inventory=Inventory(capacity=12, items=[]),
 )
@@ -455,7 +460,8 @@ dagger = Item(
     color=(0, 191, 125), 
     name="Dagger", 
     equippable=equippable.Dagger(),
-    throwable=True
+    throwable=True,
+    info="A sharp, double-edged blade forged for swift. Ideal for close-quarters combat and silent strikes. Can be thrown at enemies for a quick attack.\nDamage bonus: 3.\nStealth bonus: 1.\nTo-hit bonus: 1.\nWeight: 1 lb.\nRarity: Common."
 )
 loot_tables.register_loot_item("dagger", dagger)
 
@@ -540,6 +546,16 @@ def _get_campfire_cache_items():
 
 
 campfire.on_spawn = _setup_campfire_spawn
+
+def _setup_adventurer_equipment(entity: Actor) -> None:
+    """Automatically equip a weapon if the adventurer has one in inventory."""
+    if not hasattr(entity, 'inventory') or not hasattr(entity, 'equipment'):
+        return
+    for item in entity.inventory.items:
+        if hasattr(item, 'equippable') and item.equippable:
+            if item.equippable.equipment_type == EquipmentType.WEAPON:
+                entity.equipment.toggle_equip(item, add_message=False)
+                break  # Equip only the first weapon found
 
 short_sword_plus = Item(
     char="/", 
@@ -714,7 +730,7 @@ player = Actor(
 )
 
 adventurer = Actor(
-    char="@", 
+    char="@",
     color=ADVENTURER_COLOR,
     name="Adventurer",
     ai_cls=AdventurerAI,
@@ -724,6 +740,8 @@ adventurer = Actor(
     inventory=Inventory(capacity=20, items=loot_tables.build_monster_inventory("Adventurer", amount=4)),
     level=Level(level_up_base=20),
 )
+
+adventurer.on_spawn = _setup_adventurer_equipment
 
 # adventurer_unique = Actor(
 #     char="@",

@@ -4,7 +4,9 @@ from __future__ import annotations
 from tcod import libtcodpy
 import os
 import random
+import textwrap
 from typing import Callable, Optional, Tuple, TYPE_CHECKING, Union
+from collections import defaultdict
 
 import tcod
 import tcod.event
@@ -60,6 +62,17 @@ MOVE_KEYS = {
     tcod.event.KeySym.b: (-1, 1),
     tcod.event.KeySym.n: (1, 1),
 }
+
+ADJACENT_DELTAS = [
+    (-1, 0),
+    (1, 0),
+    (0, -1),
+    (0, 1),
+    (-1, -1),
+    (-1, 1),
+    (1, -1),
+    (1, 1),
+]
 
 WAIT_KEYS = {
     tcod.event.KeySym.PERIOD,
@@ -119,21 +132,48 @@ class PopupMessage(BaseEventHandler):
     def on_render(self, console: tcod.Console) -> None:
         """Render the parent and dim the result, then print the message on top."""
         self.parent.on_render(console)
-        console.rgb["fg"] //= 8
-        console.rgb["bg"] //= 8
+        # Canales alfa
+        console.rgb["fg"] //= 60 # Nivel de opacidad/oscurecimiento de los caracteres del fondo. Con 255 el texto se vuelve blanco. Con 0, negro. Default: 8.
+        console.rgb["bg"] //= 8 # Nivel de opacidad/oscurecimiento del fondo de los caracteres del fondo. 255 es blanco. 0, negro. Default: 8.
+
+        # Wrap the text to fit within the console width, leaving some margin
+        wrapped_text = textwrap.fill(self.text, width=console.width - 10)
 
         console.print(
             console.width // 2,
             console.height // 2,
-            self.text,
-            fg=color.white,
-            bg=color.black,
+            wrapped_text,
+            fg=color.white, # Color de los caracteres de fondo (su alfa se configura arriba)
+            bg=color.black, # Color del fondo de los caracteres del fondo (su alfa se configura arriba)
             alignment=libtcodpy.CENTER,
         )
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         """Any key returns to the parent handler."""
         return self.parent
+
+
+class ConfirmQuitHandler(PopupMessage):
+    """Ask the player to confirm saving and exiting the game."""
+
+    def __init__(self, parent_handler: BaseEventHandler):
+        super().__init__(
+            parent_handler,
+            "¿SAVE GAME AND EXIT? Press 'y' to confirm or ESC to continue game.",
+        )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
+        """Only quit on explicit confirmation, otherwise stay or go back."""
+        if event.sym == tcod.event.KeySym.ESCAPE:
+            return self.parent
+
+        if event.sym in (
+            tcod.event.KeySym.y,
+            getattr(tcod.event.KeySym, "Y", tcod.event.KeySym.y),
+        ):
+            raise SystemExit()
+
+        return None
 
 
 class EventHandler(BaseEventHandler):
@@ -236,6 +276,8 @@ class EventHandler(BaseEventHandler):
         # Restore Energy Points for all actors (Speed System)
         #self.engine.restore_energy_all()
 
+        # TODO: evitar que la debris o los cadáveres puedan tapar el sprite de
+        # las escaleras de subida o de bajada.
         # BugFix provisional:
         # Colocar escaleras para que no queden ocultas por la debris
         self.engine.bugfix_downstairs()
@@ -386,8 +428,9 @@ class CombatControlHandler(AskUserEventHandler):
             aggravated = f"{e.fighter.aggravated}"
             power = f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}"
 
-            print("DEBUG: >>>>>>>>>>>>>>>>>>>>>> e.name: ", e.name)
-            print("DEBUG: >>>>>>>>>>>>>>>>>>>>>> e.fighter.aggravated: ", e.fighter.aggravated)
+            if DEBUG_MODE:
+                print("DEBUG: e.name: ", e.name)
+                print("DEBUG: e.fighter.aggravated: ", e.fighter.aggravated)
 
             if isinstance(e.ai, Dummy) == False:
                 if e.fighter.aggravated == True:
@@ -662,7 +705,15 @@ class InventoryEventHandler(AskUserEventHandler):
         super().on_render(console)
         number_of_items_in_inventory = len(self.engine.player.inventory.items)
 
-        height = number_of_items_in_inventory + 2
+        # Group items by name for stacking
+        item_groups = defaultdict(list)
+        for item in self.engine.player.inventory.items:
+            item_groups[item.name].append(item)
+
+        # Sort groups alphabetically by item name
+        sorted_groups = sorted(item_groups.items(), key=lambda x: x[0])
+
+        height = len(sorted_groups) + 2
 
         if height <= 3:
             height = 3
@@ -690,28 +741,26 @@ class InventoryEventHandler(AskUserEventHandler):
         )
 
         if number_of_items_in_inventory > 0:
-            
-            # Ordenamos el inventario alfabéticamente
-            self.engine.player.inventory.items.sort(key=lambda x: x.name)
-            # EL SISTEMA DE STACK HAY QUE PROGRAMARLO MÁS O MENOS POR AQUÍ
-            # "i" es el índice y "ítem" es el objeto
-            for i, item in enumerate(self.engine.player.inventory.items):
+
+            for i, (item_name, items) in enumerate(sorted_groups):
+                count = len(items)
+                item = items[0]  # Use the first item for properties
 
                 # Esto asigna una tecla a cada entrada
                 item_key = chr(ord("a") + i)
 
                 is_equipped = self.engine.player.equipment.item_is_equipped(item)
 
-                item_string = f"({item_key}) {item.name}"
+                item_string = f"({item_key}) {item_name}"
+
+                if count > 1:
+                    item_string = f"{item_string} ({count})"
 
                 if is_equipped:
                     item_string = f"{item_string} (E)"
-                    
-                if item.uses > 1:
-                    item_string = f"{item_string} ({item.uses})"
 
                 console.print(x + 1, y + i + 1, item_string)
-            
+
         else:
             console.print(x + 1, y + 1, "(Empty)")
 
@@ -721,8 +770,17 @@ class InventoryEventHandler(AskUserEventHandler):
         index = key - tcod.event.KeySym.a
 
         if 0 <= index <= 26:
+            # Group items by name for stacking
+            item_groups = defaultdict(list)
+            for item in player.inventory.items:
+                item_groups[item.name].append(item)
+
+            # Sort groups alphabetically by item name
+            sorted_groups = sorted(item_groups.items(), key=lambda x: x[0])
+
             try:
-                selected_item = player.inventory.items[index]
+                item_name, items = sorted_groups[index]
+                selected_item = items[0]  # Select the first item of the group
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid)
                 return None
@@ -765,7 +823,6 @@ class InventoryExamineHandler(InventoryEventHandler):
     TITLE = "Select an item to examine"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
-        #return PopupMessage(self, f"{item.info}")
         return PopupMessage(self, f"{item.info}")
         
 
@@ -788,7 +845,7 @@ class ChestLootHandler(AskUserEventHandler):
         super().__init__(engine)
         self.chest = chest
         if self.chest.open():
-            self.engine.message_log.add_message("You open the chest.", color.descend)
+            self.engine.message_log.add_message("You open the chest.", color.white)
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
@@ -844,7 +901,7 @@ class ChestLootHandler(AskUserEventHandler):
             return
         inventory.items.append(item)
         item.parent = inventory
-        self.engine.message_log.add_message(f"You take the {item.name}.", color.descend)
+        self.engine.message_log.add_message(f"You take the {item.name}.", color.white)
 
     def on_exit(self) -> Optional[ActionOrHandler]:
         return actions.OpenChestAction(self.engine.player, self.chest)
@@ -858,6 +915,14 @@ class SelectIndexHandler(AskUserEventHandler):
         super().__init__(engine)
         player = self.engine.player
         engine.mouse_location = player.x, player.y
+
+    def _reset_mouse_location(self) -> None:
+        """Return the cursor to the player's current tile."""
+        player = self.engine.player
+        # Esto si quisiéramos que el cursor volviera a la posición del jugador.
+        #self.engine.mouse_location = player.x, player.y
+        # Esto para que el cursor vuelva a la esquina superior izquierda.
+        self.engine.mouse_location = 0, 0
 
     def on_render(self, console: tcod.Console) -> None:
         """Highlight the tile under the cursor."""
@@ -911,7 +976,12 @@ class LookHandler(SelectIndexHandler):
 
     def on_index_selected(self, x: int, y: int) -> MainGameEventHandler:
         """Return to main handler."""
+        self._reset_mouse_location()
         return MainGameEventHandler(self.engine)
+
+    def on_exit(self) -> Optional[ActionOrHandler]:
+        self._reset_mouse_location()
+        return super().on_exit()
 
 
 class ExamineScreenEventHandler(SelectIndexHandler):
@@ -1002,7 +1072,7 @@ class MainGameEventHandler(EventHandler):
             action = WaitAction(player)
         # Salir del juego
         elif key == tcod.event.KeySym.ESCAPE:
-            raise SystemExit()
+            return ConfirmQuitHandler(self)
         # Ver el historial
         elif key == tcod.event.KeySym.v:
             return HistoryViewer(self.engine)
@@ -1060,7 +1130,7 @@ class MainGameEventHandler(EventHandler):
         dest_x = player.x + dx
         dest_y = player.y + dy
         blocker = self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y)
-        if isinstance(blocker, Chest) and not blocker.is_open:
+        if isinstance(blocker, Chest):
             return ChestLootHandler(self.engine, blocker)
         return None
 

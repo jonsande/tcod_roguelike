@@ -4,6 +4,7 @@ from typing import Optional, TYPE_CHECKING
 
 from components.base_component import BaseComponent
 from equipment_types import EquipmentType
+import color
 
 if TYPE_CHECKING:
     from entity import Actor, Item
@@ -129,7 +130,7 @@ class Equipment(BaseComponent):
 
     def unequip_message(self, item_name: str) -> None:
         self.parent.gamemap.engine.message_log.add_message(
-            f"You remove the {item_name}."
+            f"You remove the {item_name}.", color.orange
         )
 
     def equip_message(self, item_name: str) -> None:

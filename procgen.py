@@ -455,14 +455,16 @@ def _spawn_entity_template(
             continue
         entity.spawn_coord = (x, y)
         entity.spawn(dungeon, x, y)
-        if __debug__:
-            print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
-        if category and rule_name:
-            generation_tracker.record(category, floor_number, rule_name)
-        placed = True
+        if settings.DEBUG_MODE:
+            if __debug__:
+                print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
+            if category and rule_name:
+                generation_tracker.record(category, floor_number, rule_name)
+            placed = True
         break
-    if not placed and __debug__:
-        print(f"DEBUG: Failed to place {debug_name} en {context}")
+    if settings.DEBUG_MODE:
+        if not placed and __debug__:
+            print(f"DEBUG: Failed to place {debug_name} en {context}")
 
 
 def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) -> None:
@@ -585,11 +587,13 @@ def maybe_place_chest(
         loot = _build_chest_loot(floor_number)
         chest_entity = entity_factories.chest.spawn(dungeon, x, y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
-        if __debug__:
-            print(f"DEBUG: Generando... Chest en x={x} y={y}")
+        if settings.DEBUG_MODE:
+            if __debug__:
+                print(f"DEBUG: Generando... Chest en x={x} y={y}")
         return
-    if __debug__:
-        print(f"DEBUG: Failed to place chest en floor {floor_number}")
+    if settings.DEBUG_MODE:
+        if __debug__:
+            print(f"DEBUG: Failed to place chest en floor {floor_number}")
 
 
 def tunnel_between(
@@ -1490,8 +1494,9 @@ def generate_dungeon(
             downstairs_candidate = center_of_last_room
             rooms_array.append(center_of_last_room)
             engine.update_center_rooms_array(rooms_array)
-            if engine.debug == True:
-                print(f"DEBUG: CENTER OF ROOMS ARRAY: {rooms_array}")
+            if settings.DEBUG_MODE:
+                if engine.debug == True:
+                    print(f"DEBUG: CENTER OF ROOMS ARRAY: {rooms_array}")
 
 
         if rooms and DUNGEON_EXTRA_CONNECTION_CHANCE > 0:
@@ -1501,6 +1506,10 @@ def generate_dungeon(
                     carve_tunnel_path(dungeon, target_room.center, new_room.center)
 
         # Colocamos entidades genéricas
+        if settings.DEBUG_MODE:
+            from color import bcolors
+            print(f"{bcolors.WARNING}====== DEBUG: Placing entities in room at...\nDungeon: {dungeon}\nFloor number: {floor_number}\nRoom center: {new_room.center}\nFixed: {used_fixed_room}{bcolors.ENDC}")
+        
         place_entities(new_room, dungeon, floor_number)
 
         #import gen_uniques
