@@ -354,14 +354,17 @@ class ThrowItemAction(Action):
 
                         if self.entity is self.engine.player:
                             print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
-                            self._add_combat_message(
-                                f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color, self.entity, target
-                            )
+                            self.engine.message_log.add_message(
+                                "{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                damage_color
+                                )
+                            
                         else:
                             print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
-                            self._add_combat_message(
-                                f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color, self.entity, self.engine.player
-                            )
+                            self.engine.message_log.add_message(
+                                "You are POISONED! (The {self.entity.name} was poisonous)", 
+                                damage_color
+                                )
 
                         target.fighter.is_poisoned = True
                         target.fighter.poisoned_counter += 5
@@ -380,8 +383,8 @@ class ThrowItemAction(Action):
                         if self.engine.debug == True:
                             print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
 
-                        self._add_combat_message("Successful stealth attack!", damage_color, self.entity, target)
-                        
+                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+
                         # Experiencia extra
                         if self.entity == self.engine.player:
                             if self.engine.debug == True:
@@ -396,10 +399,7 @@ class ThrowItemAction(Action):
             if damage > 0:
                 
                 print(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})")
-
-                self._add_combat_message(
-                    f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color, self.entity, target
-                )
+                self.engine.message_log.add_message(f"{attack_desc} for {damage} hit points ({hit_dice} VS {target.fighter.defense})", damage_color)
 
                 target.fighter.hp -= damage
 
@@ -421,9 +421,7 @@ class ThrowItemAction(Action):
 
                 print(f"{attack_desc} but does no damage.")
 
-                self._add_combat_message(
-                    f"{attack_desc} but does no damage.", damage_color, self.entity, target
-                )
+                self.engine.message_log.add_message("{attack_desc} but does no damage.", damage_color)
         
         # Si no impacta:
         else:

@@ -36,7 +36,6 @@ DOOR_OPEN_SOUNDS = [
     "data/audio/sfx/doors/open_7.ogg",
     "data/audio/sfx/doors/open_8.ogg",
     "data/audio/sfx/doors/open_9.ogg",
-    "data/audio/sfx/doors/open_10.ogg",
     
 ]
 DOOR_OPEN_VOLUME = 0.25

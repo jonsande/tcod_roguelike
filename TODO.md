@@ -7,7 +7,9 @@ VARIOS
 - [x] Test the changes
 
 ARMAS
+- [ ] Añadir en una casilla la distancia a la que se puede lanzar una daga.
 - [ ] Bajarles el color a los sprites de armas.
+- [ ] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
 - [ ] Personajes únicos!
@@ -16,6 +18,7 @@ CRIATURAS
 IA
 - [ ] Una vez que un enemigo no visible ha sido aggravated tiene que haber una probabilidad de darle esquinazo. No puede ser que el jugador quede ya como objetivo. En cada turno habrá que hacer una tirada para ver si sigue buscándole o no.
 - [ ] Mejorar IAs de enemigos para que vaya más rápido cuando en un mapa hay muchos. Que haya algo así como un estado de letargo, en la que no hagan apenas cálculos.
+- [ ] Que algunos enemigos cojan objetos del suelo. Sobre todo si los ha lanzado el jugador.
 
 AVENTURERS
 - [x] Ponerles drop loot a los adventurers.

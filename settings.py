@@ -126,15 +126,15 @@ DEBRIS_CHANCES = {
 # Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
 CHEST_SPAWN_CHANCES = [
     (1, 1),
-    (2, 1),
-    (4, 0.40),
-    (8, 0.50),
+    (2, 0.20),
+    (4, 0.20),
+    (8, 0.20),
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 CHEST_ITEM_COUNT_BY_FLOOR = [
-    (1, (9, 10)),
-    (4, (2, 3)),
-    (8, (2, 4)),
+    (1, (3, 5)),
+    (4, (1, 3)),
+    (8, (1, 3)),
 ]
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 CHEST_LOOT_TABLES = {
@@ -383,7 +383,7 @@ ENEMY_SPAWN_RULES = {
         "min_floor": 1, 
         "weight_progression": [
             (1, 10),
-            (2, 100),
+            (2, 7),
             (3, 7),
             (4, 6),
             ],
