@@ -127,7 +127,7 @@ class Engine:
 
     def restore_time_pts(self):
         print(f"\n{color.bcolors.WARNING}End turn fase{color.bcolors.ENDC}")
-        print("All actors gain 10 t-pts")
+        print("All actors gain 10 time points")
 
         for entity in set(self.game_map.actors):
 
@@ -135,7 +135,8 @@ class Engine:
             #    entity.fighter.current_time_points = 0
 
             entity.fighter.current_time_points += 10
-            print(f"{entity.name}: {entity.fighter.current_time_points} t-pts")
+            if settings.DEBUG_MODE:
+                print(f"{entity.name}: {entity.fighter.current_time_points} t-pts")
 
 
     def extra_turn_manager(self):
@@ -146,7 +147,7 @@ class Engine:
             
                 if entity.fighter.current_time_points > 20:
 
-                    if self.debug == True:
+                    if settings.DEBUG_MODE:
                         print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name} {color.bcolors.OKCYAN}EXTRA TURN{color.bcolors.ENDC}!")
                     
                     #entity.fighter.current_time_points = 0
@@ -157,12 +158,12 @@ class Engine:
                             entity.ai.perform()
                         except exceptions.Impossible:
                             entity.fighter.current_time_points = 0
-                            if self.debug == True:
+                            if settings.DEBUG_MODE:
                                 print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
                             pass  # Ignore impossible action exceptions from AI.
 
                     entity.fighter.current_time_points = 0
-                    if self.debug == True:
+                    if settings.DEBUG_MODE:
                         print(f"DEBUG: {color.bcolors.OKCYAN}{entity.name}{color.bcolors.ENDC}: {entity.fighter.current_time_points} t-pts.")
 
 
@@ -546,16 +547,17 @@ class Engine:
 
             for i in range(len(self.temporal_effects)):
                 turns, amount, attribute, message_down = self.temporal_effects[i]
-                print("[DEBUG]: ", self.temporal_effects[i])
-                print("[DEBUG]: ", turns)
-                print("[DEBUG]: ", amount)
-                print("[DEBUG]: ", attribute)
-                print("[DEBUG]: ", message_down)
+                if settings.DEBUG_MODE:
+                    print("[DEBUG]: ", self.temporal_effects[i])
+                    print("[DEBUG]: ", turns)
+                    print("[DEBUG]: ", amount)
+                    print("[DEBUG]: ", attribute)
+                    print("[DEBUG]: ", message_down)
                 if turns <= 0:
                     end_color = color.red if amount >= 0 else color.status_effect_applied
                     self.message_log.add_message(f"{message_down}", end_color)
-                    if attribute == 'base_power':
-                        self.player.fighter.base_power -= amount
+                    if attribute == 'strength':
+                        self.player.fighter.strength -= amount
                     if attribute == 'base_to_hit':
                         self.player.fighter.base_to_hit -= amount
                     if attribute == 'base_stealth':
@@ -607,13 +609,13 @@ class Engine:
             render_functions.render_dungeon_level(
                 console=console,
                 dungeon_level="Town",
-                location=(60, 42),
+                location=(68, 37),
             )
         else: 
             render_functions.render_dungeon_level(
             console=console,
             dungeon_level=self.game_world.current_floor - 1,
-            location=(61, 42),
+            location=(69, 37),
             )
         
         render_functions.render_player_tile_info(
@@ -634,7 +636,9 @@ class Engine:
             render_functions.render_combat_mode(
                 console=console, 
                 hit=self.player.fighter.to_hit, 
-                power=self.player.fighter.power, 
+                #power=self.player.fighter.power,
+                # TODO: Este power ya no tiene sentido aquí.
+                #power=self.player.fighter.strength, # Entiendo que esto se podría modificar en melee si se espera un turno.
                 defense=self.player.fighter.defense
             )
 

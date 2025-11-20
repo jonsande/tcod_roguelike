@@ -433,7 +433,7 @@ class PowerConsumable(Consumable):
         consumer.fighter.gain_temporal_bonus(
             self.number_of_turns,
             self.amount,
-            "base_power",
+            "strength",
             "You feel weak.",
         )
 

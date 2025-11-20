@@ -4,6 +4,7 @@ from typing import List, Tuple, TYPE_CHECKING
 
 import color
 from render_order import RenderOrder
+from entity import Actor
 
 if TYPE_CHECKING:
     from tcod import Console
@@ -23,14 +24,45 @@ def _unique_names(names: List[str]) -> List[str]:
         unique_names.append(name)
     return unique_names
 
+# Version without equipment info
+# def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
+#     if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
+#         return ""
+
+#     names = [
+#         entity.name for entity in game_map.entities if entity.x == x and entity.y == y
+#     ]
+
+#     tile_descriptions: List[str] = []
+#     if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+#         tile_descriptions.append("There are upstairs")
+#     if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+#         tile_descriptions.append("There are downstairs")
+
+#     return ", ".join(_unique_names(names) + tile_descriptions)
 
 def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
         return ""
 
-    names = [
-        entity.name for entity in game_map.entities if entity.x == x and entity.y == y
-    ]
+    names = []
+    for entity in game_map.entities:
+        if entity.x == x and entity.y == y:
+            name = entity.name
+            if isinstance(entity, Actor):
+                equipped_items = []
+                if entity.equipment.weapon:
+                    equipped_items.append(entity.equipment.weapon.name)
+                if entity.equipment.armor:
+                    equipped_items.append(entity.equipment.armor.name)
+                if entity.equipment.artefact:
+                    equipped_items.append(entity.equipment.artefact.name)
+                if equipped_items:
+                    if len(equipped_items) == 1:
+                        name += f" (with {equipped_items[0]})"
+                    else:
+                        name += f" (with {', '.join(equipped_items[:-1])} and {equipped_items[-1]})"
+            names.append(name)
 
     tile_descriptions: List[str] = []
     if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
@@ -113,19 +145,19 @@ def render_bar(
     )
 
 
-def render_combat_mode(console: Console, hit, power, defense):
+def render_combat_mode(console: Console, hit, defense):
     console.print(
         x=20, y=37, string="IN MELEE", fg=color.red
     )
     console.print(
-        x=30, y=37, string=f"Hit: {hit}", fg=color.white
+        x=30, y=37, string=f"To-Hit: {hit}", fg=color.white
     )
     console.print(
-        x=37, y=37, string=f"Pow: {power}", fg=color.white
+        x=40, y=37, string=f"Def: {defense}", fg=color.white
     )
-    console.print(
-        x=44, y=37, string=f"Def: {defense}", fg=color.white
-    )
+    # console.print(
+    #     x=47, y=37, string=f"Pow: {power}", fg=color.white
+    # )
 
 
 def render_fortify_indicator(console: Console):
@@ -142,7 +174,8 @@ def render_dungeon_level(
     """
     x, y = location
 
-    console.print(x=x, y=y, string=f"Dungeon level: {dungeon_level}")
+    # console.print(x=x, y=y, string=f"Dungeon level: {dungeon_level}")
+    console.print(x=x, y=y, string=f"Level: {dungeon_level}")
 
 
 def render_names_at_mouse_location(

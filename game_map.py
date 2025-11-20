@@ -415,8 +415,12 @@ class GameWorld:
     def _select_generator(self, floor: int):
         from procgen import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern
 
+        # NIVEL INICIAL
         if floor == 1:
             return generate_town, {}
+        
+        # FIXED DUNGEONS GENERATION
+        # Comprobar si para este nivel hay un mapa fijo/personalizado
         fixed_layout = settings.FIXED_DUNGEON_LAYOUTS.get(floor)
         if fixed_layout:
             map_name = fixed_layout.get("map")
@@ -432,9 +436,12 @@ class GameWorld:
                     "walls_special": walls_special,
                 }
 
+        # CAVERNS GENERATION
+        # Tirada a ver si sale un mapa de cavernas
         if random.random() < settings.CAVERN_SPAWN_CHANCE:
             return generate_cavern, {}
 
+        # STANDARD PROCEDURAL DUNGEON GENERATION
         # Primero se carga la configuración de generación específica
         # de cada nivel (si la hay en el settings).
         variants = settings.DUNGEON_MAP_VARIANT_OVERRIDES.get(floor)
@@ -442,7 +449,7 @@ class GameWorld:
             variants = settings.DUNGEON_MAP_VARIANTS
         if not variants:
             variants = [
-                {"weight": 1.0, "max_rooms": 60, "room_min_size": 2, "room_max_size": 16}
+                settings.DUNGEON_MAP_STANDARD
             ]
         weights = [variant.get("weight", 1.0) for variant in variants]
         variant = random.choices(variants, weights=weights, k=1)[0]

@@ -426,7 +426,7 @@ class CombatControlHandler(AskUserEventHandler):
             armor_value = f"{e.fighter.armor_value}"
             hp = f"{e.fighter.hp}"
             aggravated = f"{e.fighter.aggravated}"
-            power = f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}"
+            power = f"({e.fighter.strength} + {e.fighter.weapon_dmg_info} + {e.fighter.no_weapon_dmg_info}) * {e.fighter.weapon_proficiency}"
 
             if DEBUG_MODE:
                 print("DEBUG: e.name: ", e.name)
@@ -446,7 +446,7 @@ class CombatControlHandler(AskUserEventHandler):
 
                 console.print(x + 5, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.stamina}", fg=color.blue)
                 console.print(x + 11, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.defense}", fg=color.orange)
-                console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.power}+1D{e.fighter.dmg_mod[1]}", fg=color.red)
+                console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.power}+1D{e.fighter.weapon_proficiency}", fg=color.red)
                 console.print(x + 29, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.to_hit}", fg=color.orange)
                 console.print(x + 34, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.armor_value}", fg=color.orange)
                 counter_lines += 1
@@ -502,101 +502,132 @@ class CharacterScreenEventHandler(AskUserEventHandler):
         )
 
         console.print(
-            x=2, y=3, string="LEVEL: ", 
+            x=2, y=3, string="NAME: ",  fg=color.blue,
         )
         console.print(
-            x=9, y=3, string=f"{self.engine.player.level.current_level}", fg=color.blue,
+            x=9, y=3, string=f"{self.engine.player.name}",  fg=color.descend
         )
-        console.print(
-            x=12, y=3, string="XP: ", 
-        )
-        console.print(
-            x=16, y=3, string=f"{self.engine.player.level.current_xp}", fg=color.blue,
-        )
-        console.print(
-            x=20,
-            y=3,
-            string="XP for next Level: ", 
-        )
-        console.print(
-            x=39,
-            y=3,
-            string=f"{self.engine.player.level.experience_to_next_level}", fg=color.blue,
-        )
+
         console.print(
             x=2, 
             y=5, 
-            string="HIT CHANCE: ",
+            string="TO HIT CHANCE: ", fg=color.blue,
         )
         console.print(
-            x=14, 
+            x=17, 
             y=5, 
-            string=f"1D6 + ",
+            string=f"1D6 + ", fg=color.orange,
         )
         console.print(
-            x=20, 
+            x=23, 
             y=5, 
-            string=f"{self.engine.player.fighter.to_hit}", fg=color.blue
+            string=f"({self.engine.player.fighter.to_hit} * {self.engine.player.fighter.weapon_proficiency}) VS Target AV", fg=color.orange,
         )
-        console.print(
-            x=22, 
-            y=5, 
-            string="(To Hit mod - Armor Value) VS Monster Defense",
-        )
+    
         console.print(
             x=2, 
             y=7, 
-            string=f"DAMAGE: "
-        )
-        console.print(
-            x=10, 
-            y=7, 
-            string=f"{self.engine.player.fighter.power} ", fg=color.blue
+            string=f"STRENGTH: ", fg=color.blue,
         )
         console.print(
             x=12, 
             y=7, 
-            string=f"(power + weapon dmg) + 1d"
+            string=f"{self.engine.player.fighter.strength}", fg=color.orange,
         )
         console.print(
-            x=37, 
+            x=15, 
             y=7, 
-            string=f"{self.engine.player.fighter.dmg_mod[1]}", fg=color.blue
+            string=f"WEAPON DMG: ", fg=color.blue,
         )
         console.print(
-            x=38, 
+            x=27, 
             y=7, 
-            string=" (dmg mod) - Monster Armor"
+            string=f"{self.engine.player.fighter.weapon_dmg_info}", fg=color.orange,
+        )
+        console.print(
+            x=27 + len(self.engine.player.fighter.weapon_dmg_info) + 2,
+            y=7, 
+            string=f"BONUS DMG: ", fg=color.blue
+        )
+        console.print(
+            x=27 + len(self.engine.player.fighter.weapon_dmg_info) + 13, 
+            y=7, 
+            # TODO: comprobar que el cálculo de non_weapon_dmg_bonus es correcto:
+            # debería ser la suma de los bonus de todas las piezas equipadas menos
+            # el bonus del arma.
+            string=f"{self.engine.player.fighter.non_weapon_dmg_bonus}", fg=color.orange,
+        )
+        console.print(
+            x=27 + len(self.engine.player.fighter.weapon_dmg_info) + 16,
+            y=7,
+            string=f"PROFICIENCY: ", fg=color.blue,
+        )
+
+        console.print(
+            x=43  + len(self.engine.player.fighter.weapon_dmg_info) + 13,
+            y=7,
+            string=f"{self.engine.player.fighter.weapon_proficiency}", fg=color.orange,
         )
         console.print(
             x=2, 
             y=9, 
-            string="DEFENSE (parry): "
+            string="DEFENSE: ", fg=color.blue
         )
         console.print(
-            x=19, 
+            x=11, 
+            y=9,
+            string=f"{self.engine.player.fighter.defense}", fg=color.orange,
+        )
+        console.print(
+            x=13, 
             y=9, 
-            string=f"{self.engine.player.fighter.defense}", fg=color.blue
+            string="ARMOR VALUE: ", fg=color.blue,
+        )
+        console.print(
+            x=26, 
+            y=9, 
+            string=f"{self.engine.player.fighter.armor_value}", fg=color.orange,
         )
         console.print(
             x=2, 
             y=11, 
-            string="STEALTH: "
+            string="STEALTH: ", fg=color.blue,
         )
         console.print(
             x=11, 
             y=11, 
-            string=f"{self.engine.player.fighter.stealth}", fg=color.blue,
+            string=f"{self.engine.player.fighter.stealth}", fg=color.orange,
+        )
+        console.print(
+            x=14, 
+            y=11, 
+            string="LUCK: ", fg=color.blue,
+        )
+        console.print(
+            x=20, 
+            y=11, 
+            string=f"{self.engine.player.fighter.luck}", fg=color.orange,
+        )
+
+        console.print(
+            x=2, 
+            y=20, 
+            string=f"DAMAGE FORMULA: "
+        )
+        console.print(
+            x=3, 
+            y=21, 
+            string=f"(STRENGTH + WEAPON DMG + BONUS DMG) * PROFICIENCY - ARMOR VALUE ",
         )
         console.print(
             x=2, 
-            y=13, 
-            string="ARMOR VALUE: "
+            y=23, 
+            string=f"TO HIT FORMULA: "
         )
         console.print(
-            x=15, 
-            y=13, 
-            string=f"{self.engine.player.fighter.armor_value}", fg=color.blue,
+            x=3, 
+            y=24, 
+            string=f"[PENDIENTE]",
         )
 
 

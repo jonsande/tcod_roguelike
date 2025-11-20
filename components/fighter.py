@@ -143,10 +143,10 @@ class Fighter(FireStatusMixin, BaseComponent):
             self, 
             hp: int, 
             base_defense: int, 
-            base_power: int, 
+            strength: int, 
             recover_rate: int, 
             fov: int = 0, 
-            dmg_mod: Tuple[int, int] = (0, 1),
+            weapon_proficiency: float = 1.0,
             base_stealth: int = 0,
             aggressivity: int = 0,
             wait_counter: int = 0,
@@ -183,10 +183,10 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.max_hp = hp
         self._hp = hp
         self.base_defense = base_defense
-        self.base_power = base_power
+        self.strength = strength
         self.recover_rate = recover_rate
         self.fov = fov
-        self.dmg_mod = dmg_mod
+        self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
         self.aggravated = False
@@ -249,11 +249,66 @@ class Fighter(FireStatusMixin, BaseComponent):
     @property
     def defense(self) -> int:
         return self.base_defense + self.defense_bonus
+    
+    @property
+    def main_hand_weapon(self):
+        if self.parent.equipment.weapon:
+            return self.parent.equipment.weapon
+        else:
+            return None
 
     @property
-    def power(self) -> int:
-        return self.base_power + self.power_bonus
-    
+    def weapon_dmg_dice(self) -> int:
+        if self.parent.equipment and self.parent.equipment.weapon:
+            return self.parent.equipment.weapon.equippable.weapon_dmg_dice
+        else:
+            return 0
+        
+    @property
+    def weapon_dmg_dice_info(self) -> str:
+        if self.parent.equipment and self.parent.equipment.weapon:
+            equippable = self.parent.equipment.weapon.equippable
+            if equippable:
+                return f"1d{equippable.max_dmg}"
+        return "1d0"
+        
+    @property
+    def weapon_dmg_bonus(self) -> str:
+        if self.parent.equipment and self.parent.equipment.weapon:
+            return self.parent.equipment.weapon.equippable.weapon_dmg_bonus
+        
+    @property
+    def weapon_dmg_info(self) -> str:
+        if self.parent.equipment and self.parent.equipment.weapon:
+            equippable = self.parent.equipment.weapon.equippable
+            if equippable:
+                return f"1d{equippable.max_dmg}+{equippable.dmg_bonus}"
+        return "1d0+0"
+        
+    @property
+    def non_weapon_dmg_bonus(self) -> str:
+        bonus = 0
+        if self.parent.equipment:
+            bonus += self.parent.equipment.non_weapon_dmg_bonus
+            return bonus
+        else:
+            return bonus
+
+    # Total de bonus al daño de todo lo EQUIPADO
+    @property
+    def total_equipment_dmg_bonus(self) -> int:
+        if self.parent.equipment:
+            return self.parent.equipment.total_equipment_dmg_bonus
+        else:
+            return 0
+
+    @property
+    def total_fighter_dmg(self) -> int:
+        if self.parent.equipment:
+            return (self.strength + self.weapon_dmg_dice + self.parent.equipment.total_equipment_dmg_bonus) * self.weapon_proficiency
+        else:
+            return (self.strength + self.non_weapon_dmg_bonus) * self.weapon_proficiency
+
     @property
     def stealth(self) -> int:
         return self.base_stealth + self.stealth_bonus - self.stealth_penalty
@@ -271,13 +326,6 @@ class Fighter(FireStatusMixin, BaseComponent):
     def defense_bonus(self) -> int:
         if self.parent.equipment:
             return self.parent.equipment.defense_bonus
-        else:
-            return 0
-
-    @property
-    def power_bonus(self) -> int:
-        if self.parent.equipment:
-            return self.parent.equipment.power_bonus
         else:
             return 0
         
@@ -495,12 +543,11 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     def take_damage(self, amount: int) -> None:
         self.hp -= amount
-
-        
+   
     def gain_temporal_bonus(self, turns, amount, attribute, message_down):
 
-        if attribute == 'base_power':
-            self.base_power += amount
+        if attribute == 'strength':
+            self.strength += amount
         elif attribute == 'base_to_hit':
             self.base_to_hit += amount
         elif attribute == 'base_stealth':
@@ -514,13 +561,13 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.engine.manage_temporal_effects(turns, amount, attribute, message_down)
     
     def decrease_power(self, amount: int):
-        self.base_power -= amount
+        self.strength -= amount
 
     def restore_power(self, amount: int):
-        self.base_power += amount
+        self.strength += amount
         
     def gain_power(self, amount: int):
-        self.base_power += amount
+        self.strength += amount
 
     def apply_player_confusion(self, turns: int) -> None:
         self.is_player_confused = True
@@ -580,10 +627,10 @@ class Door(FireStatusMixin, BaseComponent):
     def __init__(
             self, hp: int, 
             base_defense: int, 
-            base_power: int, 
+            strength: int, 
             recover_rate: int, 
             fov: int, 
-            dmg_mod: Tuple[int, int] = (0, 1),
+            weapon_proficiency: float = 1.0,
             base_stealth: int = 0,
             aggressivity: int = 0,
             wait_counter: int = 0,
@@ -609,10 +656,10 @@ class Door(FireStatusMixin, BaseComponent):
         self.max_hp = hp
         self._hp = hp
         self.base_defense = base_defense
-        self.base_power = base_power
+        self.strength = strength
         self.recover_rate = recover_rate
         self.fov = fov
-        self.dmg_mod = dmg_mod
+        self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
         self.aggravated = False
@@ -656,7 +703,7 @@ class Door(FireStatusMixin, BaseComponent):
 
     @property
     def power(self) -> int:
-        return self.base_power + self.power_bonus
+        return self.strength + self.weapon_dmg
     
     @property
     def stealth(self) -> int:
@@ -678,9 +725,9 @@ class Door(FireStatusMixin, BaseComponent):
             return 0
 
     @property
-    def power_bonus(self) -> int:
+    def weapon_dmg(self) -> int:
         if self.parent.equipment:
-            return self.parent.equipment.power_bonus
+            return self.parent.equipment.weapon_dmg
         else:
             return 0
         
@@ -809,11 +856,11 @@ class Door(FireStatusMixin, BaseComponent):
     
     
     def decrease_power(self, amount: int):
-        self.base_power -= amount
+        self.strength -= amount
 
 
     def restore_power(self, amount: int):
-        self.base_power += amount
+        self.strength += amount
 
 
 class BreakableWallFighter(FireStatusMixin, BaseComponent):
@@ -823,7 +870,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self,
         hp: int,
         base_defense: int = 0,
-        base_power: int = 0,
+        strength: int = 0,
         recover_rate: int = 0,
         base_armor_value: int = 0,
         loot_drop_chance: float = 0.25,
@@ -834,7 +881,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.max_hp = hp
         self._hp = hp
         self.base_defense = base_defense
-        self.base_power = base_power
+        self.strength = strength
         self.recover_rate = recover_rate
         self.base_armor_value = base_armor_value
         self.loot_drop_chance = loot_drop_chance
@@ -845,7 +892,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.poison_dmg = 0
         self.aggravated = False
         self.stamina = 0
-        self.dmg_mod = (0, 1)
+        self.weapon_proficiency = 1.0
         self._init_fire_status(fire_resistance)
 
     @property
@@ -864,7 +911,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
 
     @property
     def power(self) -> int:
-        return self.base_power + self.power_bonus
+        return self.strength + self.weapon_dmg
 
     @property
     def armor_value(self) -> int:
@@ -877,9 +924,9 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         return 0
 
     @property
-    def power_bonus(self) -> int:
+    def weapon_dmg(self) -> int:
         if self.parent.equipment:
-            return self.parent.equipment.power_bonus
+            return self.parent.equipment.weapon_dmg
         return 0
 
     @property

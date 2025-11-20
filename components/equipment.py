@@ -1,3 +1,5 @@
+# módulo dedicado a gestionar el equipo que lleva un actor (jugador o NPCs).
+
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
@@ -9,7 +11,9 @@ import color
 if TYPE_CHECKING:
     from entity import Actor, Item
 
-
+# CUIDADO! No es lo mismo la clase Equippable que la clase Equipment.
+# Equippable es un componente que tienen los ítems que pueden ser equipados.
+# Equipment es un componente que tienen los actores (jugador, NPCs) que pueden equipar ítems.
 class Equipment(BaseComponent):
     parent: Actor
 
@@ -33,21 +37,38 @@ class Equipment(BaseComponent):
 
         return bonus
 
+    # La propiedad total_equipment_dmg_bonus suma el bonus al daño de todas las piezas equipadas 
+    # que hagan daño o aporten un bonus al daño.
     @property
-    def power_bonus(self) -> int:
-        bonus = 0
+    def total_equipment_dmg_bonus(self) -> int:
+        total = 0
 
         if self.weapon is not None and self.weapon.equippable is not None:
-            bonus += self.weapon.equippable.power_bonus
+            #total += self.weapon.equippable.weapon_dmg
+            total += self.weapon.equippable.dmg_bonus
 
         if self.armor is not None and self.armor.equippable is not None:
-            bonus += self.armor.equippable.power_bonus
+            # total += self.armor.equippable.weapon_dmg
+            total += self.armor.equippable.dmg_bonus
 
         if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.power_bonus
+            #total += self.artefact.equippable.weapon_dmg
+            total += self.artefact.equippable.dmg_bonus
+
+        return total
+    
+    @property
+    def non_weapon_dmg_bonus(self) -> int:
+        bonus = 0
+
+        if self.armor is not None and self.armor.equippable is not None:
+            bonus += self.armor.equippable.dmg_bonus
+
+        if self.artefact is not None and self.artefact.equippable is not None:
+            bonus += self.artefact.equippable.dmg_bonus
 
         return bonus
-    
+
     @property
     def stealth_bonus(self) -> int:
         bonus = 0

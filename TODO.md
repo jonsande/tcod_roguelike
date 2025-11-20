@@ -6,13 +6,20 @@ VARIOS
 - [x] Replace add_message calls with _add_combat_message
 - [x] Test the changes
 
+- [ ] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
+
+RENDIMIENTO
+- [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox.
+
 ARMAS
-- [ ] Añadir en una casilla la distancia a la que se puede lanzar una daga.
+- [-] Añadir en una casilla la distancia a la que se puede lanzar una daga. [Esto depende de la fuerza y pericia del jugador]
 - [ ] Bajarles el color a los sprites de armas.
 - [ ] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
 - [ ] Personajes únicos!
+- [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
+- [ ] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
 - [ ] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en en una tirada de randint(2,5) para establecer los puntos hp de un goblin sale 3, todos los goblins generados tienen 3 puntos de hp. Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 3 puntos de hp, pero otros con 2, o con 4, etc.
 
 IA
@@ -26,6 +33,7 @@ AVENTURERS
 - [x] Los aventureros exploran la planta en busca de la habitación con escaleras. Si la encuentran, toman las escaleras y desaparecen. Después de eso hay una probabilidad de encontrar sus cadáveres en niveles inferiores. Si en su camino pasan junto a un fuego, se quedarán junto al fuego hasta que este se extinga. Si se quedan sin stamina en algún momento, esperarán un turno para recuperar un punto. Son neutrales al personaje jugador, pero si este ataca a un adventurer, se volverá hostil. Si un jugador ocupa una de las casillas junto a un adventurer este "le hablara". Soltará un mensaje aleatorio de una batería enorme. Esta manera será el modo habitual de conseguir pistas sobre el juego. No todas las pistas serán verdaderas. Pero no todo lo que los adventurers digan serán pistas.
 - [ ] Aún hay veces que los adventurers se quedan como dando vueltas en una habitación (creo que cuando algún breakable wall interfiere su camino).
 - [x] Los adventurers deberían equiparse con un arma nada más generarse (si tienen alguna en el inventario).
+- [ ] Los adventurers podrían coger pociones u otros objetos que se encontraran en su línea de visión.
 
 EFECTOS SONOROS / SONIDO
 - [ ] Que la transición de música ambiente sea con fade in/out.
@@ -82,15 +90,19 @@ CUEVAS
 
 HUD
 - [!] Pantalla de ayuda, con descripción de teclas y comandos.
+- [!] Arreglar el combat panel.
+- [ ] Rediseñar el combat panel.
 - [x] Las ventanas que se abren con información tienen que aplicar formato al texto (respetar los límites de la ventana, etc.).
+- [ ] Que los mensajes repetidos iguales se apilen, al modo de nethack, con un multiplicador, y así no se consuman más líneas.
 - [ ] Mejorar la presentación de texto largo en las ventanas popup (justificado, colores, saltos de línea, etc.)
 - [ ] Pantalla de ayuda con el documento de instrucciones de cómo funciona el combate, el sigilo, etc.
 - [ ] Mejorar sistema de inventario.
 - [x] Info de objetos.
 - [ ] Rellenar la info de objetos.
+- [ ] Etiqueta "poisoned" en el panel de abajo para cuando se está envenenado. Y etiqueta confused.
 
 DUNGEON GENERATION
-- [!] La probabilidad de generarse un objeto por habitación debe ser independiente. Ahora mismo se aplica la tirada a todas las habitaciones de la planta. Esto hace que el jugador sepa rápido si en esa planta merece la pena buscar o no.
+- [x] La probabilidad de generarse un objeto por habitación debe ser independiente. Ahora mismo se aplica la tirada a todas las habitaciones de la planta. Esto hace que el jugador sepa rápido si en esa planta merece la pena buscar o no.
 - [ ] El color de los sprites de muro debe ser relativo y fijo al nivel. 
 - [ ] Arreglar problemas con la generación de fixed rooms (custom rooms)
 - [ ] Las fixed rooms deberían poder crearse con objetos estas salas. Donde aparezca el carácter '~' debe generarse un scroll (aleatorio), donde aparezca el caracter '!' debe generarse una poción aleatoria, y donde aparezca el caracter '/' debe aparecer un arma aleatoria. La probabilidad de que aparezca una cosa u otra debe ser configurable, así como la probabilidad de que aparezca un tipo u otro de pócima (si lo que se genera es una pócima), un tipo u otro de pergamino (si lo que se genera es un pergamino), un tipo u otro de arma (si lo que se genera es un arma).
@@ -104,19 +116,56 @@ La fixed dungeon de mitad de descenso se escogerá entre una batería de posible
     - [ ] Otros.
 
 COMBATE
-- [!] Rediseñar el sistema de cálculo de daño del combate. Cambiar el modo en que funcionan las armas a este respecto. Hacerlo todo más claro. Y más congruente con el factor "pericia del luchador" (proficiency).
+- [x] Rediseñar el sistema de cálculo de daño del combate. Cambiar el modo en que funcionan las armas a este respecto. Hacerlo todo más claro. Y más congruente con el factor "pericia del luchador" (proficiency).
+- [!] Describir bien cómo funciona el combate, con sus elementos tácticos y sus fórmulas.
+- [!] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
+- [ ] Modificar la mecánica del combate táctico. Actualmente es:
+
+Cuando se entra en melee (aparece un indicador de melee) se pueden hacer tres cosas, con distintos resultados para la STAMINA, el índice TO-HIT y el índice de DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá se pueda hacer relativo a algo):
+
+Actual
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |  reset   |  reset 
+Defenderse (pasar turno):     -1    |   +1     |   +1
+Retroceder:                   +1    |  reset   |   +1
+
+
+Modelo viejo
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |          |   -1 
+Defenderse (pasar turno):     -1    |   +1     |   +1
+Retroceder:                   +1    |  reset   |    -
+
+Alternativa A
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |  reset   |  reset 
+Defenderse (pasar turno):     -1    |   +1     |   +1
+Retroceder:                   +1    |  reset   |   -
+
+Alternativa B
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |  reset   |  reset
+Defenderse (pasar turno):     -1    |   +1     |   +1
+Retroceder:                   +1    |  reset   |   -1
+
 - [ ] Si el enemigo está paralizado, no debería bajarte stamina por luchar contra él o pasar turno junto a él.
 - [ ] Ataques especiales!! Por ejemplo, que puedas hacer un ataque al mismo tiempo que retrocedes una casilla, o una carga, o un ataque con desplazamiento lateral... Algo que le de un rollo ajedrez.
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
 - [x] Cofres!
+- [!] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida.
+- [ ] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit.
 - [ ] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
 - [!] Trampas!
 - [ ] Portales mágicos!
 - [ ] Objeto malditos!: debe ser simplificado (tipo unexplored, no nethack: o sea, que no haya con un mismo nombre una versión maldita y otra no, pues complica mucho el código). Unos objetos se considerarán "bueno", otros "malos", y otros "netrales".
 - [ ] Profundizar en el sistema de críticos (creo que hay algo en el stealth mode, pero nada más)
 - [ ] Profundizar en el sistema de suerte.
+- [ ] Sí que va a haber un sistema de experiencia. Estará oculto. El jugador no sabrá nada. Servirá para subir la weapon proficiency. Hay que rediseñarlo. Dará puntos por los túrnos que se pase en melee junto a una criatura hostil (hay que arreglar eso de que junto a neutrales se entre en melee también).
+
+VARIOS
+- [ ] El nombre del Personaje Jugador (PJ) debe generarse proceduralmente, siguiendo las siguientes reglas y consideraciones: habrá una batería de hasta 12 nombres de pila, y un contador de cuántas veces se ha jugado una partida con ese nombre de pila. Al comenzar una partida, se escogerá aleatoriamente un nombre de pila, se le añadirá el artículo " the ", y por último se le añadirá un ordinal (escrito en texto, no en número), de modo que quede un resultado así como, por ejemplo, "Abelardo the fourth". No podrá haber más de 16 ordinales por nombre.
 
 
 BUGS

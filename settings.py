@@ -188,24 +188,35 @@ ROOM_MIN_SIZE_SHAPES = {
 
 # Generación de mapas de habitaciones y pasillos.
 # Cada variante define el tamaño medio y el número de habitaciones del piso.
+# room_min_size establece el ancho (o alto) mínimo para cada habitación (es decir,
+# que una room_min_size = 3 quiere decir que la habitación mínima será de 3x3). Y
+# lo mismo para max_room_size.
 DUNGEON_MAP_VARIANTS = [
     {
         "weight": 0.5,
-        "max_rooms": 40,
-        "room_min_size": 2,
-        "room_max_size": 7,
+        "max_rooms": 8,
+        "room_min_size": 4,
+        "room_max_size": 10,
     },
     {
         "weight": 0.5,
         "max_rooms": 20,
         "room_min_size": 3,
-        "room_max_size": 10,
+        "room_max_size": 12,
     },
 ]
 
 # Permite sobreescribir la configuración anterior para pisos concretos.
 # Ejemplo: {3: [{"weight": 1.0, "max_rooms": 30, ...}]}
 DUNGEON_MAP_VARIANT_OVERRIDES = {}
+
+# Configuración de (entiendo) el generador estandard.
+DUNGEON_MAP_STANDARD = {
+    "weight": 1.0, 
+    "max_rooms": 20, 
+    "room_min_size": 2, 
+    "room_max_size": 17
+    }
 
 # Probabilidad de excavar pasadizos extra entre salas ya existentes.
 # Ajusta este valor para reducir o aumentar la cantidad de pasillos secundarios.
@@ -247,15 +258,21 @@ MAX_DEBRIS_BY_FLOOR = [
 ]
 
 # Máximo de objetos por habitación según el nivel del piso.
+# La configuración en MAX_ITEMS_BY_FLOOR se aplica POR HABITACIÓN, no por nivel completo.
+# En procgen.py, la función place_entities se llama para cada habitación generada.
+# Ahora bien; el elemento (1, 1), por ejemplo, quiere decir que para el nivel 1 SE PUEDE
+# generar un máximo de 1 item. No quiere decir que se vaya a generar. Lo que hará la fun-
+# ción place_entities() de procgen.py es una randint(0,1) para determinar si ese 1 máximo
+# se traduce o no en un ítem. 
 MAX_ITEMS_BY_FLOOR = [
     (1, 1),
-    (2, randint(0,1)),
-    (3, randint(0,1)),
-    (4, randint(0,1)),
-    (6, randint(0,1)),
-    (7, randint(0,1)),
-    (11, randint(0,2)),
-    (12, randint(0,2)),
+    (2, 1),
+    (3, 1),
+    (4, 1),
+    (6, 1),
+    (7, randint(1, 2)),
+    (11, 1),
+    (12, 1),
 ]
 
 # Máximo de monstruos por habitación según el nivel del piso.
@@ -356,6 +373,7 @@ ITEM_SPAWN_RULES = {
     # FOOD
     "poisoned_triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
     "triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
+    "banana": {"min_floor": 3, "weight_progression": [(3, 1)]},
     # SCROLLS
     "confusion_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
     "paralisis_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
@@ -367,6 +385,7 @@ ITEM_SPAWN_RULES = {
     # OTHER
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
     "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
+    "note_wizard_1": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 100)]},
     # ARTIFACTS
     # BUG: el min_floor no está funcionando como se espera. Sólo debería de aparecer a partir
     # del nivel 7, pero me lo encuentro en otros niveles. No sé tampoco si el max_instancies
@@ -409,3 +428,12 @@ ENEMY_SPAWN_RULES = {
     "troll": {"min_floor": 5, "weight_progression": [(7, 5)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
 }
+
+PROFICIENCY_LEVELS = {
+    "Beginner": 0.5, 
+    "Novice": 1.0, 
+    "Apprentice": 1.5, 
+    "Adept": 2.0, 
+    "Expert": 2.5, 
+    "Master": 4.0
+    }

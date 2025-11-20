@@ -1158,7 +1158,7 @@ class Scout(BaseAI): # WORK IN PROGRESS
                             #self.engine.game_map.visible
                             self.engine.message_log.add_message(
                                 f"You hear footsteps!",
-                                color.descend
+                                color.orange
                                 )
                             
                         return MovementAction(self.entity, to_x - self.entity.x, to_y - self.entity.y).perform()

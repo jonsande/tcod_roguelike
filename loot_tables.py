@@ -18,8 +18,10 @@ from entity import Item
 #   esa criatura. Pero es fácil hacer que se dropeen todos:
 #   loot_tables.build_monster_inventory escoge aleatoriamente objetos de la lista 
 #   MONSTER_LOOT_TABLES pero sin duplicados. Ahora bien, si el "amount" (atributo
-#   del Inventory) excede el número de opciones disponibles simplemente devuelve 
+#   del build_monster_inventory establecido en su Inventory) excede el número de opciones disponibles simplemente devuelve 
 #   todas las opciones en un orden aleatorio.
+# - Si se quiere estableces su inventario manualmente, se puede hacer así:
+#   inventory=Inventory(capacity=2, items=[short_sword, leather_armor])
 # - Además, puede tener configurado un “drop especial” independiente:
 #   SPECIAL_DROP_TABLES define la probabilidad total de que ocurra y la
 #   batería de objetos candidatos (con pesos individuales). Si el lanzamiento
@@ -31,7 +33,8 @@ from entity import Item
 MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
     "Adventurer": ("short_sword", "leather_armor", "stamina_potion"),
     "Giant rat": ("meat",),
-    "Goblin": ("meat", "dagger"),
+    "Monkey": ("banana", "dagger", "strength_potion", "increase_max_stamina", "life_potion", "infra_vision_potion", "antidote", "health_potion", "poison_potion", "power_potion", "stamina_potion", "temporal_infra_vision_potion", "blindness_potion","confusion_potion", "paralysis_potion", "petrification_potion", "precission_potion"),
+    "Goblin": ("meat", "dagger", "leather_armor"),
     "Orc": ("short_sword", "power_potion"),
     "True Orc": ("long_sword"),
     "Bandit": ("short_sword", "precission_potion", "stamina_potion", "poison_potion", "dagger"),
@@ -78,6 +81,7 @@ SPECIAL_DROP_TABLES: Dict[str, Dict[str, object]] = {
         "items": (
             ("sand_bag", 1),
             ("poison_potion", 1),
+            ("health_potion", 1),
         ),
     },
     "Orc": {

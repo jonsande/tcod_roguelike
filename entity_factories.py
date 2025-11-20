@@ -39,6 +39,7 @@ from settings import (
     ADVENTURER_CORPSE_CHAR,
     ADVENTURER_CORPSE_COLOR,
     ADVENTURER_CORPSE_NAME,
+    PROFICIENCY_LEVELS,
 )
 
 # OBSTACLES:
@@ -49,8 +50,8 @@ door = Obstacle(
     color=(93,59,0),
     name="Door",
     ai_cls=Dummy,
-    fighter=Door(hp=random.randint(60,80), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
-    #obstacle=Door(hp=random.randint(15,35), base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=3),
+    fighter=Door(hp=random.randint(60,80), base_defense=0, strength=0, recover_rate=0, fov=0, base_armor_value=3),
+    #obstacle=Door(hp=random.randint(15,35), base_defense=0, strength=0, recover_rate=0, fov=0, base_armor_value=3),
     level=Level(xp_given=1),
     inventory=Inventory(capacity=0),
     equipment=Equipment(),
@@ -89,6 +90,13 @@ meat = Item(
     name="Meat",
     id_name = "Meat",
     consumable=consumable.FoodConsumable(amount=8)
+)
+banana = Item(
+    char=")",
+    color=(255, 255, 0),
+    name="Banana",
+    id_name = "Banana",
+    consumable=consumable.FoodConsumable(amount=5)
 )
 loot_tables.register_loot_item("meat", meat)
 triple_ration = Item(
@@ -226,6 +234,22 @@ def potion_name_roulette():
     else:
         pass
 
+note_name_options = [
+    "Note #1",
+    "Singed paper",
+    "Damaged parchment",
+    "Scorched scroll",
+]
+
+def note_name_generator():
+    global note_name_options
+    if note_name_options:
+        roulette = random.randint(0, len(note_name_options) - 1)
+        winner = note_name_options[roulette]
+        note_name_options.remove(winner)
+        return winner
+
+
 health_potion = Item(
     char="!",
     color=(200, 200, 200),
@@ -289,7 +313,7 @@ power_potion = Item(
     consumable=consumable.TemporalEffectConsumable(
         20,
         5,
-        'base_power',
+        'strength',
     ),
     throwable=True,
 )
@@ -418,8 +442,8 @@ table = Actor(
     name="Table",
     ai_cls=Dummy,
     equipment=Equipment(),
-    #fighter=Fighter(hp=10, base_defense=1, base_power=0, recover_rate=0, fov=0),
-    fighter=Door(hp=15, base_defense=0, base_power=0, recover_rate=0, fov=0, base_armor_value=1, fire_resistance=-4),
+    #fighter=Fighter(hp=10, base_defense=1, strength=0, recover_rate=0, fov=0),
+    fighter=Door(hp=15, base_defense=0, strength=0, recover_rate=0, fov=0, base_armor_value=1, fire_resistance=-4),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=0),
 )
@@ -433,7 +457,7 @@ campfire = Actor(
     fighter=Fighter(
         hp=random.randint(CAMPFIRE_MIN_HP, CAMPFIRE_MAX_HP),
         base_defense=0,
-        base_power=0,
+        strength=0,
         recover_rate=0,
         fov=3,
     ),
@@ -557,6 +581,24 @@ def _setup_adventurer_equipment(entity: Actor) -> None:
                 entity.equipment.toggle_equip(item, add_message=False)
                 break  # Equip only the first weapon found
 
+def _setup_creature_equipment(entity: Actor) -> None:
+    #import ipdb;ipdb.set_trace()
+    """Automatically equip a weapon if the creature has one in inventory."""
+    #print(f"# DEBUG: _setup_creature_equipment called for {entity.name}")
+    if not hasattr(entity, 'inventory') or not hasattr(entity, 'equipment'):
+        #print("# DEBUG: Entity missing inventory or equipment")
+        return
+    #print(f"# DEBUG: Inventory items: {[item.name for item in entity.inventory.items]}")
+    for item in entity.inventory.items:
+        #print(f"# DEBUG: Checking item {item.name}, has equippable: {hasattr(item, 'equippable')}, equippable: {item.equippable}")
+        if hasattr(item, 'equippable') and item.equippable:
+            #print(f"# DEBUG: Item {item.name} equipment_type: {item.equippable.equipment_type}")
+            if item.equippable.equipment_type == EquipmentType.WEAPON:
+                #print(f"# DEBUG: Equipping {item.name}")
+                entity.equipment.toggle_equip(item, add_message=False)
+                break  # Equip only the first weapon found
+    #print(f"# DEBUG: Final equipment.weapon: {entity.equipment.weapon}")
+
 short_sword_plus = Item(
     char="/", 
     color=(0, 191, 155), 
@@ -639,6 +681,14 @@ goblin_tooth_amulet = Item(
     equippable=equippable.GoblinAmulet()
 )
 
+# NOTES, BOOKS, NON MAGIC SCROLLS
+note_wizard_1 = Item(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note Wizard #1",
+    info="Hq ho ervtfh hqfdqwdgr, ho qhqñ rhugrlgr, Wlppb, kxíd gh orv jerolqv ulvxhqrv txh or dfhfkedq frq vxv wudpsdv. Gh uhshqwh, xq pdjr dqfldqr dsduhflr hq xqd qxeh gh kxpr sxusxud. '¡Ghwhqhgv, fuhdwxudv gh od vrpeud!', uxlr, odqfdqgr xq khfklyr txh wudqvirupr odv wudpsdv hq ioruhv. Orv jerolqv kxbhurq fkilldqgr, b hq pdjr wrpr od pdqr gh Wlppb: 'Yhq, shtxhqñ, ho krjdu wh hvshud'.")
+
 class BreakableWallFactory:
     """Factory that generates individualized breakable walls when spawning."""
 
@@ -650,7 +700,7 @@ class BreakableWallFactory:
         fighter = BreakableWallFighter(
             hp=self._roll_hp(),
             base_defense=0,
-            base_power=0,
+            strength=0,
             recover_rate=0,
             base_armor_value=0,
             loot_drop_chance=BREAKABLE_WALL_LOOT_CHANCE,
@@ -710,10 +760,10 @@ player = Actor(
     fighter=Fighter(
         hp=player_hp,
         base_defense=0, 
-        base_power=0,
+        strength=0,
         recover_rate=1, 
         fov=6,
-        dmg_mod = (1, 4), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=1, 
         base_to_hit=0,
         luck=1,
@@ -736,7 +786,23 @@ adventurer = Actor(
     ai_cls=AdventurerAI,
     #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
     equipment=Equipment(),
-    fighter=Fighter(hp=30, base_defense=2, base_power=0, recover_rate=0, fov=6, dmg_mod = (1, 4)),
+    fighter=Fighter(
+        hp=30, 
+        base_defense=2, 
+        strength=0, 
+        recover_rate=0, 
+        fov=6, 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
+        base_stealth=1, 
+        base_to_hit=0,
+        satiety=28,
+        stamina=3, 
+        max_stamina=3,
+        poison_resistance=2,
+        luck=1,
+        critical_chance=1,
+        super_memory=True,
+    ),
     inventory=Inventory(capacity=20, items=loot_tables.build_monster_inventory("Adventurer", amount=4)),
     level=Level(level_up_base=20),
 )
@@ -750,7 +816,7 @@ adventurer.on_spawn = _setup_adventurer_equipment
 
 #     ai_cls=Neutral,
 #     equipment=Equipment(),
-#     fighter=Fighter(hp=32, base_defense=5, base_power=4, recover_rate=0, fov=0, dmg_mod = (1, 4)),
+#     fighter=Fighter(hp=32, base_defense=5, strength=4, recover_rate=0, fov=0, weapon_proficiency = (1, 4)),
 #     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Adventurer Unique", 3)),
 #     level=Level(xp_given=50),
 # )
@@ -765,9 +831,10 @@ rat = Actor(
         hp=6, 
         #hp=32,
         base_defense=1, 
-        base_power=1, 
+        strength=1, 
         recover_rate=0, 
-        fov=0, dmg_mod = (1, 2), 
+        fov=0, 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=5, 
         stamina=3, 
         max_stamina=3,
@@ -788,10 +855,10 @@ swarm_rat = Actor(
     fighter=Fighter(
         hp=4,
         base_defense=1, 
-        base_power=1, 
+        strength=1, 
         recover_rate=0, 
         fov=8, 
-        dmg_mod = (1, 2), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=15, 
         stamina=2, 
         max_stamina=2,
@@ -811,10 +878,10 @@ goblin = Actor(
     fighter=Fighter(
         hp=random.randint(7,10), 
         base_defense=2,
-        base_power=3, 
+        strength=3, 
         recover_rate=1, 
         fov=random.randint(4, 6), 
-        dmg_mod = (1, 2), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=5, 
         stamina=random.randint(2,4),
         max_stamina=3,
@@ -822,9 +889,13 @@ goblin = Actor(
         action_time_cost=7,
         woke_ai_cls=HostileEnemy
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
+    #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
+    #inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", 3)),
+    #inventory=Inventory(capacity=1, items=[dagger]),
+    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", amount=2)),
     level=Level(xp_given=3),
 )
+goblin.on_spawn = _setup_creature_equipment
 
 monkey = Actor(
     char="y",
@@ -836,19 +907,20 @@ monkey = Actor(
     fighter=Fighter(
         hp=8, 
         base_defense=2, 
-        base_power=2, 
+        strength=2, 
         recover_rate=1, 
         fov=random.randint(3, 6), 
-        dmg_mod = (1, 2), 
-        aggressivity=3, 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
+        aggressivity=2, 
         stamina=5, 
         max_stamina=5,
         action_time_cost=6,
         woke_ai_cls=HostileEnemy
     ),
-    inventory=Inventory(capacity=1, items=None),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Monkey", amount=1)),
     level=Level(xp_given=3),
 )
+monkey.on_spawn = _setup_creature_equipment
 
 orc = Actor(
     char="o",
@@ -859,10 +931,10 @@ orc = Actor(
     fighter=Fighter(
         hp=12, 
         base_defense=2, 
-        base_power=3, 
+        strength=3, 
         recover_rate=0, 
         fov=random.randint(2,4), 
-        dmg_mod = (1, 6), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=8, 
         stamina=3, 
         max_stamina=3,
@@ -882,10 +954,10 @@ true_orc = Actor(
     fighter=Fighter(
         hp=32, 
         base_defense=2, 
-        base_power=3, 
+        strength=3, 
         recover_rate=0, 
         fov=random.randint(3,6), 
-        dmg_mod = (1, 6), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=15, 
         base_to_hit=1, 
         stamina=4, 
@@ -902,7 +974,18 @@ troll = Actor(
     name="Troll",
     ai_cls=HostileEnemy,
     equipment=Equipment(),
-    fighter=Fighter(hp=38, base_defense=2, base_armor_value=3, base_power=4, recover_rate=5, fov=0, dmg_mod = (1, 8), aggressivity=8, stamina=2, max_stamina=2),
+    fighter=Fighter(
+        hp=38, 
+        base_defense=2, 
+        base_armor_value=3, 
+        strength=4, 
+        recover_rate=5, 
+        fov=0, 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
+        aggressivity=8, 
+        stamina=2, 
+        max_stamina=2,
+    ),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=14),
 )
@@ -913,7 +996,17 @@ sauron = Actor(
     name="Sauron",
     ai_cls=HostileEnemy,
     equipment=Equipment(),
-    fighter=Fighter(hp=32, base_defense=3, base_power=4, recover_rate=12, fov=2, dmg_mod = (1, 6), aggressivity=8, stamina=5, max_stamina=5),
+    fighter=Fighter(
+        hp=32, 
+        base_defense=3, 
+        strength=4, 
+        recover_rate=12, 
+        fov=2, 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
+        aggressivity=8, 
+        stamina=5, 
+        max_stamina=5,
+    ),
     inventory=Inventory(capacity=8),
     level=Level(xp_given=25),
 )
@@ -927,10 +1020,10 @@ snake = Actor(
     fighter=Fighter(
         hp=4, 
         base_defense=1, 
-        base_power=0, 
+        strength=0, # Las serpientes no hacen daño. Pero pueden envenenar.
         recover_rate=0, 
         fov=1, 
-        dmg_mod = (0, 0), # Las serpientes no hacen daño. Pero pueden envenenar.
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
         aggressivity=1, 
         stamina=5, 
         max_stamina=5,
@@ -951,10 +1044,10 @@ bandit = Actor(
     fighter=Fighter(
         hp=32, 
         base_defense=1, 
-        base_power=2, 
+        strength=2, 
         recover_rate=1, 
         fov=8, 
-        dmg_mod = (1, 4), 
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=2,
     ),
@@ -971,9 +1064,10 @@ sentinel = Actor(
     fighter=Fighter(
         hp=12, 
         base_defense=1, 
-        base_power=3, 
+        strength=3, 
         recover_rate=12, 
-        fov=0, dmg_mod = (1, 4), 
+        fov=0,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=0, 
         stamina=3, 
         max_stamina=3,

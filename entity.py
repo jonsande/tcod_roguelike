@@ -225,9 +225,6 @@ class Item(Entity):
                     obj.identified = True
 
 
-
-
-
 class Decoration(Entity):
     def __init__(
         self,
