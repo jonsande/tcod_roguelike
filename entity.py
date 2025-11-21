@@ -224,6 +224,16 @@ class Item(Entity):
                     obj.name = self.id_name
                     obj.identified = True
 
+class Book(Item):
+    """Consumables or notes that simply reveal their info text when read."""
+
+    def __init__(self, *, info: str = "NO INFO", **kwargs):
+        kwargs.setdefault("info", info)
+        super().__init__(**kwargs)
+
+    def read_message(self) -> str:
+        return self.info
+
 
 class Decoration(Entity):
     def __init__(

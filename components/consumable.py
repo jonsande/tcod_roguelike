@@ -105,6 +105,9 @@ SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Paralisis scroll": "Las sigilosas runas atrapan a {target} en el sitio.",
     "Lightning scroll": "El aire cruje y un rayo alcanza a {target}.",
     "Fireball scroll": "La explosión ígnea iluminó las runas: {affected} objetivo(s) quedaron ardiendo.",
+    "Descend scroll": "Un remolino de runas te arrastra hasta el siguiente nivel.",
+    "Teleport scroll": "Las runas chispean y el aire distorsiona mientras desapareces.",
+    "Prodigious memory scroll": "Tus pasos recientes quedaron grabados en tu mente como si el mapa entero se hubiera movido contigo.",
 }
 
 class ScrollConsumable(Consumable):
@@ -982,3 +985,61 @@ class LightningDamageConsumable(ScrollConsumable):
             ]
             frames.append((glyphs, 0.04))
         self.engine.queue_animation(frames)
+
+
+class DescendScrollConsumable(ScrollConsumable):
+    """Transport the reader to a random free tile on the next floor."""
+
+    def _activate_scroll(self, action: actions.ItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        game_world = self.engine.game_world
+        if game_world.current_floor >= len(game_world.levels):
+            raise Impossible("You can't descend any further.")
+        if not game_world.advance_floor():
+            raise Impossible("You can't descend any further.")
+        new_map = self.engine.game_map
+        x, y = game_world._find_random_free_tile(new_map)
+        consumer.place(x, y, new_map)
+        self.engine.update_fov()
+        self._effect_message(
+            consumer,
+            "Un remolino de runas se abre bajo ti y caes en el siguiente nivel.",
+            "{name} desaparece en un remolino de runas.",
+            color.descend,
+        )
+        return {"affected": 1}
+
+
+class TeleportScrollConsumable(ScrollConsumable):
+    """Move the reader to a random free tile on the current floor."""
+
+    def _activate_scroll(self, action: actions.ItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        game_world = self.engine.game_world
+        current_map = self.engine.game_map
+        x, y = game_world._find_random_free_tile(current_map)
+        consumer.place(x, y, current_map)
+        self.engine.update_fov()
+        self._effect_message(
+            consumer,
+            "Las runas estallan y apareces en un punto inesperado del mapa.",
+            "{name} desaparece en un destello de runas.",
+            color.status_effect_applied,
+        )
+        return {"affected": 1}
+
+
+class ProdigiousMemoryConsumable(ScrollConsumable):
+    """Grant the reader permanent super memory for the current campaign."""
+
+    def _activate_scroll(self, action: actions.ItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        if consumer is self.engine.player:
+            consumer.fighter.super_memory = True
+        self._effect_message(
+            consumer,
+            "Las runas se enlazan con tu mente y recuerdas cada rincón de la mazmorra.",
+            "{name} parece caminar conociendo cada rincón.",
+            color.status_effect_applied,
+        )
+        return {"affected": 1}

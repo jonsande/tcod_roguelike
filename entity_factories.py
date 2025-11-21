@@ -19,7 +19,7 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Decoration, Obstacle, Entity, Chest
+from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest
 import random
 import numpy as np
 import tile_types
@@ -188,6 +188,30 @@ fireball_scroll = Item(
     id_name = "Fireball scroll",
     consumable=consumable.FireballDamageConsumable(damage=12, radius=2),
 )
+descend_scroll = Item(
+    char="~",
+    color=(166, 0, 255),
+    name=scroll_name_roulette(),
+    id_name="Descend scroll",
+    consumable=consumable.DescendScrollConsumable(),
+)
+loot_tables.register_loot_item("descend_scroll", descend_scroll)
+teleport_scroll = Item(
+    char="~",
+    color=(0, 255, 255),
+    name=scroll_name_roulette(),
+    id_name="Teleport scroll",
+    consumable=consumable.TeleportScrollConsumable(),
+)
+loot_tables.register_loot_item("teleport_scroll", teleport_scroll)
+prodigious_memory_scroll = Item(
+    char="~",
+    color=(120, 200, 255),
+    name=scroll_name_roulette(),
+    id_name="Prodigious memory scroll",
+    consumable=consumable.ProdigiousMemoryConsumable(),
+)
+loot_tables.register_loot_item("prodigious_memory_scroll", prodigious_memory_scroll)
 
 # Breakable wall loot table (scrolls and similar findings hidden in walls)
 BREAKABLE_WALL_LOOT_TABLE = [
@@ -682,7 +706,7 @@ goblin_tooth_amulet = Item(
 )
 
 # NOTES, BOOKS, NON MAGIC SCROLLS
-note_wizard_1 = Item(
+note_wizard_1 = Book(
     char="~",
     color=(230,230,230),
     name=note_name_generator(), 
@@ -759,8 +783,8 @@ player = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=player_hp,
-        base_defense=0, 
-        strength=0,
+        base_defense=0,
+        strength=1,
         recover_rate=1, 
         fov=6,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
@@ -769,7 +793,7 @@ player = Actor(
         luck=1,
         critical_chance=1,
         satiety=player_satiety,
-        stamina=3, 
+        stamina=3,
         max_stamina=player_max_stamina,
         poison_resistance=1,
         super_memory=False,
@@ -788,13 +812,13 @@ adventurer = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=30, 
-        base_defense=2, 
-        strength=0, 
+        base_defense=5,
+        base_to_hit=0,
+        strength=1, 
         recover_rate=0, 
         fov=6, 
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
         base_stealth=1, 
-        base_to_hit=0,
         satiety=28,
         stamina=3, 
         max_stamina=3,
@@ -830,7 +854,7 @@ rat = Actor(
     fighter=Fighter(
         hp=6, 
         #hp=32,
-        base_defense=1, 
+        base_defense=3, 
         strength=1, 
         recover_rate=0, 
         fov=0, 
@@ -854,7 +878,7 @@ swarm_rat = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=4,
-        base_defense=1, 
+        base_defense=2, 
         strength=1, 
         recover_rate=0, 
         fov=8, 
@@ -876,13 +900,14 @@ goblin = Actor(
     #ai_cls=Scout,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=random.randint(7,10), 
-        base_defense=2,
-        strength=3, 
+        hp=6,
+        base_defense=5,
+        base_to_hit=0,
+        strength=1, 
         recover_rate=1, 
         fov=random.randint(4, 6), 
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
-        aggressivity=5, 
+        aggressivity=4, 
         stamina=random.randint(2,4),
         max_stamina=3,
         poison_resistance=6,
@@ -906,8 +931,8 @@ monkey = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=8, 
-        base_defense=2, 
-        strength=2, 
+        base_defense=6, 
+        strength=1, 
         recover_rate=1, 
         fov=random.randint(3, 6), 
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
@@ -930,8 +955,9 @@ orc = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=12, 
-        base_defense=2, 
-        strength=3, 
+        base_defense=6, 
+        base_to_hit=1,
+        strength=2, 
         recover_rate=0, 
         fov=random.randint(2,4), 
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
@@ -941,9 +967,10 @@ orc = Actor(
         action_time_cost=10,
         woke_ai_cls=HostileEnemy
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Orc", 1)),
+    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Orc", 2)),
     level=Level(xp_given=5),
 )
+orc.on_spawn = _setup_creature_equipment
 
 true_orc = Actor(
     char="o",
@@ -953,7 +980,7 @@ true_orc = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=32, 
-        base_defense=2, 
+        base_defense=8, 
         strength=3, 
         recover_rate=0, 
         fov=random.randint(3,6), 
@@ -964,9 +991,10 @@ true_orc = Actor(
         max_stamina=4,
         woke_ai_cls=HostileEnemy
         ),
-    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("True Orc", 2)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("True Orc", 1)),
     level=Level(xp_given=10),
 )
+true_orc.on_spawn = _setup_creature_equipment
 
 troll = Actor(
     char="T",
@@ -977,7 +1005,7 @@ troll = Actor(
     fighter=Fighter(
         hp=38, 
         base_defense=2, 
-        base_armor_value=3, 
+        base_armor_value=5,
         strength=4, 
         recover_rate=5, 
         fov=0, 
@@ -989,6 +1017,7 @@ troll = Actor(
     inventory=Inventory(capacity=1),
     level=Level(xp_given=14),
 )
+troll.on_spawn = _setup_creature_equipment
 
 sauron = Actor(
     char="&",
@@ -1019,7 +1048,7 @@ snake = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=4, 
-        base_defense=1, 
+        base_defense=3, 
         strength=0, # Las serpientes no hacen daño. Pero pueden envenenar.
         recover_rate=0, 
         fov=1, 
@@ -1043,7 +1072,7 @@ bandit = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=32, 
-        base_defense=1, 
+        base_defense=8, 
         strength=2, 
         recover_rate=1, 
         fov=8, 
@@ -1054,6 +1083,7 @@ bandit = Actor(
     inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Bandit", 2)),
     level=Level(xp_given=14),
 )
+bandit.on_spawn = _setup_creature_equipment
 
 sentinel = Actor(
     char="&",

@@ -76,6 +76,7 @@ class Dagger(Equippable):
             min_dmg=1, 
             max_dmg=4,
             dmg_bonus=0,
+            defense_bonus=1,
             stealth_bonus=1, 
             to_hit_bonus=1,
             )
@@ -87,6 +88,7 @@ class DaggerPlus(Equippable):
             min_dmg=1, 
             max_dmg=4,
             dmg_bonus=2,
+            defense_bonus=1,
             stealth_bonus=1, 
             to_hit_bonus=2,
             )
@@ -98,6 +100,7 @@ class ShortSword(Equippable):
             min_dmg=1, 
             max_dmg=6,
             dmg_bonus=0,
+            defense_bonus=1,
             stealth_bonus=0, 
             to_hit_bonus=1,
             )
@@ -110,6 +113,7 @@ class ShortSwordPlus(Equippable):
             min_dmg=1, 
             max_dmg=6,
             dmg_bonus=2,
+            defense_bonus=1,
             stealth_bonus=0, 
             to_hit_bonus=2,
             )
@@ -122,6 +126,7 @@ class LongSword(Equippable):
             min_dmg=1, 
             max_dmg=8,
             dmg_bonus=0,
+            defense_bonus=1,
             stealth_penalty=1, 
             )
 
@@ -133,6 +138,7 @@ class LongSwordPlus(Equippable):
             min_dmg=1, 
             max_dmg=8,
             dmg_bonus=2,
+            defense_bonus=1,
             stealth_penalty=1, 
             )
 
@@ -143,7 +149,8 @@ class Spear(Equippable):
             equipment_type=EquipmentType.WEAPON, 
             min_dmg=1, 
             max_dmg=8,
-            dmg_bonus=0, 
+            dmg_bonus=0,
+            defense_bonus=2,
             to_hit_bonus=1,
             )
 
@@ -154,7 +161,8 @@ class SpearPlus(Equippable):
             equipment_type=EquipmentType.WEAPON, 
             min_dmg=1, 
             max_dmg=8,
-            dmg_bonus=2, 
+            dmg_bonus=2,
+            defense_bonus=2,
             to_hit_bonus=2,
             )
 
@@ -164,11 +172,11 @@ class LeatherArmor(Equippable):
         super().__init__(
             equipment_type=EquipmentType.ARMOR, 
             dmg_bonus = 0, 
-            defense_bonus=0, 
+            defense_bonus=-1,
             stealth_bonus=0,
             stealth_penalty=1,
             to_hit_bonus=0,
-            to_hit_penalty=1,
+            to_hit_penalty=0,
             armor_value_bonus=2,
         )
         #self.parent.info=f"Stealth Penalty: {self.stealth_penalty}",
@@ -178,11 +186,11 @@ class ChainMail(Equippable):
     def __init__(self) -> None:
         super().__init__(
             equipment_type=EquipmentType.ARMOR, 
-            armor_value_bonus=5, 
-            stealth_penalty=3, 
+            armor_value_bonus=5,
+            defense_bonus=-2,
+            stealth_penalty=3,
             to_hit_penalty=2,
             )
-
 
 class Grial(Equippable):
     def __init__(self) -> None:

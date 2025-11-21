@@ -9,9 +9,10 @@ VARIOS
 - [ ] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
 
 RENDIMIENTO
-- [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox.
+- [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo.
 
 ARMAS
+- [ ] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
 - [-] Añadir en una casilla la distancia a la que se puede lanzar una daga. [Esto depende de la fuerza y pericia del jugador]
 - [ ] Bajarles el color a los sprites de armas.
 - [ ] Los objetos equipados en el inventario deben ir de otro color.
@@ -51,12 +52,12 @@ EFECTOS VISUALES
 
 PERGAMINOS
 - [ ] Limitar la distancia a la que se pueden "lanzar" los pergaminos.
-- [ ] Pergamino de descender de nivel.
+- [x] Pergamino de descender de nivel.
 - [ ] El paralysis scroll dura quizá poco.
 - [ ] Algún sistema para aumentar el stealth de forma permanente (un pergamino).
 - [ ] Pergamino summon monsters
 - [ ] Pergamino de generar humo (impide la visión en un área determinada)
-- [ ] Pergamino de teletransporte
+- [x] Pergamino de teletransporte
 - [ ] Pergamino que haga el player.fighter.super_memory True, para que se active el sistema de memoria típico
 - [ ] Pergamino que identifica si el efecto del objeto es bueno, malo, o neutral.
 
@@ -77,7 +78,7 @@ LIBRERÍAS
 
 OBJETOS VARIOS
 - [ ] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
-- [!] Libros, notas. La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
+- [x] Libros, notas. 
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 ARTEFACTOS
@@ -102,6 +103,7 @@ HUD
 - [ ] Etiqueta "poisoned" en el panel de abajo para cuando se está envenenado. Y etiqueta confused.
 
 DUNGEON GENERATION
+- [ ] El max_instances de un objeto parece que no está funcionando. Esta configuración tiene que ser total. Es decir, que nada pueda alterarla, generar una instancia de un objeto que tiene max_instances = 1.
 - [x] La probabilidad de generarse un objeto por habitación debe ser independiente. Ahora mismo se aplica la tirada a todas las habitaciones de la planta. Esto hace que el jugador sepa rápido si en esa planta merece la pena buscar o no.
 - [ ] El color de los sprites de muro debe ser relativo y fijo al nivel. 
 - [ ] Arreglar problemas con la generación de fixed rooms (custom rooms)
@@ -116,33 +118,35 @@ La fixed dungeon de mitad de descenso se escogerá entre una batería de posible
     - [ ] Otros.
 
 COMBATE
+- [!] El valor mínimo de TO-HIT debe ser 0!! Si no se rompe la fórmula. Aun así la penalización de armadura se modifica igual, pues cuando el jugador debería ganar 1 punto en melee, se quedaría en 0.
 - [x] Rediseñar el sistema de cálculo de daño del combate. Cambiar el modo en que funcionan las armas a este respecto. Hacerlo todo más claro. Y más congruente con el factor "pericia del luchador" (proficiency).
 - [!] Describir bien cómo funciona el combate, con sus elementos tácticos y sus fórmulas.
 - [!] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
-- [ ] Modificar la mecánica del combate táctico. Actualmente es:
+- [ ] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes).
+- [x] Modificar la mecánica del combate táctico. Actualmente es:
 
 Cuando se entra en melee (aparece un indicador de melee) se pueden hacer tres cosas, con distintos resultados para la STAMINA, el índice TO-HIT y el índice de DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá se pueda hacer relativo a algo):
 
-Actual
+Sistema Actual
                             STAMINA |  TO-HIT  | DEFENSE
 Atacar:                       -1    |  reset   |  reset 
 Defenderse (pasar turno):     -1    |   +1     |   +1
 Retroceder:                   +1    |  reset   |   +1
 
 
-Modelo viejo
-                            STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |          |   -1 
-Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |    -
-
 Alternativa A
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |  reset   |   -1 
+Defenderse (pasar turno):     -1    |   +1     |   +1
+Retroceder:                   +1    |  reset   |   reset
+
+Alternativa B
                             STAMINA |  TO-HIT  | DEFENSE
 Atacar:                       -1    |  reset   |  reset 
 Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |   -
+Retroceder:                   +1    |  reset   |    -
 
-Alternativa B
+Alternativa C
                             STAMINA |  TO-HIT  | DEFENSE
 Atacar:                       -1    |  reset   |  reset
 Defenderse (pasar turno):     -1    |   +1     |   +1
@@ -153,6 +157,7 @@ Retroceder:                   +1    |  reset   |   -1
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- [ ] La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
 - [x] Cofres!
 - [!] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida.
 - [ ] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit.

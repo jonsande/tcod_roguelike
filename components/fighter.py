@@ -151,6 +151,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             aggressivity: int = 0,
             wait_counter: int = 0,
             base_to_hit: int = 0,
+            #max_to_hit: int = 6,
             base_armor_value: int = 0,
             temporal_effects: bool = False,
             luck: int = 0,
@@ -193,6 +194,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.aggressivity = aggressivity
         self.wait_counter = wait_counter
         self.base_to_hit = base_to_hit
+        #self.max_to_hit = max_to_hit
         self.base_armor_value = base_armor_value
         self.temporal_effects = temporal_effects
         self.luck = luck

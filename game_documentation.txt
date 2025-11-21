@@ -1,0 +1,83 @@
+1. EL COMBATE
+
+- - Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará.
+
+- Avisos preliminares: ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos para sobrevivir: todo enemigo ha de tomarse en serio. A veces empezar un combate no es la mejor táctica. En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). Aprende a hacer uso del entorno. A veces el siguilo es tu mejor baza. Aprende a escapar.
+
+1.1. EL MODO COMBATE (MODO MELEE)
+
+- Si el PJ se y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
+
+- En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que llevemos a cabo.
+
+- MANIOBRA DEFENSIVA: Si en el turno anterior a entrar en MODO MELEE el PJ espera un turno, el PJ entrará en POSICIÓN DEFENSIVA, obteniendo los siguientes bonificadores:
+
+                             TO-HIT |  DEFENSE
+                              +1    |    +1
+
+- Una vez en MODO MELEE, existen tres tipos de acciones o MANIOBRAS DEFENSIVAS, con distintos resultados para la STAMINA, el índice TO-HIT y el índice de DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
+
+                            STAMINA |  TO-HIT  | DEFENSE
+Atacar:                       -1    |    -     |   -1             
+Defenderse (WaitAction):      -1    |   +1     |   +1             
+Retroceder(MovementAction):   +1    |   +1     |   +1             
+
+- Si el jugador se queda sin STAMINA en medio de un combate melee, puede hacer dos cosas, con sus correspondientes bonificaciones y penalizaciones asociadas:
+
+                            STAMINA |  TO-HIT  | DEFENSE
+Defenderse (WaitAction):      +1    |  reset   |  reset           
+Retroceder(MovementAction):   +1    |    +1    |    +1             
+
+- Si el jugador recibe un impacto y este hace daño, perderá de golpe las bonificaciones a TO-HIT y DEFENSE que hubiera acumulado:
+
+                            STAMINA |  TO-HIT  | DEFENSE
+Redibir daño:                 -     |  reset   |  reset
+
+
+- Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo para su ejecución.
+
+
+1.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
+
+- Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
+
+1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
+
+
+1.3. CÁLCULO DE DAÑO
+
+- Si un ataque impacta, se calcula el daño según la siguiente fórmula:
+
+(FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
+
+
+***[
+damage = ((self.entity.fighter.strength + weapon_dmg(1dx+y) + Equipment bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
+
+Definiciones:
+total_equipment_dmg =  weapon_dmg(1dx+y) + equipment_bonus
+weapon_dmg = weapon_dmg_dice (la daga, por ejemplo, hace 1d4) + dmg_bonus (algunas armas tienen un bonus)
+equipment_bonus = suma de todos los dmg_bonus que tengan los ítems del equipo
+]
+
+
+***[
+SISTEMA DE PROGRESIÓN
+
+No habrá weapon proficiency (no merece la pena: el mismo resultado se puede conseguir con un sistema más simple).
+De momento se puede dejar el sistema proficiency, haciendo que todas las criaturas tengan el nivel por defecto "Novice".	
+Si va a haber modo de incrementar el To-Hit, tiene que haber modo de incrementar la DV, tanto para PJ como para PNJs.
+Como sí va a haber modo de aumentar daño, también tiene que haber modo de aumentar el AV y/o la vida.
+Creo que debería de haber un límite (bastante bajo) de aumento del To-Hit, pues de otro modo hay que modificar también la proporción de aumento en es sistema táctico, y esto complica todo innecesariaemnte.
+Dedidido: límite al to_hit 7.
+
+Pociones que aumenten el to_hit_base: 2 max (+1 punto cada una)
+Máximo de bonus por equipo al to_hit: 2 (por arma) + 1 (por artefacto) = 3
+Máximo de bonus al to_hit por WaitAction en combate: 3
+Total: 8
+
+La dificultad del juego tiene que aumental más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.
+
+]
+
+

@@ -46,7 +46,7 @@ if GRAPHIC_MODE == "hardcore":
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
 GOD_MODE = False
 GOD_MODE_STEALTH = False
-DEBUG_MODE = False # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 
 # -- Game settings ------------------------------------------------------
 
@@ -132,18 +132,19 @@ CHEST_SPAWN_CHANCES = [
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 CHEST_ITEM_COUNT_BY_FLOOR = [
-    (1, (3, 5)),
+    (1, (6, 6)),
     (4, (1, 3)),
     (8, (1, 3)),
 ]
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 CHEST_LOOT_TABLES = {
     1: [
-        ("health_potion", 5),
-        ("stamina_potion", 5),
-        ("triple_ration", 4),
-        ("sand_bag", 2),
-        ("antidote", 2),
+        ("prodigious_memory_scroll", 1),
+        # ("health_potion", 5),
+        # ("stamina_potion", 5),
+        # ("triple_ration", 4),
+        # ("sand_bag", 2),
+        # ("antidote", 2),
     ],
     4: [
         ("power_potion", 3),
@@ -379,13 +380,16 @@ ITEM_SPAWN_RULES = {
     "paralisis_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
     "lightning_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
     "fireball_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
+    "descend_scroll": {"min_floor": 3, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
+    "teleport_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(2, 3), (5, 4)]},
+    "prodigious_memory_scroll": {"min_floor": 5, "max_instances": 2, "weight_progression": [(5, 1), (8, 2)]},
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
     # OTHER
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
     "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
-    "note_wizard_1": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 100)]},
+    "note_wizard_1": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 2)]},
     # ARTIFACTS
     # BUG: el min_floor no está funcionando como se espera. Sólo debería de aparecer a partir
     # del nivel 7, pero me lo encuentro en otros niveles. No sé tampoco si el max_instancies

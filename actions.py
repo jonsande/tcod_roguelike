@@ -302,12 +302,21 @@ class ThrowItemAction(Action):
             self._spend_throw_cost()
             return
 
+        # Comprobar si atacante y/o objetivo son visibles para el jugador
+        # Útil para impresión de mensajes y más.
+        if self.engine.game_map.visible[target.x, target.y] == False:
+            target_visible = False
+        else:
+            target_visible = True
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            attacker_visible = False
+        else:
+            attacker_visible = True
+
+        # Stamina check
         if self.entity.fighter.stamina <= 0:
             self.engine.message_log.add_message("You are exhausted!", color.red)
             raise exceptions.Impossible("")
-        
-        # TODO: el cálculo de impacto hay que rediseñarlo
-        hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
 
         # Desequipar objeto (si está equipado)
         if self.entity.equipment.item_is_equipped(self.item):
@@ -323,195 +332,225 @@ class ThrowItemAction(Action):
             self._spend_throw_cost()
             return
 
-        # Mecánica backstab/stealth/sigilo (beta)
-        # Bonificador al impacto
+
+        # CÁLCULO DE IMPACTOS
+        hits = False
+        stealth_attack = False
+
+        # Contra objetivos vivientes
         if self.is_dummy_object(target.ai) == False:
+            
+            # Ataque sorpresa backstab/stealth/sigilo con bonificador al impacto (beta)
             if target.fighter.aggravated == False:
-                #import ipdb;ipdb.set_trace()
-                #TODO: Revisar este hit_dice
-                hit_dice = hit_dice + self.entity.fighter.luck + self.entity.fighter.base_stealth
-                if self.engine.debug == True:
-                    print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
+    
+                hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
+                hit_dice = round(hit_dice) + self.entity.fighter.luck
+                
+                if hit_dice > target.fighter.defense - self.entity.fighter.stealth:
+                    hits = True
+                else:
+                    hits = False
 
-        # Si impacta
-        if hit_dice > target.fighter.defense:
+                if hits:
+                    stealth_attack = True
+                    if attacker_visible or target_visible:
+                        print(f"{self.entity.name} has SUCCESSFULLY executed a stealth attack (VS {target.name})")
+                        self.engine.message_log.add_message(
+                            f"{self.entity.name} has SUCCESSFULLY executed a stealth attack (VS {target.name})", 
+                            color.orange
+                            )
+                else:
+                    stealth_attack = False
+                    if attacker_visible or target_visible:
+                        print(f"{self.entity.name} FAILED the stealth attack (VS {target.name})!")
+                        self.engine.message_log.add_message(
+                            f"{self.entity.name} FAILED the stealth attack (VS {target.name})", 
+                            color.red
+                            )
 
-            if self.entity is self.engine.player:
-                damage_color = color.health_recovered
+            # Ataque ordinario (no stealth)
+            else:
+
+                hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
+                hit_dice = round(hit_dice)
+                
+                if hit_dice > target.fighter.defense:
+                    hits = True
+
+            # Si impacta
+            if hits == True:
+
                 # Despertar durmiente en caso de ser golpeado (aun sin daño)
                 from components.ai import HostileEnemy, SleepingEnemy
                 if isinstance(target, Actor) and isinstance(target.ai, SleepingEnemy):
                     target.ai = HostileEnemy(target)
-            else:
-                damage_color = color.red
-            
-            # Mecánica ataque envenenado
-            if self.entity.fighter.poisons_on_hit == True:
 
-                from components.ai import Dummy
-                #if isinstance(target.ai, Dummy) == False:
-                if self.is_dummy_object(target.ai) == False:
+                # Relativizar colores para mensajes
+                if self.entity is self.engine.player:
+                    damage_color = color.health_recovered
+                else:
+                    damage_color = color.red
+                
+                # Mecánica ataque envenenado
+                if self.entity.fighter.poisons_on_hit == True and self.is_dummy_object(target.ai) == False:
 
                     poison_roll = random.randint(1, 6)
 
                     if poison_roll > 1:
 
                         if self.entity is self.engine.player:
-                            print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
-                            self.engine.message_log.add_message(
-                                "{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
-                                damage_color
-                                )
+                            if attacker_visible or target_visible:
+                                print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
+                                self.engine.message_log.add_message(
+                                    "{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                    damage_color
+                                    )
                             
                         else:
-                            print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
-                            self.engine.message_log.add_message(
-                                "You are POISONED! (The {self.entity.name} was poisonous)", 
-                                damage_color
-                                )
+                            if attacker_visible or target_visible:
+                                print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                                self.engine.message_log.add_message(
+                                    "You are POISONED! (The {self.entity.name} was poisonous)", 
+                                    damage_color
+                                    )
 
                         target.fighter.is_poisoned = True
+                        # TODO: relativizar el poisoned_counter y el poison_dmg
                         target.fighter.poisoned_counter += 5
                         target.fighter.poison_dmg = 1
                         self.entity.fighter.poisons_on_hit = False
 
-            #damage = self.entity.fighter.power + random.randint(self.entity.fighter.weapon_proficiency[0], self.entity.fighter.weapon_proficiency[1]) - target.fighter.armor_value
-            
-            # if hasattr(self.item, 'equippable'):
-            #     weapon_dmg = getattr(self.item.equippable.weapon_dmg, "weapon_dmg", 0) #Creo que esta sería la manera más simple de hacerlo.
-            # damage = (self.entity.fighter.strength + (weapon_dmg * self.entity.fighter.weapon_proficiency)) - target.fighter.armor_value
-            # damage = round(damage)
+                # THROWING DAMAGE CALCULATION
+                # Si es un arma...
+                if self.item.equippable.equipment_type.name == "WEAPON":
 
-            # TODO: Revisar fórmula de daño al lanzar objetos. Tener en cuenta que pueden
-            # lanzarse armas como dagas y objetos que no son armas.
-            total_equipment_dmg_bonus = getattr(self.entity.fighter, "total_equipment_dmg", 0)
-            print(f"DEBUG: total_equipment_dmg en ThrowItemAction: {total_equipment_dmg_bonus}")
-            damage = ((self.entity.fighter.strength + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
-            damage = round(damage)
+                    strength = self.entity.fighter.strength
+                    weapon_dmg_dice_info = self.item.equippable.weapon_dmg_dice_info
+                    weapon_dmg_bonus = self.item.equippable.weapon_dmg_bonus
+                    non_weapon_dmg_bonus = self.entity.fighter.non_weapon_dmg_bonus
+                    total_equipment_dmg_bonus = self.entity.fighter.total_equipment_dmg_bonus
+                    proficiency = self.entity.fighter.weapon_proficiency
+                    weapon_dmg_dice_roll = self.item.equippable.weapon_dmg_dice
+                    
+                    if attacker_visible or target_visible:
+                        print(f"{bcolors.WARNING}Calculating THROWING damage with the following stats:{bcolors.ENDC}")
+                        print("Throwing weapon: ", self.item.name)
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {strength}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_info: {weapon_dmg_dice_info}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_roll: {weapon_dmg_dice_roll}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_bonus: {weapon_dmg_bonus}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} non_weapon_dmg_bonus: {non_weapon_dmg_bonus}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} (total_equipment_dmg_bonus: {total_equipment_dmg_bonus})")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} proficiency: {proficiency}")
+                        if target.fighter:
+                            print(f"{bcolors.WARNING}{target.name}{bcolors.ENDC} armor_value: {target.fighter.armor_value}")
+                    
+                    # El arma lanzada ya no se encuentra equipada, por eso hay que sumar su bonus aparte
+                    damage = ((strength + weapon_dmg_dice_roll + weapon_dmg_bonus + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
+                    damage = round(damage)
 
-            # THROWING DAMAGE CALCULATION
-            if self.item.equippable.equipment_type.name == "WEAPON":
+                    # Bonificador STEALTH ATTACK al daño
+                    if stealth_attack:
 
-                strength = self.entity.fighter.strength
-                weapon_dmg_dice_info = self.item.equippable.weapon_dmg_dice_info
-                weapon_dmg_bonus = self.item.equippable.weapon_dmg_bonus
-                no_weapon_dmg_bonus = self.entity.fighter.non_weapon_dmg_bonus
-                total_equipment_dmg_bonus = self.entity.fighter.total_equipment_dmg_bonus
-                proficiency = self.entity.fighter.weapon_proficiency
-                weapon_dmg_dice_roll = self.item.equippable.weapon_dmg_dice
-                
-                print(f"{bcolors.WARNING}Calculating THROWING damage with the following stats:{bcolors.ENDC}")
-                print("Throwing weapon: ", self.item.name)
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {strength}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_info: {weapon_dmg_dice_info}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_roll: {weapon_dmg_dice_roll}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_bonus: {weapon_dmg_bonus}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} no_weapon_dmg_bonus: {no_weapon_dmg_bonus}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} (total_equipment_dmg_bonus: {total_equipment_dmg_bonus})")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} proficiency: {proficiency}")
-                if target.fighter:
-                    print(f"{bcolors.WARNING}{target.name}{bcolors.ENDC} armor_value: {target.fighter.armor_value}")
-        
-                #total_equipment_dmg_bonus = getattr(self.entity.fighter, "total_equipment_dmg_bonus", 0)
-                #import ipdb;ipdb.set_trace()
-                # El arma lanzada ya no se encuentra equipada, por eso hay que sumar su bonus aparte
-                damage = ((strength + weapon_dmg_dice_roll + weapon_dmg_bonus + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
-                damage = round(damage)
-                print(f"{bcolors.WARNING}--> Final THROWING damage: {damage}{bcolors.ENDC}")
+                        second_weapon_dmg_dice_roll = self.item.equippable.weapon_dmg_dice
+                        damage = damage + strength + second_weapon_dmg_dice_roll
 
-            else:
-                # Si no es un arma, hacer daño básico
-                print(f"{bcolors.WARNING}Calculating THROWING damage (NON-WEAPON) with the following stats:{bcolors.ENDC}")
-                print("Throwing weapon: ", self.item.name)
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {self.entity.fighter.strength}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} no_weapon_dmg_bonus: {self.entity.fighter.non_weapon_dmg_bonus}")
-                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} proficiency: {self.entity.fighter.weapon_proficiency}")
-                damage = (self.entity.fighter.strength + self.entity.fighter.non_weapon_dmg_bonus) * self.entity.fighter.weapon_proficiency - target.fighter.armor_value
-                damage = round(damage)
-                print(f"{bcolors.WARNING}--> Final THROWING damage (non-weapon): {damage}{bcolors.ENDC}")
+                        if target_visible or attacker_visible:
+                            self.engine.message_log.add_message("Successful stealth attack!", damage_color)
+                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful stealth attack! ({damage} dmg points)")
+                            print(f"Backstab final damage: {damage}")
 
-
-            # Mecánica backstab/stealth/sigilo (beta)
-            # Bonificador al daño
-            if isinstance(target, Actor):
-                if self.is_dummy_object(target.ai) == False:
-                    if target.fighter.aggravated == False:
-                        damage = (damage + self.entity.fighter.luck) * 2
-
-                        if self.engine.debug == True:
+                        if DEBUG_MODE:
                             print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
-
-                        self.engine.message_log.add_message("Successful stealth attack!", damage_color)
-
-                        # Experiencia extra
-                        if self.entity == self.engine.player:
-                            if self.engine.debug == True:
+                        
+                        # Especial para dagas
+                        if self.item.name == "Dagger":
+                            damage = damage * 1.5
+                            damage = round(damage)
+                            if DEBUG_MODE:
+                                print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
+                        
+                        if DEBUG_MODE == True:
+                            if self.entity == self.engine.player:
                                 print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
-                            self.engine.player.level.add_xp(target.level.xp_given)
 
-                        target.fighter.aggravated = True
+                        self.engine.player.level.add_xp(target.level.xp_given)
 
-            attack_desc = f"{self.entity.name.capitalize()} attacks {target.name} ({hit_dice} VS {target.fighter.defense})"
+                    if attacker_visible or target_visible:
+                        print(f"{bcolors.WARNING}--> Final THROWING damage: {damage}{bcolors.ENDC}")
 
-            # Si hace daño...
-            if damage > 0:
+                else:
+                    # Si no es un arma, hacer daño básico
+                    if attacker_visible or target_visible:
+                        print(f"{bcolors.WARNING}Calculating THROWING damage (NON-WEAPON) with the following stats:{bcolors.ENDC}")
+                        print("Throwing weapon: ", self.item.name)
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {self.entity.fighter.strength}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} non_weapon_dmg_bonus: {self.entity.fighter.non_weapon_dmg_bonus}")
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} proficiency: {self.entity.fighter.weapon_proficiency}")
+                    damage = (self.entity.fighter.strength + self.entity.fighter.non_weapon_dmg_bonus) * self.entity.fighter.weapon_proficiency - target.fighter.armor_value
+                    damage = round(damage)
+                    if attacker_visible or target_visible:
+                        print(f"{bcolors.WARNING}--> Final THROWING damage (non-weapon): {damage}{bcolors.ENDC}")
 
-                print(f"{attack_desc} for {damage} dmg points.")
-                self.engine.message_log.add_message(f"{attack_desc} for {damage} dmg points.", damage_color)
+  
+                attack_desc = f"{self.entity.name.capitalize()} attacks {target.name} ({hit_dice} VS {target.fighter.defense})"
 
-                target.fighter.hp -= damage
+                # Si impacta y hace daño...
+                if damage > 0:
 
-            # Si no hace daño
-            else:
+                    if attacker_visible or target_visible:
+                        print(f"{attack_desc} for {damage} dmg points.")
+                        self.engine.message_log.add_message(f"{attack_desc} for {damage} dmg points.", damage_color)
+                    else:
+                        print(f"You hear sounds of fighting.")
+                        self.engine.message_log.add_message(f"You hear sounds of fighting.")
 
-                # Reseteamos la BONIFICACIÓN
-                #if self.entity.fighter.to_hit_counter > 0:
-                    # se resta el bonificador al daño...
-                    #self.entity.fighter.strength -= self.entity.fighter.to_power_counter
-                    # ...o a la tirada de daño
-                    #self.entity.fighter.weapon_proficiency[1] -= self.entity.fighter.to_power_counter
-                    # ...o al to hit
-                    #self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                    target.fighter.hp -= damage
 
-                    # reseteamos el contador de bonificación
-                    #self.entity.fighter.to_hit_counter = 0
+                # Si impacta pero no hace daño
+                else:
 
-
-                print(f"{attack_desc} but does no damage.")
-
-                self.engine.message_log.add_message("{attack_desc} but does no damage.", damage_color)
-        
-        # Si no impacta:
-        else:
-
-            if self.entity is self.engine.player or self.entity.name == "Adventurer":
-                failure_color = color.red
-            else:
-                failure_color = color.health_recovered
+                    if attacker_visible or target_visible:
+                        print(f"{attack_desc} but does no damage.")
+                        self.engine.message_log.add_message("{attack_desc} but does no damage.", damage_color)
+                    else:
+                        print(f"You hear sounds of fighting.")
+                        self.engine.message_log.add_message(f"You hear sounds of fighting.")
             
+            # Si no impacta:
+            else:
 
-            # Reseteamos la BONIFICACIÓN
+                # Relativizar colores de mensajes
+                if self.entity is self.engine.player or self.entity.name == "Adventurer":
+                    failure_color = color.red
+                else:
+                    failure_color = color.health_recovered
+
+                if target_visible or attacker_visible:
+                    attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
+                    print(f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})")
+                    self.engine.message_log.add_message(
+                        f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})",
+                        failure_color,
+                    )
+
+            # Tanto si impacta como si no impacta...
+
+            # Reseteamos la BONIFICACIÓN si la hubiera
             if self.entity.fighter.to_hit_counter > 0:
-                # se resta el bonificador al daño...
-                #self.entity.fighter.strength -= self.entity.fighter.to_power_counter
-                # ...o a la tirada de daño
-                #self.entity.fighter.weapon_proficiency[1] -= self.entity.fighter.to_power_counter
-                # ...o al to hit
-                #self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
-                self.entity.fighter.base_to_hit -= 1
+                self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                self.entity.fighter.to_hit_counter = 0
+            if self.entity.fighter.to_defense_counter > 0:
+                self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
+                self.entity.fighter.to_defense_counter = 0
 
-                # reseteamos el contador de bonificación
-                #self.entity.fighter.to_hit_counter = 0
-                self.entity.fighter.to_hit_counter -= 1
+            # Enemigo dado por enterado
+            target.fighter.aggravated = True
+            self.engine.message_log.add_message(f"{target.name} is aggravated!", color.red)
 
-
-            # if target_visible or attacker_visible:
-            attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
-            print(f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})")
-            self.engine.message_log.add_message(
-                f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})",
-                failure_color,
-            )
+        # TODO: Contra objetivos no vivientes
+        else:
+            pass
 
         self._spend_throw_cost()
 
@@ -734,12 +773,14 @@ class MeleeAction(ActionWithDirection):
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
         
+        # Stamina check
         if self.entity.fighter.stamina <= 0:
             if target_visible or attacker_visible:
                 if self.entity is self.engine.player:
                     self.engine.message_log.add_message("You are exhausted!", color.red)
                 else:
-                    self.engine.message_log.add_message(f"{self.entity.name} is exhausted!")
+                    if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+                        self.engine.message_log.add_message(f"{self.entity.name} is exhausted!")
             raise exceptions.Impossible("")
         
         # Calculo de impacto
@@ -753,8 +794,7 @@ class MeleeAction(ActionWithDirection):
         # hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit + self.entity.fighter.weapon_proficiency
         # hit_dice = round(hit_dice)
 
-        # TODO: Hay que revisar todo esto para que funcione con el nuevo sistema
-        # de cálculo de daños.
+        # TODO: Hay que revisar todo esto para que funcione como en ThrowItemAction
         # Mecánica backstab/stealth/sigilo (beta)
         # Bonificador al impacto
         if self.is_dummy_object(target.ai) == False:
@@ -807,7 +847,7 @@ class MeleeAction(ActionWithDirection):
                                 self.engine.message_log.add_message(
                                     f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
                                 )
-
+                        # TODO: relativizar el poisoned_counter y el poison_dmg
                         target.fighter.is_poisoned = True
                         target.fighter.poisoned_counter += 5
                         target.fighter.poison_dmg = 1
@@ -850,17 +890,24 @@ class MeleeAction(ActionWithDirection):
                 if self.is_dummy_object(target.ai) == False:
                     if target.fighter.aggravated == False:
 
-                        #damage = (damage + self.entity.fighter.luck) * 2
-                        damage = ((strength + weapon_dmg_dice_roll + total_equipment_dmg_bonus + self.entity.fighter.luck) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
-                        damage = round(damage)
+                        # Cálculo de daño Backstab
+                        second_weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
+                        damage = damage + strength + second_weapon_dmg_dice_roll
 
-                        if self.engine.debug == True:
+                        if DEBUG_MODE:
                             print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
+
+                        # Especial para dagas
+                        if self.item.name == "Dagger":
+                            damage = damage * 1.5
+                            damage = round(damage)
+                            if DEBUG_MODE:
+                                print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
 
                         if target_visible or attacker_visible:
                             self.engine.message_log.add_message("Successful stealth attack!", damage_color)
-                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful stealth attack!")
-                            print(f"Backstab damage applied: {damage}")
+                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful stealth attack! ({damage} dmg points)")
+                            print(f"Backstab final damage: {damage}")
 
                         # Experiencia extra
                         if self.entity == self.engine.player:
@@ -877,30 +924,10 @@ class MeleeAction(ActionWithDirection):
             if damage > 0:
                 
                 # PENALIZACIÓN por SER DAÑADO
-                
-
-                # BONIFICACIÓN por dañar
-                # Limitamos la bonificación:
-                #if self.entity.fighter.to_hit_counter < 1:
-                
-                    # Opciones de bonificación:
-
-                    ## A) Los impactos aumentan el poder (daño)...
-                    ### A.1) ... el daño base 
-                    #self.entity.fighter.strength += 1
-                    ### A.2) ... o la tirada de daño
-                    #self.entity.fighter.weapon_proficiency[1] += 1
-
-                    ## B) Los impactos aumentan el To Hit:
-                    #self.entity.fighter.base_to_hit += 1
-
-                    # Contabilizamos el bonus:
-                    #self.entity.fighter.to_hit_counter += 1
-
-                    # DEBUG
-                    #print(f"power_hits_counter: {power_hits_counter}")
-                    #print(f"strength: {self.entity.fighter.strength}")
-
+                if self.is_dummy_object(target.ai) == False:
+                    if target.fighter.to_hit_counter > 1:
+                        target.fighter.base_to_hit - target.fighter.to_hit_counter
+                        target.fighter.to_hit_counter = 0
 
                 # Efectos sonoros y otros efectos singulares
                 # if target is self.engine.player:
@@ -917,7 +944,7 @@ class MeleeAction(ActionWithDirection):
                 if target_visible or attacker_visible:
                     print(f"{attack_desc} and hits ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!")
                     self.engine.message_log.add_message(
-                        f"{attack_desc} and hits for {damage} dmg points!", damage_color
+                        f"{attack_desc} and hits ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!", damage_color
                     )
 
                 target.fighter.hp -= damage
@@ -982,16 +1009,22 @@ class MeleeAction(ActionWithDirection):
         # Con cada ataque gastamos 1 de stamina
         self.entity.fighter.stamina -= 1
 
+        # Ajustes de BONIFICACIONES
 
-        # Y reseteamos la BONIFICACIÓN
+        # Mantenemos to-hit bonus...
+        # ...y reducimos en 1 el DefenseValue
+        if self.entity.fighter.to_defense_counter > 0:
+            self.entity.fighter.base_defense -= 1
+            self.entity.fighter.to_defense_counter -= 1
+
         # Reseteamos to-hit bonus
         # Reseteamos to_defense bonus
-        if self.entity.fighter.to_hit_counter > 0:
-            self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
-            self.entity.fighter.to_hit_counter = 0
-        if self.entity.fighter.to_defense_counter > 0:
-            self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
-            self.entity.fighter.to_defense_counter = 0
+        # if self.entity.fighter.to_hit_counter > 0:
+        #     self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+        #     self.entity.fighter.to_hit_counter = 0
+        # if self.entity.fighter.to_defense_counter > 0:
+        #     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
+        #     self.entity.fighter.to_defense_counter = 0
 
         # Con cada ataque reducimos 1 el defense bonus acumulado
         # Sistema antiguo. Ahora reseteamos todo el bonus de defensa al atacar.
@@ -1043,11 +1076,17 @@ class MovementAction(ActionWithDirection):
                 if self.entity.fighter.to_defense_counter < 3:
                     self.entity.fighter.base_defense += 1
                     self.entity.fighter.to_defense_counter += 1
+
+                # BONIFICACIÓN a To Hit
+                #import ipdb;ipdb.set_trace()
+                if self.entity.fighter.to_hit_counter < 3:
+                    self.entity.fighter.base_to_hit += 1
+                    self.entity.fighter.to_hit_counter += 1
                 
-                # PENALIZACIÓN a To Hit
-                if self.entity.fighter.to_hit_counter >= 1:
-                    self.entity.fighter.base_to_hit -= 1
-                    self.entity.fighter.to_hit_counter -= 1
+                # # PENALIZACIÓN a To Hit
+                # if self.entity.fighter.to_hit_counter >= 1:
+                #     self.entity.fighter.base_to_hit -= 1
+                #     self.entity.fighter.to_hit_counter -= 1
 
                 self.entity.move(self.dx, self.dy)            
                 player_moved = True
@@ -1058,6 +1097,10 @@ class MovementAction(ActionWithDirection):
                 if self.entity.fighter.to_defense_counter > 0:
                     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
                     self.entity.fighter.to_defense_counter = 0
+                # Reseteamos BONIFICACIÓN al to_hit
+                if self.entity.fighter.to_hit_counter > 0:
+                    self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                    self.entity.fighter.to_hit_counter = 0
 
                 self.entity.move(self.dx, self.dy)
                 player_moved = True
@@ -1163,9 +1206,7 @@ class CloseDoorAction(Action):
 class WaitAction(Action):
     def perform(self) -> None:
         """
-        if self.entity.fighter.stamina < self.entity.fighter.max_stamina:
-            self.entity.fighter.stamina += 1
-        pass
+        Wait. Gain +1 to To-Hit and +1 to Defense.
         """
 
         # Accion de esperar resetea el tipo de BONIFICACIÓN por impactos, 
@@ -1234,14 +1275,15 @@ class WaitAction(Action):
                 self.entity.fighter.stamina -= 1
 
                 # BONIFICADOR a la defensa
-                if self.entity.fighter.to_defense_counter < 3:
+                # Límite de bonificación a la defensa por maniobras tácticas
+                if self.entity.fighter.to_defense_counter < 3: # Para tener un max de 3 puntos aquí hay que poner 3, no 4. No entiendo por qué.
                     self.entity.fighter.base_defense += 1
                     self.entity.fighter.to_defense_counter += 1
 
-
-                # BONIFICADOR a to hit  
-                self.entity.fighter.base_to_hit += 1
-                self.entity.fighter.to_hit_counter +=1
+                # BONIFICADOR a to hit
+                if self.entity.fighter.to_hit_counter < 3: # Para tener un max de 3 puntos aquí hay que poner 3, no 4. No entiendo por qué.
+                    self.entity.fighter.base_to_hit += 1
+                    self.entity.fighter.to_hit_counter += 1
      
                 #print(f"{self.entity.name}: stamina: {self.entity.fighter.stamina}")
                 #print(f"{self.entity.name}: base_defense: {self.entity.fighter.base_defense}")
@@ -1263,7 +1305,7 @@ class WaitAction(Action):
                 #    self.entity.fighter.to_defense_counter -= 2
                 #    self.entity.fighter.base_defense -= 2
                 
-                ## ...o pierde defensa de golpe
+                ## Pierde defensa de golpe
                 if self.entity.fighter.to_defense_counter > 0:
                     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
                     self.entity.fighter.to_defense_counter = 0

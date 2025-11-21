@@ -23,7 +23,7 @@ from actions import (
 )
 import color
 import exceptions
-from entity import Chest
+from entity import Chest, Book
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -829,6 +829,8 @@ class InventoryActivateHandler(InventoryEventHandler):
     TITLE = "Select an item to use"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+        if isinstance(item, Book):
+            return PopupMessage(self, item.read_message())
         if item.consumable:
             # Return the action for the selected item.
             return item.consumable.get_action(self.engine.player)
