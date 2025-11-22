@@ -925,8 +925,8 @@ class MeleeAction(ActionWithDirection):
                 
                 # PENALIZACIÓN por SER DAÑADO
                 if self.is_dummy_object(target.ai) == False:
-                    if target.fighter.to_hit_counter > 1:
-                        target.fighter.base_to_hit - target.fighter.to_hit_counter
+                    if target.fighter.to_hit_counter > 0:
+                        target.fighter.base_to_hit -= target.fighter.to_hit_counter
                         target.fighter.to_hit_counter = 0
 
                 # Efectos sonoros y otros efectos singulares

@@ -18,6 +18,7 @@ ARMAS
 - [ ] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
+- [ ] Las criaturas huyen con hp bajos.
 - [ ] Personajes únicos!
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
 - [ ] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.

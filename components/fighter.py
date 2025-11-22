@@ -143,7 +143,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             self, 
             hp: int, 
             base_defense: int, 
-            strength: int, 
+            strength: int,
             recover_rate: int, 
             fov: int = 0, 
             weapon_proficiency: float = 1.0,
@@ -251,6 +251,7 @@ class Fighter(FireStatusMixin, BaseComponent):
     @property
     def defense(self) -> int:
         return self.base_defense + self.defense_bonus
+        #return self.base_defense + self.defense_bonus + self.to_defense_counter
     
     @property
     def main_hand_weapon(self):
