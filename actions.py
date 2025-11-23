@@ -750,6 +750,8 @@ class MeleeAction(ActionWithDirection):
     def perform(self) -> None:
 
         target = self.target_actor
+        does_damage = False
+        does_a_hit = False
 
         # Comprobar si atacante y/o objetivo son visibles para el jugador
         # Útil para impresión de mensajes y más.
@@ -783,10 +785,9 @@ class MeleeAction(ActionWithDirection):
                         self.engine.message_log.add_message(f"{self.entity.name} is exhausted!")
             raise exceptions.Impossible("")
         
-        # Calculo de impacto
-        # El cálculo de imparto es una tirada de 1d6 + to_hit vs defensa del objetivo
-        #hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
-        # El cálculo de imparto es una tirada de 1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
+        # Con cada ataque gastamos 1 de stamina
+        self.entity.fighter.stamina -= 1
+
         hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
         hit_dice = round(hit_dice)
 
@@ -809,6 +810,8 @@ class MeleeAction(ActionWithDirection):
 
         # Si impacta
         if hit_dice > target.fighter.defense:
+
+            does_a_hit = True
 
             if self.entity is self.engine.player:
                 damage_color = color.health_recovered
@@ -865,10 +868,14 @@ class MeleeAction(ActionWithDirection):
             weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
             
             print(f"{bcolors.WARNING}Calculating MELEE damage with the following stats:{color.bcolors.ENDC}")
-            if self.entity.fighter.main_hand_weapon is not None:
-                print("Weapon: ", self.entity.fighter.main_hand_weapon.name)
-            else:
-                print("Weapon: None (unarmed attack)")
+            weapon_name = (
+                self.entity.fighter.main_hand_weapon.name
+                if self.entity.fighter.main_hand_weapon
+                else self.entity.fighter.natural_weapon_name
+                if self.entity.fighter.natural_weapon_name
+                else "None (unarmed attack)"
+            )
+            print("Weapon: ", weapon_name)
             print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {strength}")
             print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_info: {weapon_dmg_dice_info}")
             print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} weapon_dmg_dice_roll: {weapon_dmg_dice_roll}")
@@ -919,15 +926,31 @@ class MeleeAction(ActionWithDirection):
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
 
+            # BONIFICADOR: atacar e impactar
+            # Reducimos en 1 el DefenseValue
+            if self.entity.fighter.to_defense_counter > 0:
+                self.entity.fighter.base_defense -= 1
+                self.entity.fighter.to_defense_counter -= 1
 
             # Si hace daño...
             if damage > 0:
                 
+                does_damage = True
+
                 # PENALIZACIÓN por SER DAÑADO
                 if self.is_dummy_object(target.ai) == False:
                     if target.fighter.to_hit_counter > 0:
                         target.fighter.base_to_hit -= target.fighter.to_hit_counter
                         target.fighter.to_hit_counter = 0
+                    if target.fighter.to_defense_counter > 0:
+                        target.fighter.base_defense -= target.fighter.to_defense_counter
+                        target.fighter.to_defense_counter = 0
+
+                # BONIFICADOR POR DAÑAR
+                if self.entity.fighter.to_hit_counter < 3:
+                    self.entity.fighter.base_to_hit += 1
+                    self.entity.fighter.to_hit_counter += 1
+
 
                 # Efectos sonoros y otros efectos singulares
                 # if target is self.engine.player:
@@ -942,9 +965,9 @@ class MeleeAction(ActionWithDirection):
                     #     pass
 
                 if target_visible or attacker_visible:
-                    print(f"{attack_desc} and hits ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!")
+                    print(f"{attack_desc} and HITS ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!")
                     self.engine.message_log.add_message(
-                        f"{attack_desc} and hits ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!", damage_color
+                        f"{attack_desc} and HITS ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!", damage_color
                     )
 
                 target.fighter.hp -= damage
@@ -965,19 +988,28 @@ class MeleeAction(ActionWithDirection):
                     #self.entity.fighter.to_hit_counter = 0
 
                 if target_visible or attacker_visible:
+                    if target is self.engine.player:
+                        failure_color = color.health_recovered
+                    else:
+                        failure_color = color.red
                     print(f"{attack_desc} but does no damage.")
                     self.engine.message_log.add_message(
-                        f"{attack_desc} but does no damage.", damage_color
+                        f"{attack_desc} but does no damage.", failure_color
                     )
         
         # Si no impacta:
         else:
 
-            # TODO: Configurar colores en caso de que el combate sea entre jugador y 
-            # adventurers.
+            # Relativizar colores
             if self.entity is self.engine.player or self.entity.name == "Adventurer":
                 failure_color = color.red
             else:
+                failure_color = color.health_recovered
+            
+            # En caso de que combate sea entre jugador y adventurer
+            if self.entity is self.engine.player and target.name == "Adventurer":
+                failure_color = color.red
+            elif self.entity.name == "Adventurer" and target is self.engine.player:
                 failure_color = color.health_recovered
 
             # Reseteamos la BONIFICACIÓN
@@ -1006,25 +1038,30 @@ class MeleeAction(ActionWithDirection):
                     failure_color,
                 )
 
-        # Con cada ataque gastamos 1 de stamina
-        self.entity.fighter.stamina -= 1
 
-        # Ajustes de BONIFICACIONES
+        # Ajustes de BONIFICACIONES FINALES
 
-        # Mantenemos to-hit bonus...
-        # ...y reducimos en 1 el DefenseValue
-        if self.entity.fighter.to_defense_counter > 0:
-            self.entity.fighter.base_defense -= 1
-            self.entity.fighter.to_defense_counter -= 1
-
-        # Reseteamos to-hit bonus
-        # Reseteamos to_defense bonus
+        # Reducimos en 1 el To-Hit
         # if self.entity.fighter.to_hit_counter > 0:
-        #     self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
-        #     self.entity.fighter.to_hit_counter = 0
+        #     self.entity.fighter.base_to_hit -= 1
+        #     self.entity.fighter.to_hit_counter -= 1
+
+        # Si no hizo daño, Reseteamos el To-Hit:
+        if does_damage == False:
+            if self.entity.fighter.to_hit_counter > 0:
+                self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                self.entity.fighter.to_hit_counter = 0
+                
+        # Reducimos en 1 el DefenseValue
         # if self.entity.fighter.to_defense_counter > 0:
-        #     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
-        #     self.entity.fighter.to_defense_counter = 0
+        #     self.entity.fighter.base_defense -= 1
+        #     self.entity.fighter.to_defense_counter -= 1
+
+        # Si no impactó, Reseteamos to_defense bonus
+        if does_a_hit == False:
+            if self.entity.fighter.to_defense_counter > 0:
+                self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
+                self.entity.fighter.to_defense_counter = 0
 
         # Con cada ataque reducimos 1 el defense bonus acumulado
         # Sistema antiguo. Ahora reseteamos todo el bonus de defensa al atacar.
@@ -1036,7 +1073,11 @@ class MeleeAction(ActionWithDirection):
         ##if self.entity.fighter.to_defense_counter >= 1:
         ##    self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
         ##    self.entity.fighter.to_defense_counter = 0
-
+        
+        # Calculo de impacto
+        # El cálculo de imparto es una tirada de 1d6 + to_hit vs defensa del objetivo
+        #hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
+        # El cálculo de imparto es una tirada de 1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
 
         # TIME SYSTEM
         # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
@@ -1078,15 +1119,21 @@ class MovementAction(ActionWithDirection):
                     self.entity.fighter.to_defense_counter += 1
 
                 # BONIFICACIÓN a To Hit
-                #import ipdb;ipdb.set_trace()
-                if self.entity.fighter.to_hit_counter < 3:
-                    self.entity.fighter.base_to_hit += 1
-                    self.entity.fighter.to_hit_counter += 1
+                # To-Hit +1
+                # if self.entity.fighter.to_hit_counter < 3:
+                #     self.entity.fighter.base_to_hit += 1
+                #     self.entity.fighter.to_hit_counter += 1
                 
-                # # PENALIZACIÓN a To Hit
+                # PENALIZACIÓN a To Hit
+                # To-Hit -1
                 # if self.entity.fighter.to_hit_counter >= 1:
                 #     self.entity.fighter.base_to_hit -= 1
                 #     self.entity.fighter.to_hit_counter -= 1
+
+                # To-hit reset
+                if self.entity.fighter.to_hit_counter > 0:
+                    self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
+                    self.entity.fighter.to_hit_counter = 0
 
                 self.entity.move(self.dx, self.dy)            
                 player_moved = True
@@ -1222,6 +1269,8 @@ class WaitAction(Action):
         if not self.entity.fighter.is_in_melee:
 
             # Recuperamos stamina
+            # if self.entity is self.engine.player:
+            #     import ipdb;ipdb.set_trace()
             if self.entity.fighter.stamina < self.entity.fighter.max_stamina:
                 self.entity.fighter.stamina += 1
                 #print(f"{self.entity.name}: stamina: {self.entity.fighter.stamina}")
@@ -1238,7 +1287,7 @@ class WaitAction(Action):
 
 
             # FORTIFICAR: 
-            # Punto de defensa GRATIS (e.e. sin gasto de estamina)
+            # Punto de defensa  y To-Hit GRATIS (e.e. sin gasto de estamina)
             # si el enemigo está a 1 de distancia
             #import render_functions
             #if self.engine.player.fighter.can_fortify == True:
@@ -1265,10 +1314,10 @@ class WaitAction(Action):
             
 
 
-        # En melee:
+        # Si en melee:
         else: 
 
-            # Si queda stamina:
+            # Stamina check:
             if self.entity.fighter.stamina > 0:
 
                 #self.entity.fighter.defense_bonus += self.entity.fighter.base_defense + self.entity.fighter.armor_value - self.entity.fighter.aggressivity
@@ -1305,13 +1354,12 @@ class WaitAction(Action):
                 #    self.entity.fighter.to_defense_counter -= 2
                 #    self.entity.fighter.base_defense -= 2
                 
-                ## Pierde defensa de golpe
+                ## Defense reset
                 if self.entity.fighter.to_defense_counter > 0:
                     self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
                     self.entity.fighter.to_defense_counter = 0
                 
-                # To hit bonus
-                ## A) De golpe pierde todo el bonus
+                # To-Hit reset
                 if self.entity.fighter.to_hit_counter > 0:
                     self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
                     self.entity.fighter.to_hit_counter = 0

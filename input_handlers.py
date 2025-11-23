@@ -521,7 +521,7 @@ class CharacterScreenEventHandler(AskUserEventHandler):
         console.print(
             x=23, 
             y=5, 
-            string=f"({self.engine.player.fighter.to_hit} * {self.engine.player.fighter.weapon_proficiency}) VS Target AV", fg=color.orange,
+            string=f"({self.engine.player.fighter.to_hit} * {self.engine.player.fighter.weapon_proficiency}) VS Target DV", fg=color.orange,
         )
     
         console.print(
@@ -627,7 +627,7 @@ class CharacterScreenEventHandler(AskUserEventHandler):
         console.print(
             x=3, 
             y=24, 
-            string=f"[PENDIENTE]",
+            string=f"1d6 + (TO-HIT * PROFICIENCY) VS DEFENSE VALUE",
         )
 
 

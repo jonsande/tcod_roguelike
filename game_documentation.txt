@@ -10,45 +10,90 @@
 
 - En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que llevemos a cabo.
 
-- MANIOBRA DEFENSIVA: Si en el turno anterior a entrar en MODO MELEE el PJ espera un turno, el PJ entrará en POSICIÓN DEFENSIVA, obteniendo los siguientes bonificadores:
+- FORTIFICAR: Si un personaje pasa turno (WaitAction) en el turno anterior a entrar MODO COMBATE, dicho personaje entrará en POSICIÓN DEFENSIVA, obteniendo los siguientes bonificadores:
 
                              TO-HIT |  DEFENSE
                               +1    |    +1
 
-- Una vez en MODO MELEE, existen tres tipos de acciones o MANIOBRAS DEFENSIVAS, con distintos resultados para la STAMINA, el índice TO-HIT y el índice de DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
+- Una vez en MODO MELEE, existen tres tipos de MANIOBRAS DE COMBATE BÁSICAS, con distintos resultados para la STAMINA, y el bonus-caché a TO-HIT y DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
 
                             STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |    -     |   -1             
-Defenderse (WaitAction):      -1    |   +1     |   +1             
-Retroceder(MovementAction):   +1    |   +1     |   +1             
+Atacar (MeleeAction):         -1    |  reset   |   -1            x    
+Defenderse (WaitAction):      -1    |   +1     |   +1            x   
+Retroceder(MovementAction):   +1    |  reset   |    -            x
+
+- Si el atacante logra un impacto y este hace daño obtiene un modificador al índice TO-HIT en el siguiente turno, hasta un máximo de 3:
+
+                                      TO-HIT
+                                        +1                       x
+
+- Si el atacante no impacta pierde su bonus acumulado
+
+                            STAMINA |  TO-HIT  | DEFENSE
+Fallar impacto:               -     |  reset   |  reset                      
+
 
 - Si el jugador se queda sin STAMINA en medio de un combate melee, puede hacer dos cosas, con sus correspondientes bonificaciones y penalizaciones asociadas:
 
                             STAMINA |  TO-HIT  | DEFENSE
-Defenderse (WaitAction):      +1    |  reset   |  reset           
-Retroceder(MovementAction):   +1    |    +1    |    +1             
+Defenderse (WaitAction):      +1    |  reset   |  reset          x
+Retroceder(MovementAction):   +1    |  reset   |   +1            x 
 
 - Si el jugador recibe un impacto y este hace daño, perderá de golpe las bonificaciones a TO-HIT y DEFENSE que hubiera acumulado:
 
                             STAMINA |  TO-HIT  | DEFENSE
-Redibir daño:                 -     |  reset   |  reset
+Redibir daño:                 -     |  reset   |  reset          x
 
 
 - Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo para su ejecución.
+
 
 
 1.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
 
 - Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
 
-1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
+        1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
+
+- Se considera que tiene lugar el impacto en caso de que el resultado sea MAYOR que la defensa del objetivo.
 
 
 1.3. CÁLCULO DE DAÑO
 
 - Si un ataque impacta, se calcula el daño según la siguiente fórmula:
 
-(FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
+        (FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
+
+
+1.4. TABLAS DE REFERENCIA
+
+ TO-HIT   |   RESULTADO MÍN  |  RESULTADO MAX
+   0                1                6
+   1                2                7
+   2                3                8
+   3                4                9
+   4                5               10
+   5                6               11
+
+
+   CRIATURA     |     DEFENSA BASE
+  Giant rat               2   
+  hungry rat              2
+    Goblin                3         (Withd dagger +1)
+    Monkey                5
+     Orc                  4                  
+   True Orc               4
+    Troll                 2
+    Snake                 3
+   Bandit                 5
+
+
+
+
+
+
+
+
 
 
 ***[
@@ -79,4 +124,3 @@ Total: 8
 La dificultad del juego tiene que aumental más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.
 
 ]
-

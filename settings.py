@@ -239,6 +239,34 @@ CAVERN_DEATH_LIMIT = 3
 # Iteraciones del autómata celular; más pasos producen cavernas más suaves y con menos ruido.
 CAVERN_SMOOTHING_STEPS = 5
 
+# -- Cavern monster population ------------------------------------------------
+# Min/max creatures spawned per cavern level (list of tuples: floor threshold, (min, max)).
+CAVERN_MONSTER_COUNT_BY_FLOOR = [(1, (8, 14))]
+# Cavern-specific spawn rules follow the same schema as ENEMY_SPAWN_RULES.
+CAVERN_MONSTER_SPAWN_RULES = {
+    "snake": {"min_floor": 1, "weight_progression": [(1, 15), (4, 6), (7, 2)]},
+    "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (3, 20), (5, 15)]},
+    "orc": {"min_floor": 3, "weight_progression": [(3, 12), (6, 25), (9, 10)]},
+    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 18), (4, 10), (7, 3)]},
+    "skeleton": {"min_floor": 4, "weight_progression": [(4, 5), (7, 10)]},
+}
+
+# -- Cavern item population ---------------------------------------------------
+# Rango (mínimo, máximo) de ítems colocados libremente en cuevas por nivel mínimo.
+CAVERN_ITEM_COUNT_BY_FLOOR = [
+    (1, (0, 1)),
+    (2, (10, 20)),
+    (3, (1, 2)),
+    (5, (2, 4)),
+]
+# Tabla específica de cuevas reutilizando el mismo formato que ITEM_SPAWN_RULES.
+CAVERN_ITEM_SPAWN_RULES = {
+    "health_potion": {"min_floor": 1, "weight_progression": [(1, 6), (4, 3)]},
+    "stamina_potion": {"min_floor": 2, "weight_progression": [(2, 5), (5, 3)]},
+    "confusion_scroll": {"min_floor": 3, "weight_progression": [(3, 2), (6, 4)]},
+    "sand_bag": {"min_floor": 1, "weight_progression": [(1, 2), (4, 1)]},
+}
+
 # -- Column decorations -------------------------------------------------------
 # Probabilidad de que las salas generadas (rectangulares, circulares, elípticas o en cruz) aparezcan con columnas.
 ROOM_DECORATION_CHANCE = {
@@ -338,6 +366,8 @@ ADVENTURER_IRRELEVANT_GREETING_MESSAGES = [
 ]
 ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES = 2
 
+# STANDARD DUNGEON GENERATOR SETTINGS
+
 # -- Loot generation -----------------------------------------------------------
 # Configuración de botín/objetos. Cada entrada permite controlar:
 # - min_floor: nivel mínimo en el que empieza a considerarse.
@@ -426,11 +456,14 @@ ENEMY_SPAWN_RULES = {
     "snake": {"min_floor": 1, "weight_progression": [(1, 10)]},
     "rat": {"min_floor": 1, "weight_progression": [(1, 50), (3, 0)]},
     "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10)]},
+    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (7, 3)]},
     "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 50), (4, 30), (6, 20), (10, 15)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 20), (4, 30), (5, 30), (8, 50), (9, 20)]},
     "true_orc": {"min_floor": 5, "weight_progression": [(5, 5), (8, 20)]},
+    "skeleton": {"min_floor": 4, "weight_progression": [(4, 15), (6, 18), (9, 12)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
+    "cultist": {"min_floor": 6, "weight_progression": [(6, 8), (9, 16)]},
 }
 
 PROFICIENCY_LEVELS = {

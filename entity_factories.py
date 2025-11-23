@@ -16,7 +16,7 @@ from components.ai import (
 )
 from components import consumable, equippable
 from components.equipment import Equipment
-from components.fighter import Fighter, Door, BreakableWallFighter
+from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapon
 from components.inventory import Inventory
 from components.level import Level
 from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest
@@ -595,33 +595,34 @@ def _get_campfire_cache_items():
 
 campfire.on_spawn = _setup_campfire_spawn
 
+def _equip_first_item_of_type(entity: Actor, equipment_type: EquipmentType) -> None:
+    """Equip the first item of the requested type found in the entity's inventory."""
+    for item in entity.inventory.items:
+        if (
+            hasattr(item, 'equippable')
+            and item.equippable
+            and item.equippable.equipment_type == equipment_type
+        ):
+            entity.equipment.toggle_equip(item, add_message=False)
+            break
+
+
 def _setup_adventurer_equipment(entity: Actor) -> None:
-    """Automatically equip a weapon if the adventurer has one in inventory."""
+    """Automatically equip a weapon and armor if the adventurer has them in inventory."""
     if not hasattr(entity, 'inventory') or not hasattr(entity, 'equipment'):
         return
-    for item in entity.inventory.items:
-        if hasattr(item, 'equippable') and item.equippable:
-            if item.equippable.equipment_type == EquipmentType.WEAPON:
-                entity.equipment.toggle_equip(item, add_message=False)
-                break  # Equip only the first weapon found
+    _equip_first_item_of_type(entity, EquipmentType.WEAPON)
+    _equip_first_item_of_type(entity, EquipmentType.ARMOR)
 
 def _setup_creature_equipment(entity: Actor) -> None:
     #import ipdb;ipdb.set_trace()
-    """Automatically equip a weapon if the creature has one in inventory."""
+    """Automatically equip a weapon and armor if the creature has them in inventory."""
     #print(f"# DEBUG: _setup_creature_equipment called for {entity.name}")
     if not hasattr(entity, 'inventory') or not hasattr(entity, 'equipment'):
         #print("# DEBUG: Entity missing inventory or equipment")
         return
-    #print(f"# DEBUG: Inventory items: {[item.name for item in entity.inventory.items]}")
-    for item in entity.inventory.items:
-        #print(f"# DEBUG: Checking item {item.name}, has equippable: {hasattr(item, 'equippable')}, equippable: {item.equippable}")
-        if hasattr(item, 'equippable') and item.equippable:
-            #print(f"# DEBUG: Item {item.name} equipment_type: {item.equippable.equipment_type}")
-            if item.equippable.equipment_type == EquipmentType.WEAPON:
-                #print(f"# DEBUG: Equipping {item.name}")
-                entity.equipment.toggle_equip(item, add_message=False)
-                break  # Equip only the first weapon found
-    #print(f"# DEBUG: Final equipment.weapon: {entity.equipment.weapon}")
+    _equip_first_item_of_type(entity, EquipmentType.WEAPON)
+    _equip_first_item_of_type(entity, EquipmentType.ARMOR)
 
 short_sword_plus = Item(
     char="/", 
@@ -783,7 +784,7 @@ player = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=player_hp,
-        base_defense=0,
+        base_defense=1,
         strength=1,
         recover_rate=1, 
         fov=6,
@@ -798,6 +799,7 @@ player = Actor(
         poison_resistance=1,
         super_memory=False,
         lamp_on=True,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=20),
     level=Level(level_up_base=20), # Default: 200
@@ -811,8 +813,8 @@ adventurer = Actor(
     #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
     equipment=Equipment(),
     fighter=Fighter(
-        hp=30, 
-        base_defense=5,
+        hp=32, 
+        base_defense=3,
         base_to_hit=0,
         strength=1, 
         recover_rate=0, 
@@ -825,7 +827,8 @@ adventurer = Actor(
         poison_resistance=2,
         luck=1,
         critical_chance=1,
-        super_memory=True,
+        super_memory=False,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=20, items=loot_tables.build_monster_inventory("Adventurer", amount=4)),
     level=Level(level_up_base=20),
@@ -852,18 +855,19 @@ rat = Actor(
     ai_cls=SleepingEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=6, 
+        hp=6,
         #hp=32,
-        base_defense=3, 
-        strength=1, 
-        recover_rate=0, 
-        fov=0, 
-        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
-        aggressivity=5, 
-        stamina=3, 
+        base_defense=3,
+        strength=1,
+        recover_rate=0,
+        fov=0,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
+        aggressivity=5,
+        stamina=3,
         max_stamina=3,
         action_time_cost=7,
         luck=0,
+        natural_weapon=NaturalWeapon(name="Rat claws", min_dmg=1, max_dmg=3),
     ),
     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Giant rat", amount=1)),
     level=Level(xp_given=2),
@@ -878,19 +882,50 @@ swarm_rat = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=4,
-        base_defense=2, 
-        strength=1, 
-        recover_rate=0, 
-        fov=8, 
-        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
-        aggressivity=15, 
-        stamina=2, 
+        base_defense=2,
+        strength=1,
+        recover_rate=0,
+        fov=8,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
+        aggressivity=15,
+        stamina=2,
         max_stamina=2,
         action_time_cost=7,
+        natural_weapon=NaturalWeapon(name="Rat claws", min_dmg=1, max_dmg=3),
     ),
     inventory=Inventory(capacity=0),
     level=Level(xp_given=1),
 )
+
+cave_bat = Actor(
+    char="b",
+    color=(94, 94, 150),
+    name="Cave bat",
+    ai_cls=SneakeEnemy,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=3,
+        base_defense=1,
+        strength=0,
+        recover_rate=0,
+        fov=8,
+        weapon_proficiency=PROFICIENCY_LEVELS["Beginner"],
+        base_stealth=4,
+        aggressivity=6,
+        stamina=2,
+        max_stamina=2,
+        action_time_cost=4,
+        woke_ai_cls=HostileEnemy,
+        natural_weapon=NaturalWeapon(name="Needle fangs", min_dmg=0, max_dmg=2),
+    ),
+    inventory=Inventory(capacity=0),
+    level=Level(xp_given=1),
+)
+
+def _randomize_goblin_stats(entity: Actor) -> None:
+    entity.fighter.hp = random.randint(7, 10)
+    entity.fighter.base_defense = random.randint(2, 3)
+    # etc.
 
 goblin = Actor(
     char="g",
@@ -900,27 +935,29 @@ goblin = Actor(
     #ai_cls=Scout,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=12,
-        base_defense=5,
+        hp=8,
+        base_defense=3,
         base_to_hit=0,
-        strength=1, 
-        recover_rate=1, 
-        fov=random.randint(4, 6), 
-        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
-        aggressivity=4, 
+        strength=1,
+        recover_rate=1,
+        fov=random.randint(4, 6),
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
+        aggressivity=4,
         stamina=random.randint(2,4),
         max_stamina=3,
         poison_resistance=6,
         action_time_cost=7,
-        woke_ai_cls=HostileEnemy
+        woke_ai_cls=HostileEnemy,
+        natural_weapon=NaturalWeapon(name="Goblin claws", min_dmg=1, max_dmg=4, dmg_bonus=0),
     ),
     #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
     #inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", 3)),
     #inventory=Inventory(capacity=1, items=[dagger]),
-    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", amount=2)),
+    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", amount=1)),
     level=Level(xp_given=3),
 )
-goblin.on_spawn = _setup_creature_equipment
+#goblin.on_spawn = _setup_creature_equipment
+goblin.on_spawn = lambda ent: (_setup_creature_equipment(ent), _randomize_goblin_stats(ent))
 
 monkey = Actor(
     char="y",
@@ -931,7 +968,7 @@ monkey = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=8, 
-        base_defense=6, 
+        base_defense=5, 
         strength=1, 
         recover_rate=1, 
         fov=random.randint(3, 6), 
@@ -940,7 +977,8 @@ monkey = Actor(
         stamina=5, 
         max_stamina=5,
         action_time_cost=6,
-        woke_ai_cls=HostileEnemy
+        woke_ai_cls=HostileEnemy,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Monkey", amount=1)),
     level=Level(xp_given=3),
@@ -955,7 +993,7 @@ orc = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=12, 
-        base_defense=6, 
+        base_defense=4, 
         base_to_hit=1,
         strength=2, 
         recover_rate=0, 
@@ -965,7 +1003,8 @@ orc = Actor(
         stamina=3, 
         max_stamina=3,
         action_time_cost=10,
-        woke_ai_cls=HostileEnemy
+        woke_ai_cls=HostileEnemy,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Orc", 2)),
     level=Level(xp_given=5),
@@ -980,7 +1019,7 @@ true_orc = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=32, 
-        base_defense=8, 
+        base_defense=4, 
         strength=3, 
         recover_rate=0, 
         fov=random.randint(3,6), 
@@ -989,12 +1028,39 @@ true_orc = Actor(
         base_to_hit=1, 
         stamina=4, 
         max_stamina=4,
-        woke_ai_cls=HostileEnemy
+        woke_ai_cls=HostileEnemy,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
         ),
     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("True Orc", 1)),
     level=Level(xp_given=10),
 )
 true_orc.on_spawn = _setup_creature_equipment
+
+skeleton = Actor(
+    char="K",
+    color=(180, 180, 180),
+    name="Skeleton",
+    ai_cls=HostileEnemy,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=16,
+        base_defense=5,
+        base_to_hit=1,
+        base_armor_value=2,
+        strength=2,
+        recover_rate=0,
+        fov=4,
+        weapon_proficiency=PROFICIENCY_LEVELS["Apprentice"],
+        aggressivity=5,
+        stamina=3,
+        max_stamina=3,
+        action_time_cost=9,
+        natural_weapon=NaturalWeapon(name="Bone blade", min_dmg=2, max_dmg=5),
+    ),
+    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Skeleton", amount=2)),
+    level=Level(xp_given=8),
+)
+skeleton.on_spawn = _setup_creature_equipment
 
 troll = Actor(
     char="T",
@@ -1013,6 +1079,7 @@ troll = Actor(
         aggressivity=8, 
         stamina=2, 
         max_stamina=2,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
     ),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=14),
@@ -1058,6 +1125,7 @@ snake = Actor(
         max_stamina=5,
         woke_ai_cls=SneakeEnemy,
         poisons_on_hit=True,
+        natural_weapon=NaturalWeapon(name="Bite", min_dmg=0, max_dmg=1, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=0),
     level=Level(xp_given=2),
@@ -1072,18 +1140,45 @@ bandit = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=32, 
-        base_defense=8, 
+        base_defense=5, 
         strength=2, 
         recover_rate=1, 
         fov=8, 
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=2,
+        natural_weapon=NaturalWeapon(name="Cheater fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
     ),
-    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Bandit", 2)),
+    inventory=Inventory(capacity=5, items=loot_tables.build_monster_inventory("Bandit", 5)),
     level=Level(xp_given=14),
 )
 bandit.on_spawn = _setup_creature_equipment
+
+cultist = Actor(
+    char="c",
+    color=(160, 0, 160),
+    name="Cultist",
+    ai_cls=HostileEnemyPlus,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=18,
+        base_defense=3,
+        base_to_hit=1,
+        strength=2,
+        recover_rate=1,
+        fov=9,
+        weapon_proficiency=PROFICIENCY_LEVELS["Apprentice"],
+        base_stealth=2,
+        aggressivity=8,
+        stamina=4,
+        max_stamina=4,
+        action_time_cost=7,
+        natural_weapon=NaturalWeapon(name="Ceremonial dagger", min_dmg=1, max_dmg=4, dmg_bonus=1),
+    ),
+    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Cultist", amount=2)),
+    level=Level(xp_given=12),
+)
+cultist.on_spawn = _setup_creature_equipment
 
 sentinel = Actor(
     char="&",
@@ -1103,7 +1198,7 @@ sentinel = Actor(
         max_stamina=3,
         action_time_cost=10,
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Giant rat", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Sentinel", 1)),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )

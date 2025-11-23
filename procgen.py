@@ -125,7 +125,10 @@ generation_tracker = GenerationTracker()
 
 
 def _build_spawn_rule_entries(
-    spawn_config: Dict[str, Dict], category: str
+    spawn_config: Dict[str, Dict],
+    category: Optional[str],
+    *,
+    register_labels: bool = True,
 ) -> Dict[str, Dict]:
     resolved: Dict[str, Dict] = {}
     for name, config in spawn_config.items():
@@ -141,14 +144,23 @@ def _build_spawn_rule_entries(
         progression = entry.get("weight_progression")
         if progression:
             entry["weight_progression"] = sorted(progression)
-        generation_tracker.register_label(category, name, entry["display_name"])
+        if register_labels and category:
+            generation_tracker.register_label(category, name, entry["display_name"])
         resolved[name] = entry
     return resolved
 
 
 item_spawn_rules = _build_spawn_rule_entries(settings.ITEM_SPAWN_RULES, "items")
 enemy_spawn_rules = _build_spawn_rule_entries(settings.ENEMY_SPAWN_RULES, "monsters")
+cavern_monster_spawn_rules = _build_spawn_rule_entries(
+    settings.CAVERN_MONSTER_SPAWN_RULES, None, register_labels=False
+)
+cavern_item_spawn_rules = _build_spawn_rule_entries(
+    settings.CAVERN_ITEM_SPAWN_RULES, None, register_labels=False
+)
 debris_chances = _resolve_entity_table(settings.DEBRIS_CHANCES)
+cavern_monster_count_by_floor = settings.CAVERN_MONSTER_COUNT_BY_FLOOR
+cavern_item_count_by_floor = settings.CAVERN_ITEM_COUNT_BY_FLOOR
 
 
 def _compute_rule_weight(entry: Dict, floor: int) -> float:
@@ -186,6 +198,36 @@ def _select_spawn_entries(
             max_instances = entry.get("max_instances")
             current_total = generation_tracker.get_total(category, entry["name"])
             current_total += pending_counts.get(entry["name"], 0)
+            if max_instances is not None and current_total >= max_instances:
+                continue
+            weight = _compute_rule_weight(entry, floor)
+            if weight <= 0:
+                continue
+            candidates.append(entry)
+            weights.append(weight)
+        if not candidates:
+            break
+        choice = random.choices(candidates, weights=weights, k=1)[0]
+        selections.append(choice)
+        pending_counts[choice["name"]] += 1
+    return selections
+
+
+def _select_weighted_spawn_entries(
+    rules: Dict[str, Dict],
+    number_of_entities: int,
+    floor: int,
+) -> List[Dict]:
+    selections: List[Dict] = []
+    pending_counts: Counter = Counter()
+    for _ in range(number_of_entities):
+        candidates: List[Dict] = []
+        weights: List[float] = []
+        for entry in rules.values():
+            if floor < entry.get("min_floor", 1):
+                continue
+            max_instances = entry.get("max_instances")
+            current_total = pending_counts.get(entry["name"], 0)
             if max_instances is not None and current_total >= max_instances:
                 continue
             weight = _compute_rule_weight(entry, floor)
@@ -1299,13 +1341,41 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
             entity_factories.debris_a.spawn(dungeon, x, y)
     dungeon.spawn_monsters_counter = 0
 
-    for _ in range(random.randint(8, 14)):
-        x = random.randint(1, dungeon.width - 2)
-        y = random.randint(1, dungeon.height - 2)
-        if dungeon.tiles["walkable"][x, y] and \
-            (not dungeon.downstairs_location or (x, y) != dungeon.downstairs_location) and \
-            (not dungeon.upstairs_location or (x, y) != dungeon.upstairs_location):
-            entity_factories.monster_roulette().spawn(dungeon, x, y)
+    min_monsters, max_monsters = get_floor_value(
+        cavern_monster_count_by_floor, floor_number, (8, 14)
+    )
+    min_monsters = max(0, min_monsters)
+    max_monsters = max(min_monsters, max_monsters)
+    number_of_monsters = random.randint(min_monsters, max_monsters)
+
+    for monster_entry in _select_weighted_spawn_entries(
+        cavern_monster_spawn_rules, number_of_monsters, floor_number
+    ):
+        for _ in range(40):
+            x = random.randint(1, dungeon.width - 2)
+            y = random.randint(1, dungeon.height - 2)
+            if not _can_place_entity(dungeon, x, y):
+                continue
+            monster_entry["entity"].spawn(dungeon, x, y)
+            break
+
+    min_items, max_items = get_floor_value(
+        cavern_item_count_by_floor, floor_number, (0, 0)
+    )
+    min_items = max(0, min_items)
+    max_items = max(min_items, max_items)
+    number_of_items = random.randint(min_items, max_items) if max_items > 0 else 0
+
+    for item_entry in _select_weighted_spawn_entries(
+        cavern_item_spawn_rules, number_of_items, floor_number
+    ):
+        for _ in range(40):
+            x = random.randint(1, dungeon.width - 2)
+            y = random.randint(1, dungeon.height - 2)
+            if not _can_place_entity(dungeon, x, y):
+                continue
+            item_entry["entity"].spawn(dungeon, x, y)
+            break
 
 
 def generate_cavern(

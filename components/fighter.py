@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 import copy
 import random
 import numpy as np
@@ -19,6 +19,32 @@ x = 0
 # ESTO NO SÉ SI TIENE ALGUNA UTILIDAD AHORA MISMO (pero creo que no):
 turns = 0
 gainance = 0
+
+
+class NaturalWeapon:
+    """Simple helper that describes a creature's natural attack."""
+
+    def __init__(self, name: str, min_dmg: int, max_dmg: int, dmg_bonus: int = 0):
+        self.name = name
+        self.min_dmg = min_dmg
+        self.max_dmg = max_dmg
+        self.dmg_bonus = dmg_bonus
+
+    @property
+    def weapon_dmg_dice(self) -> int:
+        if self.min_dmg == 0 and self.max_dmg == 0:
+            return 0
+        return random.randint(self.min_dmg, self.max_dmg)
+
+    @property
+    def weapon_dmg_dice_info(self) -> str:
+        if self.max_dmg == 0:
+            return "0"
+        return f"1d{self.max_dmg}"
+
+    @property
+    def weapon_dmg_bonus(self) -> int:
+        return self.dmg_bonus
 
 
 class FireStatusMixin:
@@ -180,6 +206,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             super_memory: bool = False,
             lamp_on: bool = False,
             fire_resistance: int = 1,
+            natural_weapon: Optional[NaturalWeapon] = None,
             ):
         self.max_hp = hp
         self._hp = hp
@@ -210,6 +237,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.critical_chance = critical_chance + luck
         self.super_memory = super_memory
         self.lamp_on = lamp_on
+        self.natural_weapon = natural_weapon
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -255,38 +283,74 @@ class Fighter(FireStatusMixin, BaseComponent):
     
     @property
     def main_hand_weapon(self):
-        if self.parent.equipment.weapon:
-            return self.parent.equipment.weapon
-        else:
-            return None
+        # if self.parent.equipment.weapon:
+        #     return self.parent.equipment.weapon
+        # else:
+        #     return None
+        equipment = getattr(self.parent, "equipment", None)
+        if equipment and equipment.weapon:
+            return equipment.weapon
+        return None
 
     @property
     def weapon_dmg_dice(self) -> int:
-        if self.parent.equipment and self.parent.equipment.weapon:
-            return self.parent.equipment.weapon.equippable.weapon_dmg_dice
-        else:
-            return 0
-        
+        # if self.parent.equipment and self.parent.equipment.weapon:
+        #     return self.parent.equipment.weapon.equippable.weapon_dmg_dice
+        # else:
+        #     return 0
+        equipment = getattr(self.parent, "equipment", None)
+        weapon = getattr(equipment, "weapon", None) if equipment else None
+        if weapon and weapon.equippable:
+            return weapon.equippable.weapon_dmg_dice
+        if self.natural_weapon:
+            return self.natural_weapon.weapon_dmg_dice
+        return 0
+
     @property
     def weapon_dmg_dice_info(self) -> str:
-        if self.parent.equipment and self.parent.equipment.weapon:
-            equippable = self.parent.equipment.weapon.equippable
+        # if self.parent.equipment and self.parent.equipment.weapon:
+        #     equippable = self.parent.equipment.weapon.equippable
+        equipment = getattr(self.parent, "equipment", None)
+        weapon = getattr(equipment, "weapon", None) if equipment else None
+        if weapon and weapon.equippable:
+            equippable = weapon.equippable
             if equippable:
                 return f"1d{equippable.max_dmg}"
+        if self.natural_weapon:
+            return self.natural_weapon.weapon_dmg_dice_info
         return "1d0"
-        
+
     @property
-    def weapon_dmg_bonus(self) -> str:
-        if self.parent.equipment and self.parent.equipment.weapon:
-            return self.parent.equipment.weapon.equippable.weapon_dmg_bonus
+    def weapon_dmg_bonus(self) -> int:
+        # if self.parent.equipment and self.parent.equipment.weapon:
+        #     return self.parent.equipment.weapon.equippable.weapon_dmg_bonus
+        equipment = getattr(self.parent, "equipment", None)
+        weapon = getattr(equipment, "weapon", None) if equipment else None
+        if weapon and weapon.equippable:
+            return weapon.equippable.weapon_dmg_bonus
+        if self.natural_weapon:
+            return self.natural_weapon.weapon_dmg_bonus
+        return 0
         
     @property
     def weapon_dmg_info(self) -> str:
-        if self.parent.equipment and self.parent.equipment.weapon:
-            equippable = self.parent.equipment.weapon.equippable
+        # if self.parent.equipment and self.parent.equipment.weapon:
+        #     equippable = self.parent.equipment.weapon.equippable
+        equipment = getattr(self.parent, "equipment", None)
+        weapon = getattr(equipment, "weapon", None) if equipment else None
+        if weapon and weapon.equippable:
+            equippable = weapon.equippable
             if equippable:
                 return f"1d{equippable.max_dmg}+{equippable.dmg_bonus}"
+        if self.natural_weapon:
+            return f"1d{self.natural_weapon.max_dmg}+{self.natural_weapon.dmg_bonus}"
         return "1d0+0"
+
+    @property
+    def natural_weapon_name(self) -> Optional[str]:
+        if self.natural_weapon:
+            return self.natural_weapon.name
+        return None
         
     @property
     def non_weapon_dmg_bonus(self) -> str:

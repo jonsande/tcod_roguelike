@@ -6,23 +6,25 @@ VARIOS
 - [x] Replace add_message calls with _add_combat_message
 - [x] Test the changes
 
+- [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
+- [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
 - [ ] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
 
 RENDIMIENTO
 - [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo.
 
 ARMAS
-- [ ] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
+- [!] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
 - [-] Añadir en una casilla la distancia a la que se puede lanzar una daga. [Esto depende de la fuerza y pericia del jugador]
 - [ ] Bajarles el color a los sprites de armas.
 - [ ] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Las criaturas huyen con hp bajos.
+- [ ] Las criaturas deben huir con hp bajos.
 - [ ] Personajes únicos!
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
-- [ ] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
-- [ ] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en en una tirada de randint(2,5) para establecer los puntos hp de un goblin sale 3, todos los goblins generados tienen 3 puntos de hp. Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 3 puntos de hp, pero otros con 2, o con 4, etc.
+- [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
+- [ ] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, parece que todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en si en una tirada de randint(7,12) para establecer los puntos hp de un goblin sale 12, todos los goblins generados tienen 12 puntos de hp (comprueba que es correcto lo que digo). ¿Por qué sucede esto? Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 12 puntos de hp, pero otros con 7, o con 9, etc. ¿Es posible?
 
 IA
 - [ ] Una vez que un enemigo no visible ha sido aggravated tiene que haber una probabilidad de darle esquinazo. No puede ser que el jugador quede ya como objetivo. En cada turno habrá que hacer una tirada para ver si sigue buscándole o no.
