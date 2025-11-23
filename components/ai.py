@@ -13,6 +13,7 @@ import color
 import tile_types
 import exceptions
 import settings
+from audio import update_campfire_audio
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -1215,7 +1216,10 @@ class Dummy(BaseAI):
             dy = player.y - campfire.y
             distance = max(abs(dx), abs(dy))  # Chebyshev distance.
 
-            if distance <= 1:
+            is_adjacent = distance <= 1
+            update_campfire_audio(self.entity, is_adjacent)
+
+            if is_adjacent:
                 player.fighter.heal(1)
                 if player.fighter.hp < player.fighter.max_hp:
                     self.engine.message_log.add_message(

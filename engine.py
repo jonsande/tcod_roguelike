@@ -24,6 +24,7 @@ import color
 import render_functions
 from entity import Actor
 from render_order import RenderOrder
+from audio import update_campfire_audio, preload_campfire_audio
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -78,6 +79,13 @@ class Engine:
         self.center_room_array = []
         self.identified_items = []
         self.debug = debug
+        # Esto es para que no haya cortes al reproducir por primera vez el sonido
+        # de fogatas. Como es un audio más largo, se precarga la pista de hoguera:
+        # _load_sound y preload_campfire_audio(), que llama al mixer al arrancar y 
+        # cachea todos los ficheros configurados de campfire (lista y pista única). 
+        # Así, cuando se entra junto a un fuego la primera reproducción ya está 
+        # lista y no se produce un parón en el juego.
+        preload_campfire_audio()
         self._animation_queue: List[List[AnimationFrame]] = []
 
     def clock(self):
@@ -361,6 +369,7 @@ class Engine:
             self.message_log.add_message("A campfire dies out.", color.status_effect_applied)
         if random.random() < self._CAMPFIRE_SCROLL_CHANCE:
             entity_factories.fireball_scroll.spawn(self.game_map, campfire.x, campfire.y)
+        update_campfire_audio(campfire, False)
         campfire.char = "%"
         campfire.color = (90, 90, 90)
         campfire.name = "Remains of campfire"

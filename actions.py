@@ -13,7 +13,15 @@ from entity import Actor
 import exceptions
 import random
 from settings import DEBUG_MODE
-from audio import play_player_footstep, play_door_open_sound, play_door_close_sound
+from audio import (
+    play_player_footstep,
+    play_door_open_sound,
+    play_door_close_sound,
+    play_item_pickup_sound,
+    play_stair_descend_sound,
+    play_melee_attack_sound,
+    play_player_stamina_depleted_sound,
+)
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -90,6 +98,7 @@ class PickupAction(Action):
                 inventory.items.append(item)
 
                 self.engine.message_log.add_message(f"You picked up the {item.name}!")
+                play_item_pickup_sound(item)
 
                 # TIME SYSTEM
                 #self.entity.fighter.current_energy_points -= 10
@@ -213,6 +222,8 @@ class TakeStairsAction(Action):
             self.engine.message_log.add_message(
                 "You descend the staircase.", color.descend
                 )
+            if self.entity is self.engine.player:
+                play_stair_descend_sound()
             print(f"{color.bcolors.OKCYAN}{self.entity.name} descends the staircase.{color.bcolors.ENDC}")
 
         elif at_upstairs:
@@ -315,7 +326,11 @@ class ThrowItemAction(Action):
 
         # Stamina check
         if self.entity.fighter.stamina <= 0:
-            self.engine.message_log.add_message("You are exhausted!", color.red)
+            if self.entity is self.engine.player:
+                self.engine.message_log.add_message("You are exhausted!", color.red)
+                play_player_stamina_depleted_sound()
+            else:
+                self.engine.message_log.add_message(f"{self.entity.name} is exhausted!", color.red)
             raise exceptions.Impossible("")
 
         # Desequipar objeto (si está equipado)
@@ -332,13 +347,16 @@ class ThrowItemAction(Action):
             self._spend_throw_cost()
             return
 
+        target_ai = getattr(target, "ai", None)
+        target_is_dummy = self.is_dummy_object(target_ai)
+
 
         # CÁLCULO DE IMPACTOS
         hits = False
         stealth_attack = False
 
         # Contra objetivos vivientes
-        if self.is_dummy_object(target.ai) == False:
+        if not target_is_dummy:
             
             # Ataque sorpresa backstab/stealth/sigilo con bonificador al impacto (beta)
             if target.fighter.aggravated == False:
@@ -774,12 +792,14 @@ class MeleeAction(ActionWithDirection):
         target_ai = getattr(target, "ai", None)
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
+        target_is_dummy = self.is_dummy_object(target_ai)
         
         # Stamina check
         if self.entity.fighter.stamina <= 0:
             if target_visible or attacker_visible:
                 if self.entity is self.engine.player:
                     self.engine.message_log.add_message("You are exhausted!", color.red)
+                    play_player_stamina_depleted_sound()
                 else:
                     if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
                         self.engine.message_log.add_message(f"{self.entity.name} is exhausted!")
@@ -798,7 +818,7 @@ class MeleeAction(ActionWithDirection):
         # TODO: Hay que revisar todo esto para que funcione como en ThrowItemAction
         # Mecánica backstab/stealth/sigilo (beta)
         # Bonificador al impacto
-        if self.is_dummy_object(target.ai) == False:
+        if not target_is_dummy:
 
             if target.fighter.aggravated == False:
                 #import ipdb;ipdb.set_trace()
@@ -831,8 +851,7 @@ class MeleeAction(ActionWithDirection):
             if self.entity.fighter.poisons_on_hit == True:
 
                 from components.ai import Dummy
-                #if isinstance(target.ai, Dummy) == False:
-                if self.is_dummy_object(target.ai) == False:
+                if not target_is_dummy:
 
                     poison_roll = random.randint(1, 6)
 
@@ -894,7 +913,7 @@ class MeleeAction(ActionWithDirection):
             # Mecánica backstab/stealth/sigilo (beta)
             # Bonificador al daño
             if isinstance(target, Actor):
-                if self.is_dummy_object(target.ai) == False:
+                if not target_is_dummy:
                     if target.fighter.aggravated == False:
 
                         # Cálculo de daño Backstab
@@ -938,7 +957,7 @@ class MeleeAction(ActionWithDirection):
                 does_damage = True
 
                 # PENALIZACIÓN por SER DAÑADO
-                if self.is_dummy_object(target.ai) == False:
+                if not target_is_dummy:
                     if target.fighter.to_hit_counter > 0:
                         target.fighter.base_to_hit -= target.fighter.to_hit_counter
                         target.fighter.to_hit_counter = 0
@@ -969,6 +988,7 @@ class MeleeAction(ActionWithDirection):
                     self.engine.message_log.add_message(
                         f"{attack_desc} and HITS ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!", damage_color
                     )
+                play_melee_attack_sound(self.entity, "hit_damage", target_is_dummy=target_is_dummy)
 
                 target.fighter.hp -= damage
 
@@ -996,6 +1016,7 @@ class MeleeAction(ActionWithDirection):
                     self.engine.message_log.add_message(
                         f"{attack_desc} but does no damage.", failure_color
                     )
+                play_melee_attack_sound(self.entity, "hit_no_damage", target_is_dummy=target_is_dummy)
         
         # Si no impacta:
         else:
@@ -1037,6 +1058,7 @@ class MeleeAction(ActionWithDirection):
                     f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})", 
                     failure_color,
                 )
+            play_melee_attack_sound(self.entity, "miss", target_is_dummy=target_is_dummy)
 
 
         # Ajustes de BONIFICACIONES FINALES
@@ -1404,6 +1426,7 @@ class ToogleLightAction(Action):
         #     self.engine.message_log.add_message("You turn OFF your lamp", color.enemy_die)
         #     return 0
         
+        # TODO: esto ahora mismo es provisional. Hay que relativizarlo.
         if self.engine.player.fighter.fov == 6:
             self.engine.player.fighter.base_stealth += 1
             self.engine.player.fighter.fov = 1

@@ -39,7 +39,17 @@ AVENTURERS
 - [x] Los adventurers deberían equiparse con un arma nada más generarse (si tienen alguna en el inventario).
 - [ ] Los adventurers podrían coger pociones u otros objetos que se encontraran en su línea de visión.
 
+PERSONAJES
+- [ ] Personajes únicos o especiales:
+- [ ] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje).
+- [ ] Anciano del fuego eterno. Normalmente en el nivel de superficie. Junto a un campfire que nunca se apaga. Le da consejos cripticos al PJ. En ocasiones le puede obsequiar con un objeto mágico. En otras partidas el viejo no está, y sólo están los restos de la fogata.
+- [ ] Robot estropeado pero aún operativo.
+
 EFECTOS SONOROS / SONIDO
+- [ ] Sonido de queja/lamento al recibir daño (específico de cada criatura).
+- [-] Sonido de ataques con armas y desarmado. [Sistema implementado, pero sin configurar]
+- [x] Sonidos de recoger objetos.
+- [x] Sonido de fuergo jungo a las fogatas (al recuperar vida, disparar el función correspondiente).
 - [ ] Que la transición de música ambiente sea con fade in/out.
 - [x] Sonido ambiente!
 - [x] Sistema para sonidos sfx
@@ -70,40 +80,62 @@ POCIONES
 - [ ] ¿Animación para la rotura de pociones?
 - [x] Crear animación genérica para lanzamiento de cualquier objeto.
 
+ANILLOS
+
+
+COLGANTES Y AMULETOS
+
+
+ARMAS MÁGICAS
+
+
+ARMADURAS MÁGICAS
+
+
 COFRES
 - [x] Dibujar un sprite para los cofres para el psuedo-ascii.
 - [ ] Sonido al abrir (y cerrar) cofres.
 - [ ] Una vez abiertos no se pueden cerrar (arreglar esto).
 - [ ] Tenemos que implementar la mecánica para introducir objetos dentro de un cofre. Es decir, para transferir objetos del inventario al cofre abierto.
 
-LIBRERÍAS
-- [ ] Con libros y/o pergaminos.
+MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
+- [ ] Librerías Con libros y/o pergaminos.
+- [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
 - [ ] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas. 
-- [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 ARTEFACTOS
 - [ ] Crear artefacto revolver. Es un objeto único. Se tiene en el inventario, y al activarlo, permite disparar. El revolver tiene 6 balas (y no se puede recargar, pues no existirán más balas en toda la mazmorra). Cuando se dispara el revolver, el jugador escoge el objetivo. Son objetivos válidos las criaturas que sean visibles y que se encuentren en un radio de 25 casillas o menos. La probabilidad de impactar será como sigue: 100% a la distancia de una casilla.... El daño será variable.
 
-CUEVAS
-- [ ] Revisar el loot de las cuevas. Parece que se trata todo como una habitación. Hay que hacerlo de otra forma.
-- [ ] Las paredes de las cavernas tienen que usar otro sprite.
-- [ ] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
-
 HUD
+- [ ] Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen).
 - [!] Pantalla de ayuda, con descripción de teclas y comandos.
 - [!] Arreglar el combat panel.
+- [ ] Idioma inglés y español.
 - [ ] Rediseñar el combat panel.
 - [x] Las ventanas que se abren con información tienen que aplicar formato al texto (respetar los límites de la ventana, etc.).
-- [ ] Que los mensajes repetidos iguales se apilen, al modo de nethack, con un multiplicador, y así no se consuman más líneas.
+- [x] Que los mensajes repetidos iguales se apilen, al modo de nethack, con un multiplicador, y así no se consuman más líneas.
 - [ ] Mejorar la presentación de texto largo en las ventanas popup (justificado, colores, saltos de línea, etc.)
 - [ ] Pantalla de ayuda con el documento de instrucciones de cómo funciona el combate, el sigilo, etc.
 - [ ] Mejorar sistema de inventario.
 - [x] Info de objetos.
 - [ ] Rellenar la info de objetos.
 - [ ] Etiqueta "poisoned" en el panel de abajo para cuando se está envenenado. Y etiqueta confused.
+
+SALAS ESPECIALES
+- [ ] Tiendas!
+
+EVENTOS ESPECIALES
+- [ ] Misiones.
+- [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
+
+
+CUEVAS
+- [x] Revisar el loot de las cuevas. Parece que se trata todo como una habitación. Hay que hacerlo de otra forma.
+- [ ] Las paredes de las cavernas tienen que usar otro sprite.
+- [x] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
 
 DUNGEON GENERATION
 - [ ] El max_instances de un objeto parece que no está funcionando. Esta configuración tiene que ser total. Es decir, que nada pueda alterarla, generar una instancia de un objeto que tiene max_instances = 1.

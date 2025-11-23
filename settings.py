@@ -139,7 +139,7 @@ CHEST_ITEM_COUNT_BY_FLOOR = [
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 CHEST_LOOT_TABLES = {
     1: [
-        ("prodigious_memory_scroll", 1),
+        ("infra_vision_potion", 6),
         # ("health_potion", 5),
         # ("stamina_potion", 5),
         # ("triple_ration", 4),

@@ -10,6 +10,13 @@ from components.base_component import BaseComponent
 from render_order import RenderOrder
 import tile_types
 import loot_tables
+from audio import (
+    update_campfire_audio,
+    play_pain_sound,
+    play_death_sound,
+    play_breakable_wall_destroy_sound,
+    play_table_destroy_sound,
+)
 
 if TYPE_CHECKING:
     from entity import Actor, Obstacle
@@ -272,8 +279,13 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     @hp.setter
     def hp(self, value: int) -> None:
-        self._hp = max(0, min(value, self.max_hp))
-        if self._hp == 0 and self.parent.ai:
+        old_hp = getattr(self, "_hp", self.max_hp)
+        clamped = max(0, min(value, self.max_hp))
+        took_damage = clamped < old_hp
+        self._hp = clamped
+        if took_damage:
+            play_pain_sound(getattr(self, "parent", None))
+        if self._hp == 0 and getattr(self.parent, "ai", None):
             self.die()
 
     @property
@@ -493,6 +505,11 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         #self.engine.player.fighter.is_in_melee = False
 
+        original_name = getattr(self.parent, "name", "")
+        lowered_name = original_name.lower() if isinstance(original_name, str) else ""
+        is_campfire = lowered_name == "campfire"
+        is_table = lowered_name == "table"
+
         if self.engine.player is self.parent:
             death_message = "You died!"
             death_message_color = color.player_die
@@ -505,12 +522,18 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.parent.color = (160, 160, 160)
         self.parent.blocks_movement = False
         self.parent.ai = None
-        self.parent.name = f"remains of {self.parent.name}"
+        play_death_sound(self.parent)
+        self.parent.name = f"remains of {original_name}"
         self.parent.render_order = RenderOrder.CORPSE
 
         if self.engine.game_map.visible[self.parent.x, self.parent.y]:
             print(death_message)
             self.engine.message_log.add_message(death_message, death_message_color)
+
+        if is_campfire:
+            update_campfire_audio(self.parent, False)
+        if is_table:
+            play_table_destroy_sound()
 
         self.engine.player.level.add_xp(self.parent.level.xp_given)
 
@@ -1033,6 +1056,8 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         gamemap = self.engine.game_map
         death_message = f"The {self.parent.name.lower()} collapses!"
         self.engine.message_log.add_message(death_message, color.enemy_die)
+        play_death_sound(self.parent)
+        play_breakable_wall_destroy_sound()
         gamemap.tiles[x, y] = tile_types.floor
         self.parent.ai = None
         self.parent.blocks_movement = False

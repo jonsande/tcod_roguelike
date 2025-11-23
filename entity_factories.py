@@ -386,7 +386,7 @@ infra_vision_potion = Item(
     color=(200, 200, 200),
     name=potion_name_roulette(),
     id_name="Potion of True Sight",
-    consumable=consumable.IncreaseFOVConsumable(amount=1),
+    consumable=consumable.IncreaseFOVConsumable(amount=2),
     throwable=True,
 )
 

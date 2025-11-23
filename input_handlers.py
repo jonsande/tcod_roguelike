@@ -24,6 +24,7 @@ from actions import (
 import color
 import exceptions
 from entity import Chest, Book
+from audio import play_chest_open_sound
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -878,6 +879,7 @@ class ChestLootHandler(AskUserEventHandler):
         super().__init__(engine)
         self.chest = chest
         if self.chest.open():
+            play_chest_open_sound()
             self.engine.message_log.add_message("You open the chest.", color.white)
 
     def on_render(self, console: tcod.Console) -> None:

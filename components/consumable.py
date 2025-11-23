@@ -100,6 +100,21 @@ class Consumable(BaseComponent):
         self._effect_message_emitted = False
         return False
 
+    def _resolve_temporal_texts(
+        self,
+        default_player_hi: Optional[str],
+        default_creature_hi: Optional[str],
+        default_end: Optional[str],
+    ):
+        key = getattr(self, "message_key", None)
+        if not key and hasattr(self, "parent"):
+            key = getattr(self.parent, "id_name", None)
+        config = self.TEMPORAL_EFFECT_TEXTS.get(key or "", {})
+        player_hi = default_player_hi or config.get("player_hi") or "You feel different."
+        creature_hi = default_creature_hi or config.get("creature_hi") or "{name} looks affected."
+        end = default_end or config.get("player_end") or "The effect wears off."
+        return player_hi, creature_hi, end
+
 SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Confusion scroll": "{target} titubea bajo las runas chispeantes.",
     "Paralisis scroll": "Las sigilosas runas atrapan a {target} en el sitio.",
@@ -245,21 +260,6 @@ class AreaTargetScrollConsumable(ScrollConsumable):
 
     def _apply_area_effect(self, action: actions.ItemAction) -> int:
         raise NotImplementedError()
-
-    def _resolve_temporal_texts(
-        self,
-        default_player_hi: Optional[str],
-        default_creature_hi: Optional[str],
-        default_end: Optional[str],
-    ):
-        key = getattr(self, "message_key", None)
-        if not key and hasattr(self, "parent"):
-            key = getattr(self.parent, "id_name", None)
-        config = self.TEMPORAL_EFFECT_TEXTS.get(key or "", {})
-        player_hi = default_player_hi or config.get("player_hi") or "You feel different."
-        creature_hi = default_creature_hi or config.get("creature_hi") or "{name} looks affected."
-        end = default_end or config.get("player_end") or "The effect wears off."
-        return player_hi, creature_hi, end
 
 class TargetedConfusionConsumable(SingleTargetScrollConsumable):
     def __init__(self, number_of_turns: int):
