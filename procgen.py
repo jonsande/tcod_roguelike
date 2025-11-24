@@ -1002,6 +1002,8 @@ def ensure_path_between(dungeon: GameMap, start: Tuple[int, int], goal: Tuple[in
     return False
 
 
+# BUG: Esto no estaba funcionando bien. De todos modos era una mala idea. Esta función
+# no es más que un bugfix provisional.
 def guarantee_downstairs_access(dungeon: GameMap, start: Tuple[int, int], goal: Tuple[int, int]) -> bool:
     """Carve a minimal breakable corridor when the stairs are unreachable."""
     walls_to_convert = find_walls_to_convert(dungeon, start, goal)

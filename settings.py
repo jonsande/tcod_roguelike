@@ -118,7 +118,7 @@ INTRO_MESSAGE = "After a long journey, you find the entrance to the labyrinth."
 # -- Player progression -------------------------------------------------------
 # Permite activar/desactivar el sistema de subida de nivel del jugador.
 # Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
-# xp en el futuro.
+# xp en el futuro. El sistema está mal implementado ahora mismo.
 PLAYER_LEVELING_ENABLED = False
 
 # -- Player starting gear -----------------------------------------------------
@@ -300,10 +300,10 @@ CHEST_LOOT_TABLES = {
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
-    # "room_01": [(1, 0.08), (6, 0.08)],
+    "room_01": [(1, 0.00), (6, 0.00)],
     # "room_secret": [(1, 0.10), (8, 0.10)],
-    # "room_door": [(1, 0.08), (5, 0.08)],
-    # "room_secret_B": [(1, 0.08), (8, 0.08)],
+    "room_door": [(1, 0.00), (5, 0.00)],
+    "room_secret_B": [(1, 0.00), (8, 0.00)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------
@@ -375,30 +375,74 @@ CAVERN_SMOOTHING_STEPS = 5
 
 # -- Cavern monster population ------------------------------------------------
 # Min/max creatures spawned per cavern level (list of tuples: floor threshold, (min, max)).
-CAVERN_MONSTER_COUNT_BY_FLOOR = [(1, (8, 14))]
+CAVERN_MONSTER_COUNT_BY_FLOOR = [(1, (4, 9))]
 # Cavern-specific spawn rules follow the same schema as ENEMY_SPAWN_RULES.
 CAVERN_MONSTER_SPAWN_RULES = {
     "snake": {"min_floor": 1, "weight_progression": [(1, 15), (4, 6), (7, 2)]},
     "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (3, 20), (5, 15)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 12), (6, 25), (9, 10)]},
-    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 18), (4, 10), (7, 3)]},
+    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
     "skeleton": {"min_floor": 4, "weight_progression": [(4, 5), (7, 10)]},
 }
 
 # -- Cavern item population ---------------------------------------------------
 # Rango (mínimo, máximo) de ítems colocados libremente en cuevas por nivel mínimo.
 CAVERN_ITEM_COUNT_BY_FLOOR = [
-    (1, (0, 1)),
-    (2, (10, 20)),
-    (3, (1, 2)),
-    (5, (2, 4)),
+    (1, (2, 5)),
+    (2, (2, 5)),
+    (3, (3, 5)),
+    (5, (3, 5)),
 ]
 # Tabla específica de cuevas reutilizando el mismo formato que ITEM_SPAWN_RULES.
 CAVERN_ITEM_SPAWN_RULES = {
-    "health_potion": {"min_floor": 1, "weight_progression": [(1, 6), (4, 3)]},
-    "stamina_potion": {"min_floor": 2, "weight_progression": [(2, 5), (5, 3)]},
-    "confusion_scroll": {"min_floor": 3, "weight_progression": [(3, 2), (6, 4)]},
-    "sand_bag": {"min_floor": 1, "weight_progression": [(1, 2), (4, 1)]},
+    # HI VALUE POTIONS
+    "strength_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "increase_max_stamina": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "life_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "infra_vision_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(2, 6)]},
+    # POTIONS
+    "antidote": {"min_floor": 2, "weight_progression": [(1, 5)]},
+    "sand_bag": {"min_floor": 2, "weight_progression": [(1, 5)]},
+    "health_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "poison_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "power_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "stamina_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "temporal_infra_vision_potion": {"min_floor": 5, "weight_progression": [(5, 4)]},
+    "blindness_potion": {"min_floor": 2, "weight_progression": [(1, 3), (2, 15)]},
+    "confusion_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "paralysis_potion": {"min_floor": 2, "weight_progression": [(2, 15), (4, 2)]},
+    "petrification_potion": {"min_floor": 6, "weight_progression": [(4, 5)]},
+    "precission_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    # WEAPONS
+    "short_sword": {"min_floor": 2, "weight_progression": [(2, 5), (5, 10),(8, 7)]},
+    "short_sword_plus": {"min_floor": 2, "weight_progression": [(6, 7)]},
+    "long_sword": {"min_floor": 2, "weight_progression": [(5, 10)]},
+    "long_sword_plus": {"min_floor": 2, "weight_progression": [(7, 8)]},
+    "spear": {"min_floor": 2, "weight_progression": [(2, 5), (7, 10)]},
+    "spear_plus": {"min_floor": 2, "weight_progression": [(2, 3), (7, 5)]},
+    # FOOD
+    "poisoned_triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
+    "triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
+    "banana": {"min_floor": 2, "weight_progression": [(2, 1)]},
+    # SCROLLS
+    "confusion_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "paralisis_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "lightning_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
+    "fireball_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
+    "descend_scroll": {"min_floor": 2, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
+    "teleport_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(2, 3), (5, 4)]},
+    "prodigious_memory_scroll": {"min_floor": 5, "max_instances": 2, "weight_progression": [(5, 1), (8, 2)]},
+    # ARMOR
+    "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
+    "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    # RINGS
+    "accuracy_ring": {"min_floor": 2, "max_instances": 1, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
+    "plain_ring": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
+    # OTHER
+    "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
+    "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
+    "note_wizard_1": {"min_floor": 2, "max_instances": 1, "weight_progression": [(2, 7)]},
+    # ARTIFACTS
 }
 
 # -- Column decorations -------------------------------------------------------
@@ -422,11 +466,11 @@ MAX_DEBRIS_BY_FLOOR = [
 
 # Máximo de objetos por habitación según el nivel del piso.
 # La configuración en MAX_ITEMS_BY_FLOOR se aplica POR HABITACIÓN, no por nivel completo.
-# En procgen.py, la función place_entities se llama para cada habitación generada.
+# En procgen.py, a la función place_entities se llama para cada habitación generada.
 # Ahora bien; el elemento (1, 1), por ejemplo, quiere decir que para el nivel 1 SE PUEDE
 # generar un máximo de 1 item. No quiere decir que se vaya a generar. Lo que hará la fun-
 # ción place_entities() de procgen.py es una randint(0,1) para determinar si ese 1 máximo
-# se traduce o no en un ítem. 
+# se traduce o no en un ítem.
 MAX_ITEMS_BY_FLOOR = [
     #(0, 0),
     (1, 0),
