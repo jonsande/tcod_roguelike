@@ -1,26 +1,25 @@
 
-# Python + tcod roguelike
+# The Seeker - Roguelike
 
 ![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/YetAnotherRoguelike_gameplay.png?raw=true)
 
-Traditional roguelike in development.
+A traditional roguelike currently in development.
 
 Main features:
-- A world with its own story.
-- Option for pure ASCII and pseudo-ASCII graphics.
-- Procedural map generation (multiple layers).
-- Handcrafted maps and scenarios.
-- Innovative tactical combat system.
-- Stealth system.
-- Unique and special events.
-- Complex and varied enemy AI.
-- Sound effects.
-- Some special visual effects.
-- Raycasting-based FOV.
+- A rich world with its own story and lore.
+- Choose between pure ASCII or pseudo-ASCII graphics.
+- Procedural map generation with multiple layers.
+- Handcrafted maps and carefully designed scenarios.
+- A fresh, tactical combat system built for depth and strategy.
+- Stealth mechanics for those who prefer subtlety over strength.
+- Unique and special in-game events.
+- Diverse and challenging enemy AI.
+- Atmospheric sound effects and select visual enhancements.
+- Raycasting-based field of view.
 - Potions, scrolls, magical items, unique artifacts...
-- And more.
+- And much more to come.
 
-Written in Python, using the tcod and pygame libraries. Inspired by the highly instructive “Yet another roguelike tutorial” (https://rogueliketutorials.com/tutorials/tcod/v2/).
+Developed in Python using the tcod and pygame libraries. Inspired by the excellent “Yet Another Roguelike Tutorial” (https://rogueliketutorials.com/tutorials/tcod/v2/).
 
 ## Controls
 
