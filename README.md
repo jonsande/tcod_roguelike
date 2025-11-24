@@ -3,7 +3,24 @@
 
 ![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/YetAnotherRoguelike_gameplay.png?raw=true)
 
-Experimental traditional roguelike with procedural level generation, pathfinding, raycasting FOV, stealth system... Based on "Yet another roguelike tutorial - Written on Python 3 and TCOD" (https://rogueliketutorials.com/tutorials/tcod/v2/).
+Traditional roguelike in development.
+
+Main features:
+- A world with its own story.
+- Option for pure ASCII and pseudo-ASCII graphics.
+- Procedural map generation (multiple layers).
+- Handcrafted maps and scenarios.
+- Innovative tactical combat system.
+- Stealth system.
+- Unique and special events.
+- Complex and varied enemy AI.
+- Sound effects.
+- Some special visual effects.
+- Raycasting-based FOV.
+- Potions, scrolls, magical items, unique artifacts...
+- And more.
+
+Written in Python, using the tcod and pygame libraries. Inspired by the highly instructive “Yet another roguelike tutorial” (https://rogueliketutorials.com/tutorials/tcod/v2/).
 
 ## Controls
 
@@ -35,11 +52,13 @@ n - Down&Right<br />
 i - Examine inventory<br />
 g - Pickup item<br />
 d - Drop item<br />
-a - Use item (in inventory)<br />
+a - Use/wear/wield item (from inventory)<br />
 t - Throw item<br />
-SPACE - Interact (take stairs)<br />
-o - On/Off lantern<br />
-p - Combat info panel<br />
-v - Message log<br />
 x - Look around<br />
+SPACE - Interact (take stairs)<br />
+q - On/Off lantern<br />
 c - Character information<br />
+p - Enemies info panel<br />
+v - Message log<br />
+
+BACKSPACE - Debug Console<br />

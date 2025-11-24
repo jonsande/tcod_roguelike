@@ -304,7 +304,7 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
             trail = 5
             for offset in range(trail):
                 idx = (head - offset) % bar_width
-                bar_chars[idx] = "*"
+                bar_chars[idx] = "="
         bar = "[" + "".join(bar_chars) + "]"
 
         spinner = self._SPINNER[int(elapsed * 6) % len(self._SPINNER)]
@@ -341,9 +341,10 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
                 #     alignment=libtcodpy.CENTER,
                 # )
                 console.print(
-                    center_x,
-                    center_y + 7,
-                    "Pulsa cualquier tecla para continuar",
+                    center_x - 1,
+                    center_y + 5,
+                    # "Pulsa cualquier tecla para continuar",
+                    "= Press any key =",
                     fg=color.menu_text,
                     alignment=libtcodpy.CENTER,
                 )
@@ -351,14 +352,16 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
                 console.print(
                     center_x,
                     center_y + 5,
-                    "Hubo un problema al generar el juego.",
+                    # "Hubo un problema al generar el juego.",
+                    "There was a problem",
                     fg=color.red,
                     alignment=libtcodpy.CENTER,
                 )
                 console.print(
                     center_x,
                     center_y + 7,
-                    "Pulsa cualquier tecla para volver al menú.",
+                    # "Pulsa cualquier tecla para volver al menú.",
+                    "= Press any key to return =",
                     fg=color.menu_text,
                     alignment=libtcodpy.CENTER,
                 )
@@ -366,7 +369,7 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
             console.print(
                 center_x,
                 center_y + 5,
-                "Generando...",
+                "LOADING",
                 fg=color.menu_text,
                 alignment=libtcodpy.CENTER,
             )

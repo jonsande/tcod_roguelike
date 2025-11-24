@@ -526,7 +526,8 @@ eternal_campfire = _build_campfire_actor(eternal=True)
 old_man = Actor(
     char="@",
     color=(150, 150, 150),
-    name="El viejo",
+    # name="El viejo",
+    name="The old man",
     ai_cls=OldManAI,
     equipment=Equipment(),
     fighter=Fighter(

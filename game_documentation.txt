@@ -1,21 +1,21 @@
 1. EL COMBATE
 
-- - Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará.
+- Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará.
 
 - Avisos preliminares: ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos para sobrevivir: todo enemigo ha de tomarse en serio. A veces empezar un combate no es la mejor táctica. En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). Aprende a hacer uso del entorno. A veces el siguilo es tu mejor baza. Aprende a escapar.
 
 1.1. EL MODO COMBATE (MODO MELEE)
 
-- Si el PJ se y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
+- Si el PJ y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
 
-- En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que llevemos a cabo.
+- En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que podemos llevar a cabo:
 
 - FORTIFICAR: Si un personaje pasa turno (WaitAction) en el turno anterior a entrar MODO COMBATE, dicho personaje entrará en POSICIÓN DEFENSIVA, obteniendo los siguientes bonificadores:
 
                              TO-HIT |  DEFENSE
                               +1    |    +1
 
-- Una vez en MODO MELEE, existen tres tipos de MANIOBRAS DE COMBATE BÁSICAS, con distintos resultados para la STAMINA, y el bonus-caché a TO-HIT y DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
+- Una vez en MODO MELEE, existen tres tipos de MANIOBRAS DE COMBATE BÁSICAS, con distintos resultados para la STAMINA y el bonus-caché a TO-HIT y DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
 
                             STAMINA |  TO-HIT  | DEFENSE
 Atacar (MeleeAction):         -1    |  reset   |   -1            x    
@@ -45,7 +45,7 @@ Retroceder(MovementAction):   +1    |  reset   |   +1            x
 Redibir daño:                 -     |  reset   |  reset          x
 
 
-- Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo para su ejecución.
+- Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo.
 
 
 
@@ -65,7 +65,7 @@ Redibir daño:                 -     |  reset   |  reset          x
         (FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
 
 
-1.4. TABLAS DE REFERENCIA
+1.4. TABLAS DE REFERENCIA (incompletas)
 
  TO-HIT   |   RESULTADO MÍN  |  RESULTADO MAX
    0                1                6
@@ -79,10 +79,10 @@ Redibir daño:                 -     |  reset   |  reset          x
    CRIATURA     |     DEFENSA BASE
   Giant rat               2   
   hungry rat              2
-    Goblin                3         (Withd dagger +1)
+    Goblin                3         (With dagger +1)
     Monkey                5
-     Orc                  4                  
-   True Orc               4
+     Orc                  4         (With short sword +1)         
+   True Orc               4         (With long sword +1)
     Troll                 2
     Snake                 3
    Bandit                 5

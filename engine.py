@@ -629,8 +629,8 @@ class Engine:
         if self.game_world.current_floor == 1:
             render_functions.render_dungeon_level(
                 console=console,
-                dungeon_level="Desert",
-                location=(68, 37),
+                dungeon_level="The Entrance",
+                location=(60, 37),
             )
         else: 
             render_functions.render_dungeon_level(
