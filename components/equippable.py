@@ -139,7 +139,7 @@ class LongSwordPlus(Equippable):
             max_dmg=8,
             dmg_bonus=2,
             defense_bonus=1,
-            stealth_penalty=1, 
+            stealth_penalty=0, 
             )
 
 

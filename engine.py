@@ -539,19 +539,21 @@ class Engine:
             
             if isinstance(obj, Actor) and obj.is_alive and obj.ai_cls != components.ai.Dummy:
                 
-                if self.game_map.visible[obj.x, obj.y]:
-                    distance = int(obj.distance(self.player.x, self.player.y))
-                    self.player.fighter.aggravated = True # Para la gestión del stealth attack de los enemigos
-                    #print(distance)
-                    if distance > 0:
-                        if distance <= 1:
-                            self.player.fighter.is_in_melee = True
-                            # DEBUG:
-                            #print(f"Enemigo detectado: {obj.name}")
-                            #print(f"Distancia: {distance}")
-                            #print(f"Visible: {self.game_map.visible[obj.x, obj.y]}")
-                    if distance == 2:
-                        self.player.fighter.fortified = True
+                if obj.ai_cls != components.ai.OldManAI:
+
+                    if self.game_map.visible[obj.x, obj.y]:
+                        distance = int(obj.distance(self.player.x, self.player.y))
+                        self.player.fighter.aggravated = True # Para la gestión del stealth attack de los enemigos
+                        #print(distance)
+                        if distance > 0:
+                            if distance <= 1:
+                                self.player.fighter.is_in_melee = True
+                                # DEBUG:
+                                #print(f"Enemigo detectado: {obj.name}")
+                                #print(f"Distancia: {distance}")
+                                #print(f"Visible: {self.game_map.visible[obj.x, obj.y]}")
+                        if distance == 2:
+                            self.player.fighter.fortified = True
 
 
     def manage_temporal_effects(self, turns, amount, attribute, message_down):
@@ -627,7 +629,7 @@ class Engine:
         if self.game_world.current_floor == 1:
             render_functions.render_dungeon_level(
                 console=console,
-                dungeon_level="Town",
+                dungeon_level="Desert",
                 location=(68, 37),
             )
         else: 
@@ -655,9 +657,6 @@ class Engine:
             render_functions.render_combat_mode(
                 console=console, 
                 hit=self.player.fighter.to_hit, 
-                #power=self.player.fighter.power,
-                # TODO: Este power ya no tiene sentido aquí.
-                #power=self.player.fighter.strength, # Entiendo que esto se podría modificar en melee si se espera un turno.
                 defense=self.player.fighter.defense
             )
 

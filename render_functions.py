@@ -48,7 +48,10 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     names = []
     for entity in game_map.entities:
         if entity.x == x and entity.y == y:
-            name = entity.name
+            name = getattr(entity, "name", None)
+            if not isinstance(name, str):
+                # Entities like vanished foes clear their name; skip them on hover.
+                continue
             if isinstance(entity, Actor):
                 equipped_items = []
                 if entity.equipment.weapon:

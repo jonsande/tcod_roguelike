@@ -97,7 +97,7 @@ CHEST_OPEN_VOLUME = 0.4
 CAMPFIRE_SOUND_ENABLED = True
 CAMPFIRE_SOUNDS = ["data/audio/sfx/campfire/campfire_1.mp3",]
 CAMPFIRE_SOUND = None
-CAMPFIRE_VOLUME = 0.35
+CAMPFIRE_VOLUME = 0.75
 
 # Stair interactions --------------------------------------------------------
 STAIR_DESCEND_SOUND_ENABLED = True

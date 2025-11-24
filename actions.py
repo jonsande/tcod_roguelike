@@ -598,11 +598,20 @@ class ThrowItemAction(Action):
             return
 
         potion_id = getattr(self.item, "id_name", self.item.name)
-        adjustments = self._temporarily_reduce_duration(consumable, potion_id)
+        blocked_by_exception = potion_id in POTION_IDENTIFICATION_EXCEPTIONS
         previously_identified = getattr(self.item, "identified", False)
         original_name = self.item.name
-        blocked_by_exception = potion_id in POTION_IDENTIFICATION_EXCEPTIONS
-        allow_identification = not blocked_by_exception
+
+        if blocked_by_exception:
+            consumable.consume()
+            self.engine.message_log.add_message(
+                "No parece que la sustancia le afecte a esa criatura.",
+                color.impossible,
+            )
+            return
+
+        adjustments = self._temporarily_reduce_duration(consumable, potion_id)
+        allow_identification = True
         special_message = "The creature's pupils dilate." if potion_id == PRECISION_POTION_ID else None
         effect_applied = True
         previous_suppression = getattr(consumable, "_suppress_effect_messages", False)

@@ -482,6 +482,7 @@ def _place_town_old_man_with_campfire(
     dungeon: GameMapTown,
     *,
     stairs_location: Optional[Tuple[int, int]],
+    floor_number: int,
 ) -> None:
     """Place El viejo and his eternal campfire near the Town stairs."""
     if not stairs_location:
@@ -536,20 +537,72 @@ def _place_town_old_man_with_campfire(
         if offset not in neighbor_priority:
             neighbor_priority.append(offset)
 
+    campfire_position: Optional[Tuple[int, int]] = None
     for dx, dy in neighbor_priority:
         cx, cy = old_man_position[0] + dx, old_man_position[1] + dy
         if _can_place_entity(dungeon, cx, cy):
             entity_factories.eternal_campfire.spawn(dungeon, cx, cy)
-            return
+            campfire_position = (cx, cy)
+            break
 
-    for dx in range(-2, 3):
-        for dy in range(-2, 3):
-            if dx == 0 and dy == 0:
-                continue
-            cx, cy = old_man_position[0] + dx, old_man_position[1] + dy
-            if _can_place_entity(dungeon, cx, cy):
-                entity_factories.eternal_campfire.spawn(dungeon, cx, cy)
-                return
+    if campfire_position is None:
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
+                if dx == 0 and dy == 0:
+                    continue
+                cx, cy = old_man_position[0] + dx, old_man_position[1] + dy
+                if _can_place_entity(dungeon, cx, cy):
+                    entity_factories.eternal_campfire.spawn(dungeon, cx, cy)
+                    campfire_position = (cx, cy)
+                    break
+            if campfire_position:
+                break
+
+    _place_town_old_man_chest(dungeon, old_man_position, floor_number)
+
+
+def _place_town_old_man_chest(
+    dungeon: GameMapTown,
+    old_man_position: Tuple[int, int],
+    floor_number: int,
+) -> None:
+    """Place a guaranteed chest near the town old man when on floor 1."""
+    if floor_number != 1:
+        return
+
+    # Ítems aleatorios en el cofre del viejo
+    loot = _build_chest_loot(floor_number)
+
+    # Ítems garantizados en el cofre del viejo
+    for key in settings.OLD_MAN_CHEST:
+        prototype = getattr(entity_factories, key, None)
+        loot.append(copy.deepcopy(prototype))
+
+    if not loot:
+        return
+
+    chest_offsets = [
+        (1, 0),
+        (-1, 0),
+        (0, 1),
+        (0, -1),
+        (1, 1),
+        (1, -1),
+        (-1, 1),
+        (-1, -1),
+        (2, 0),
+        (-2, 0),
+        (0, 2),
+        (0, -2),
+    ]
+    for dx, dy in chest_offsets:
+        chest_x = old_man_position[0] + dx - 1
+        chest_y = old_man_position[1] + dy + 1
+        if not _can_place_entity(dungeon, chest_x, chest_y):
+            continue
+        chest_entity = entity_factories.chest.spawn(dungeon, chest_x, chest_y)
+        entity_factories.fill_chest_with_items(chest_entity, loot)
+        return
 
 
 def _spawn_entity_template(
@@ -1854,7 +1907,9 @@ def generate_town(
 
     downstairs = (35, 17)
 
-    _place_town_old_man_with_campfire(dungeon, stairs_location=downstairs)
+    _place_town_old_man_with_campfire(
+        dungeon, stairs_location=downstairs, floor_number=floor_number
+    )
 
     # Colocamos entidades genéricas
     place_entities(new_room, dungeon, floor_number)

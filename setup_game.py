@@ -285,13 +285,13 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
         center_x = console.width // 2
         center_y = console.height // 2 - 2
 
-        console.print(
-            center_x,
-            center_y - 4,
-            "Creando juego nuevo...",
-            fg=color.menu_text,
-            alignment=libtcodpy.CENTER,
-        )
+        # console.print(
+        #     center_x,
+        #     center_y - 4,
+        #     "Generando...",
+        #     fg=color.menu_text,
+        #     alignment=libtcodpy.CENTER,
+        # )
 
         elapsed = time.perf_counter() - self._start_time
         bar_width = 28
@@ -308,19 +308,19 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
         bar = "[" + "".join(bar_chars) + "]"
 
         spinner = self._SPINNER[int(elapsed * 6) % len(self._SPINNER)]
-        ascii_pick = [
-            r"   /\\",
-            r"  /__\\   {}".format(spinner),
-            r"     /",
-        ]
-        for idx, line in enumerate(ascii_pick):
-            console.print(
-                center_x,
-                center_y - 1 + idx,
-                line,
-                fg=color.menu_text,
-                alignment=libtcodpy.CENTER,
-            )
+        # ascii_pick = [
+        #     r"   /\\",
+        #     r"  /__\\   {}".format(spinner),
+        #     r"     /",
+        # ]
+        # for idx, line in enumerate(ascii_pick):
+        #     console.print(
+        #         center_x,
+        #         center_y - 1 + idx,
+        #         line,
+        #         fg=color.menu_text,
+        #         alignment=libtcodpy.CENTER,
+        #     )
 
         console.print(
             center_x,
@@ -332,14 +332,14 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
 
         if self._done:
             if self._engine_result and not self._error:
-                status = "¡Listo!"
-                console.print(
-                    center_x,
-                    center_y + 5,
-                    status,
-                    fg=color.green,
-                    alignment=libtcodpy.CENTER,
-                )
+                # status = "¡Listo!"
+                # console.print(
+                #     center_x,
+                #     center_y + 5,
+                #     status,
+                #     fg=color.orange,
+                #     alignment=libtcodpy.CENTER,
+                # )
                 console.print(
                     center_x,
                     center_y + 7,
@@ -366,7 +366,7 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
             console.print(
                 center_x,
                 center_y + 5,
-                "Tallando túneles...",
+                "Generando...",
                 fg=color.menu_text,
                 alignment=libtcodpy.CENTER,
             )

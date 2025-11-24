@@ -16,8 +16,8 @@ campfire_counter = 0
 campfire_exist = False
 
 # Asignamos nivel en que generar el artefacto
-#grial_floor = random.randint(8, 12)
-goblin_amulet_floor = random.randint(2,8)
+grial_floor = random.randint(10, 16)
+goblin_amulet_floor = random.randint(4,8)
 
 # Colocamos entidades especiales
 def place_uniques(floor, center_of_last_room, dungeon):
@@ -52,7 +52,7 @@ def place_uniques(floor, center_of_last_room, dungeon):
 
     # Jefes:
     ## Sauron
-    if floor == 13:
+    if floor == 16:
         if center_of_last_room != (0,0):
             global sauron_exists
             if sauron_exists == True:
@@ -62,25 +62,3 @@ def place_uniques(floor, center_of_last_room, dungeon):
                 sauron_exists = True
     else:
         pass
-
-
-    # Especiales:
-
-    ## Campfire
-    """
-    if floor > 1 and floor < 12:
-        if center_of_last_room != (0, 0):
-            global campfire_counter
-            if campfire_counter == floor:     
-                if random.randint(1,12) >= 1:
-                    campfire_counter += 1                    
-                    entity_factories.campfire.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
-    """
-    """
-    if floor == 2:
-        if center_of_last_room != (0, 0):
-            global campfire_exist
-            if campfire_exist == False:
-                entity_factories.campfire.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
-                campfire_exist = True
-    """

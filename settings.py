@@ -55,12 +55,12 @@ FULLSCREEN_MODE = "desktop"  # "desktop" o "exclusive"
 # -- Intro cinematic ----------------------------------------------------
 # Controla si se muestra una breve introducción al iniciar una nueva partida.
 INTRO_ENABLED = True
-INTRO_FADE_DURATION = 2.0  # segundos para fundir a negro o desde él
+INTRO_FADE_DURATION = 2.7  # segundos para fundir a negro o desde él
 INTRO_SLIDE_DURATION = 3.5  # tiempo en pantalla antes de iniciar el fundido
 INTRO_SLIDES = [
     {
-        "text": "Los ancianos te han elegido para la Gran Búsqueda.",
-        "hold": 2.8,
+        "text": "Los ancianos han elegido.",
+        "hold": 4.2,
     },
     {
         "text": "El ancestral artefacto se perdió generaciones atrás.\n"
@@ -68,13 +68,15 @@ INTRO_SLIDES = [
         "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
         "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
         "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
-        "muy anterior al Tercer Nacimiento.\n"
-        "Muchos han emprendido la Gran Búsqueda antes que tú.\n",
+        "muy anterior al Tercer Nacimiento.\n",
         "hold": 17.3,
     },
     {
-        "text": "Nadie ha vuelto.",
-        "hold": 3.0,
+        "text": "Los ancianos han elegido a un nuevo buscador. El elegido deberá viajar\n"
+        "a través de las montañas del Duule hasta el desierto pálido, encontrar\n"
+        "la entrada al laberinto y adentrarse en él.\n"
+        "Muchos otros han emprendido la Gran Búsqueda antes. Nadie ha vuelto.",
+        "hold": 13.0,
     },
 ]
 
@@ -102,13 +104,10 @@ PLAYER_LEVELING_ENABLED = False
 # jugador. `quantity` permite añadir varias copias y `equip` marca si se intenta
 # equipar esa copia en cuanto empiece la partida.
 PLAYER_STARTING_INVENTORY = [
-    {"item": "dagger", "equip": True},
-    {"item": "leather_armor", "equip": True},
-    {"item": "dagger", "quantity": 3},
-    # {"item": "paralisis_scroll", "quantity": 3},
-    # {"item": "lightning_scroll", "quantity": 3},
-    # {"item": "fireball_scroll", "quantity": 3},
-    # {"item": "poison_potion", "quantity": 4},
+    # {"item": "dagger", "equip": True},
+    # {"item": "leather_armor", "equip": True},
+    # {"item": "dagger", "quantity": 3},
+    {"item": "triple_ration", "quantity": 2},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -166,7 +165,6 @@ DEBRIS_CHANCES = {
 # Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_SPAWN_CHANCES = [
-    (1, 1),
     (2, 0.20),
     (4, 0.20),
     (8, 0.20),
@@ -174,10 +172,13 @@ CHEST_SPAWN_CHANCES = [
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_ITEM_COUNT_BY_FLOOR = [
-    (1, (6, 6)),
+    (1, (1, 1)), # En el primer nivel se genera siempre un cofre junto al viejo.
     (4, (1, 3)),
     (8, (1, 3)),
 ]
+
+OLD_MAN_CHEST = ["dagger", "leather_armor"]
+
 # Listado de todos los objetos. Útil para las CHEST_LOOT_TABLES
 ALL_ITEMS = [
     ("strength_potion", 1), 
@@ -218,15 +219,29 @@ ALL_ITEMS = [
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_LOOT_TABLES = {
     1: [
-        ("accuracy_ring", 6),
-        ("plain_ring", 2),
-        # ("health_potion", 5),
-        # ("stamina_potion", 5),
-        # ("triple_ration", 4),
-        # ("sand_bag", 2),
-        # ("antidote", 2),
+        ("accuracy_ring", 1), 
+        ("plain_ring", 1),
     ],
-    2: ALL_ITEMS,
+    2: [
+        ("dagger", 1),
+        # ("leather_armor", 1),
+        ("strength_potion", 1), 
+        ("increase_max_stamina", 1), 
+        ("life_potion", 1), 
+        ("infra_vision_potion", 1), 
+        ("antidote", 1), 
+        ("health_potion", 1), 
+        ("poison_potion", 1), 
+        ("power_potion", 1), 
+        ("stamina_potion", 1), 
+        ("temporal_infra_vision_potion", 1), 
+        ("blindness_potion", 1), 
+        ("confusion_potion", 1), 
+        ("paralysis_potion", 1), 
+        ("petrification_potion", 1), 
+        ("precission_potion", 1),
+    ],
+    3: ALL_ITEMS,
     8: [
         ("short_sword_plus", 2),
         ("spear_plus", 2),
@@ -234,6 +249,28 @@ CHEST_LOOT_TABLES = {
         ("fireball_scroll", 2),
         ("paralisis_scroll", 2),
         ("accuracy_ring", 2),
+        ("strength_potion", 1), 
+        ("increase_max_stamina", 1), 
+        ("life_potion", 1), 
+        ("infra_vision_potion", 1), 
+        ("antidote", 1), 
+        ("health_potion", 1), 
+        ("poison_potion", 1), 
+        ("power_potion", 1), 
+        ("stamina_potion", 1), 
+        ("temporal_infra_vision_potion", 1), 
+        ("blindness_potion", 1), 
+        ("confusion_potion", 1), 
+        ("paralysis_potion", 1), 
+        ("petrification_potion", 1), 
+        ("precission_potion", 1),
+        ("confusion_scroll", 1),
+        ("paralisis_scroll", 1),
+        ("lightning_scroll", 1),
+        ("fireball_scroll", 1),
+        ("descend_scroll", 1),
+        ("teleport_scroll", 1),
+        ("prodigious_memory_scroll", 1),
     ],
 }
 
@@ -354,7 +391,7 @@ ROOM_DECORATION_CHANCE = {
 # -- Dungeon population tables ------------------------------------------------
 # Máximo de manchas de escombros por piso (tuplas: nivel mínimo, cantidad máxima).
 MAX_DEBRIS_BY_FLOOR = [
-    (1, 30),
+    (1, 40),
     (2, 9),
     (4, 7),
     (6, 14),
@@ -369,7 +406,8 @@ MAX_DEBRIS_BY_FLOOR = [
 # ción place_entities() de procgen.py es una randint(0,1) para determinar si ese 1 máximo
 # se traduce o no en un ítem. 
 MAX_ITEMS_BY_FLOOR = [
-    (1, 1),
+    #(0, 0),
+    (1, 0),
     (2, 1),
     (3, 1),
     (4, 1),
@@ -381,8 +419,7 @@ MAX_ITEMS_BY_FLOOR = [
 
 # Máximo de monstruos por habitación según el nivel del piso.
 MAX_MONSTERS_BY_FLOOR = [
-    (0, 0),
-    (1, 1),
+    #(1, 0),
     (2, 1),
     (3, 1),
     (5, randint(1,2)),
@@ -407,7 +444,7 @@ CAMPFIRE_CACHE_ITEM_IDS = [
     "dagger_plus",
 ]
 # Chance (0-1) for a campfire to drop a fireball scroll when it dies out.
-CAMPFIRE_SCROLL_DROP_CHANCE = 0.01
+CAMPFIRE_SCROLL_DROP_CHANCE = 0.02
 
 # -- Adventurers behavior -----------------------------------------------------
 ADVENTURER_COLOR = (150, 150, 150)
@@ -416,7 +453,6 @@ ADVENTURER_CORPSE_COLOR = (100, 100, 100)
 ADVENTURER_CORPSE_NAME = "Remains of an adventurer"
 # Base probability (0-1) added per floor after they descend to find their corpse.
 ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
-# STANDARD DUNGEON GENERATOR SETTINGS
 
 # -- Loot generation -----------------------------------------------------------
 # Configuración de botín/objetos. Cada entrada permite controlar:
@@ -427,23 +463,23 @@ ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
 # - weight_progression: lista de (nivel, peso) que sobreescribe el peso a partir de ese nivel.
 ITEM_SPAWN_RULES = {
     # HI VALUE POTIONS
-    "strength_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "increase_max_stamina": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "life_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "infra_vision_potion": {"min_floor": 1, "max_instances": 8, "base_weight": 8, "weight_progression": [(1, 100)]},
+    "strength_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "increase_max_stamina": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "life_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "infra_vision_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(2, 6)]},
     # POTIONS
-    "antidote": {"min_floor": 1, "weight_progression": [(1, 5)]},
-    "sand_bag": {"min_floor": 1, "weight_progression": [(1, 5)]},
-    "health_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
-    "poison_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
-    "power_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
-    "stamina_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "antidote": {"min_floor": 2, "weight_progression": [(1, 5)]},
+    "sand_bag": {"min_floor": 2, "weight_progression": [(1, 5)]},
+    "health_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "poison_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "power_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "stamina_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
     "temporal_infra_vision_potion": {"min_floor": 5, "weight_progression": [(5, 4)]},
-    "blindness_potion": {"min_floor": 1, "weight_progression": [(1, 3)]},
-    "confusion_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
-    "paralysis_potion": {"min_floor": 4, "weight_progression": [(4, 2)]},
+    "blindness_potion": {"min_floor": 2, "weight_progression": [(1, 3), (2, 15)]},
+    "confusion_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
+    "paralysis_potion": {"min_floor": 2, "weight_progression": [(2, 15), (4, 2)]},
     "petrification_potion": {"min_floor": 6, "weight_progression": [(4, 5)]},
-    "precission_potion": {"min_floor": 1, "weight_progression": [(1, 5), (2, 15)]},
+    "precission_potion": {"min_floor": 2, "weight_progression": [(1, 5), (2, 15)]},
     # WEAPONS
     "short_sword": {"min_floor": 2, "weight_progression": [(2, 5), (5, 10),(8, 7)]},
     "short_sword_plus": {"min_floor": 2, "weight_progression": [(6, 7)]},
@@ -452,35 +488,31 @@ ITEM_SPAWN_RULES = {
     "spear": {"min_floor": 2, "weight_progression": [(2, 5), (7, 10)]},
     "spear_plus": {"min_floor": 2, "weight_progression": [(2, 3), (7, 5)]},
     # FOOD
-    "poisoned_triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
-    "triple_ration": {"min_floor": 3, "weight_progression": [(3, 10)]},
-    "banana": {"min_floor": 3, "weight_progression": [(3, 1)]},
+    "poisoned_triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
+    "triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
+    "banana": {"min_floor": 2, "weight_progression": [(2, 1)]},
     # SCROLLS
-    "confusion_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
-    "paralisis_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
-    "lightning_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
-    "fireball_scroll": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
-    "descend_scroll": {"min_floor": 3, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
+    "confusion_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "paralisis_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "lightning_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
+    "fireball_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
+    "descend_scroll": {"min_floor": 2, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
     "teleport_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(2, 3), (5, 4)]},
     "prodigious_memory_scroll": {"min_floor": 5, "max_instances": 2, "weight_progression": [(5, 1), (8, 2)]},
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
     # RINGS
-    "accuracy_ring": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
-    "plain_ring": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
+    "accuracy_ring": {"min_floor": 2, "max_instances": 1, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
+    "plain_ring": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
     # OTHER
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
     "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
-    "note_wizard_1": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 2)]},
+    "note_wizard_1": {"min_floor": 2, "max_instances": 1, "weight_progression": [(2, 7)]},
     # ARTIFACTS
-    # BUG: el min_floor no está funcionando como se espera. Sólo debería de aparecer a partir
-    # del nivel 7, pero me lo encuentro en otros niveles. No sé tampoco si el max_instancies
-    # está funcionando correctamente.
-    # P.D. Ya entiendo. Esto está sobreescrito en uniques.py. Allí se establece, entre otras
-    # cosas, en qué nivel tiene que aparecer este goblin_tooth_amulet.
-    "goblin_tooth_amulet": {"min_floor": 7, "max_instances": 1, "weight_progression": [(7, 4)]},
-    "grial": {"min_floor": 10, "max_instances": 1, "weight_progression": [(10, 4)]},
+    # La generación de artefactos únicos los está gestionando uniques.py
+    #"goblin_tooth_amulet": {"min_floor": 7, "max_instances": 1, "weight_progression": [(7, 4)]},
+    #"grial": {"min_floor": 10, "max_instances": 1, "weight_progression": [(10, 4)]},
 }
 
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
@@ -488,18 +520,17 @@ ENEMY_SPAWN_RULES = {
     "adventurer": {
         "min_floor": 1, 
         "weight_progression": [
-            (1, 10),
+            (1, 7),
             (2, 7),
             (3, 7),
             (4, 6),
             ],
     },
-    "monkey": {"min_floor": 1, "weight_progression": [(1, 8), (2, 10)]},
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
     "campfire": {
-        "min_floor": 1,
+        "min_floor": 2,
         "weight_progression": [
-            (1, 10),
+            (2, 10),
             (13, 7),
             (14, 4),
             (15, 1),
@@ -511,7 +542,8 @@ ENEMY_SPAWN_RULES = {
     "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10)]},
     "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (7, 3)]},
     "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 50), (4, 30), (6, 20), (10, 15)]},
-    "orc": {"min_floor": 3, "weight_progression": [(3, 20), (4, 30), (5, 30), (8, 50), (9, 20)]},
+    "monkey": {"min_floor": 1, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
+    "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 20)]},
     "true_orc": {"min_floor": 5, "weight_progression": [(5, 5), (8, 20)]},
     "skeleton": {"min_floor": 4, "weight_progression": [(4, 15), (6, 18), (9, 12)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5)]},

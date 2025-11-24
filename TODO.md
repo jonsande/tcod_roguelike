@@ -140,6 +140,8 @@ EVENTOS ESPECIALES
 - [ ] Misiones.
 - [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
 
+HISTORIA
+- [ ] En el nivel 4 debe lanzarse un evento especial.
 
 CUEVAS
 - [x] Revisar el loot de las cuevas. Parece que se trata todo como una habitación. Hay que hacerlo de otra forma.
@@ -201,6 +203,10 @@ Retroceder:                   +1    |  reset   |   -1
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- [ ] Si el enemigo está paralizado, tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. Debe tmb haber un bonus a tu hit muy grande.
+- [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
+- [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
+- [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.
 - [ ] Esperar junto a una puerta cerrada para oir/escuchar. Te dice si hay alguna criatura a unas 5 o 6 casillas a distancia tras la puerta.
 - [!] Solucionar el tema de la lámpara/linterna y el fov!!
 - [ ] La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
@@ -220,6 +226,10 @@ VARIOS
 
 
 BUGS
+
+BUG: Cuando se lanza una poción de ceguera contra una criatura y la criatura recupera la visión al de un tiempo, se recibe el mensaje: "Shapes slowly emerge again around you". Es incorrecto. Hay que relativizar el mensaje.
+
+BUG: Cuando el texto de la pantalla de arriba es demasiado largo, se sale de la pantalla.
 
 BUG: cuando una adventurer entra en combate con una criatura salen los mensajes del combate en pantalla. No deberían salir, si el adventurer no es visible para ej personaje jugador.
 

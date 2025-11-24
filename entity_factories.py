@@ -531,10 +531,10 @@ old_man = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=40,
-        base_defense=1,
+        base_defense=0,
         strength=0,
         recover_rate=1,
-        fov=6,
+        fov=2,
     ),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=0),
@@ -1001,6 +1001,11 @@ def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.base_defense = random.randint(2, 3)
     # etc.
 
+def _goblin_on_spawn(entity: Actor) -> None:
+    """Configure goblins when they spawn so the engine can pickle the factory."""
+    _setup_creature_equipment(entity)
+    _randomize_goblin_stats(entity)
+
 goblin = Actor(
     char="g",
     color=(60,89,33),
@@ -1031,7 +1036,7 @@ goblin = Actor(
     level=Level(xp_given=3),
 )
 #goblin.on_spawn = _setup_creature_equipment
-goblin.on_spawn = lambda ent: (_setup_creature_equipment(ent), _randomize_goblin_stats(ent))
+goblin.on_spawn = _goblin_on_spawn
 
 monkey = Actor(
     char="y",
