@@ -493,7 +493,11 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         items_to_drop = list(getattr(inventory_component, "items", []) or [])
         for item in items_to_drop:
-            item.spawn(self.gamemap, self.parent.x, self.parent.y)
+            try:
+                inventory_component.items.remove(item)
+            except ValueError:
+                pass  # Item already removed elsewhere.
+            item.place(self.parent.x, self.parent.y, self.gamemap)
 
         special_loot = loot_tables.roll_special_drop(getattr(self.parent, "name", ""))
         if special_loot:
@@ -511,18 +515,21 @@ class Fighter(FireStatusMixin, BaseComponent):
         is_table = lowered_name == "table"
 
         if self.engine.player is self.parent:
+            # TODO: disparar sonido de muerte del Personaje.
             death_message = "You died!"
             death_message_color = color.player_die
         else:
             death_message = f"{self.parent.name} is dead!"
             death_message_color = color.enemy_die
-
+        if is_table:
+            play_table_destroy_sound()
+        else:
+            play_death_sound(self.parent)
 
         self.parent.char = "%"
         self.parent.color = (160, 160, 160)
         self.parent.blocks_movement = False
         self.parent.ai = None
-        play_death_sound(self.parent)
         self.parent.name = f"remains of {original_name}"
         self.parent.render_order = RenderOrder.CORPSE
 
@@ -532,8 +539,6 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         if is_campfire:
             update_campfire_audio(self.parent, False)
-        if is_table:
-            play_table_destroy_sound()
 
         self.engine.player.level.add_xp(self.parent.level.xp_given)
 
@@ -908,6 +913,8 @@ class Door(FireStatusMixin, BaseComponent):
         gamemap.entities.discard(self.parent)
         self.engine.player.level.add_xp(self.parent.level.xp_given)
         self.drop_loot()
+        if getattr(self.parent, "name", "").lower() == "table":
+            play_table_destroy_sound()
         import entity_factories
         entity_factories.breakable_wall_rubble.spawn(gamemap, x, y)
         return None
@@ -1056,7 +1063,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         gamemap = self.engine.game_map
         death_message = f"The {self.parent.name.lower()} collapses!"
         self.engine.message_log.add_message(death_message, color.enemy_die)
-        play_death_sound(self.parent)
+        #play_death_sound(self.parent)
         play_breakable_wall_destroy_sound()
         gamemap.tiles[x, y] = tile_types.floor
         self.parent.ai = None

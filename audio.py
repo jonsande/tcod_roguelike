@@ -222,12 +222,24 @@ class AmbientSoundController:
 
     def _track_for_floor(self, floor: int) -> Optional[str]:
         tracks = getattr(audio_cfg, "AMBIENT_SOUND_TRACKS", {}) or {}
-        track = None
+        track_choice: Optional[str] = None
         if isinstance(tracks, dict):
-            track = tracks.get(floor)
-        if not track:
-            track = getattr(audio_cfg, "AMBIENT_SOUND_DEFAULT_TRACK", None)
-        return track
+            track_choice = tracks.get(floor)
+        if track_choice is None:
+            track_choice = getattr(audio_cfg, "AMBIENT_SOUND_DEFAULT_TRACK", None)
+        return self._resolve_track_choice(track_choice)
+
+    def _resolve_track_choice(self, entry: Optional[object]) -> Optional[str]:
+        if entry is None:
+            return None
+        if isinstance(entry, (list, tuple, set)):
+            candidates = [str(value).strip() for value in entry if isinstance(value, str) and value.strip()]
+            if not candidates:
+                return None
+            return random.choice(candidates)
+        if isinstance(entry, str) and entry.strip():
+            return entry
+        return None
 
 
 ambient_sound = AmbientSoundController()

@@ -210,3 +210,18 @@ class GoblinAmulet(Equippable):
             to_hit_penalty=6
             )
         #self.parent.identify()
+
+
+class PlainRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+        )
+
+
+class AccuracyRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            to_hit_bonus=1,
+        )

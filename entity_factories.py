@@ -13,6 +13,7 @@ from components.ai import (
     Scout,
     SentinelEnemy,
     AdventurerAI,
+    OldManAI,
 )
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -273,6 +274,27 @@ def note_name_generator():
         note_name_options.remove(winner)
         return winner
 
+RING_APPEARANCE_POOL = [
+    "Tarnished copper ring",
+    "Braided silver ring",
+    "Heavy iron band",
+    "Ivory-inlaid ring",
+    "Azure gemmed ring",
+    "Etched obsidian band",
+    "Thin brass ring",
+    "Speckled stone ring",
+    "Twisted gold ring",
+    "Polished steel ring",
+]
+ring_appearance_options = RING_APPEARANCE_POOL.copy()
+
+def ring_appearance_roulette():
+    global ring_appearance_options
+    if not ring_appearance_options:
+        ring_appearance_options = RING_APPEARANCE_POOL.copy()
+    roulette = random.randint(0, len(ring_appearance_options) - 1)
+    return ring_appearance_options.pop(roulette)
+
 
 health_potion = Item(
     char="!",
@@ -472,22 +494,52 @@ table = Actor(
     level=Level(xp_given=0),
 )
 
-campfire = Actor(
-    char="x",
-    color=(255,170,0),
-    name="Campfire",
-    ai_cls=Dummy,
-    equipment=Equipment(),
-    fighter=Fighter(
+
+def _build_campfire_actor(*, eternal: bool = False) -> Actor:
+    fighter = Fighter(
         hp=random.randint(CAMPFIRE_MIN_HP, CAMPFIRE_MAX_HP),
         base_defense=0,
         strength=0,
         recover_rate=0,
         fov=3,
+    )
+    if eternal:
+        fighter.never_extinguish = True
+    return Actor(
+        char="x",
+        color=(255,170,0),
+        name="Campfire",
+        ai_cls=Dummy,
+        equipment=Equipment(),
+        fighter=fighter,
+        inventory=Inventory(capacity=0),
+        level=Level(xp_given=5),
+    )
+
+
+campfire = _build_campfire_actor()
+eternal_campfire = _build_campfire_actor(eternal=True)
+
+#campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
+
+
+old_man = Actor(
+    char="@",
+    color=(150, 150, 150),
+    name="El viejo",
+    ai_cls=OldManAI,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=40,
+        base_defense=1,
+        strength=0,
+        recover_rate=1,
+        fov=6,
     ),
-    inventory=Inventory(capacity=0),
-    level=Level(xp_given=5),
+    inventory=Inventory(capacity=1),
+    level=Level(xp_given=0),
 )
+old_man.id_name = "The old man"
 
 #campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
 
@@ -594,6 +646,7 @@ def _get_campfire_cache_items():
 
 
 campfire.on_spawn = _setup_campfire_spawn
+eternal_campfire.on_spawn = _setup_campfire_spawn
 
 def _equip_first_item_of_type(entity: Actor, equipment_type: EquipmentType) -> None:
     """Equip the first item of the requested type found in the entity's inventory."""
@@ -687,6 +740,27 @@ chain_mail = Item(
     equippable=equippable.ChainMail()
 )
 loot_tables.register_loot_item("chain_mail", chain_mail)
+
+# RINGS
+
+plain_ring = Item(
+    char="=",
+    color=(205, 127, 50),
+    name=ring_appearance_roulette(),
+    id_name="Plain ring",
+    equippable=equippable.PlainRing(),
+)
+loot_tables.register_loot_item("plain_ring", plain_ring)
+
+accuracy_ring = Item(
+    char="=",
+    color=(173, 216, 230),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Accuracy",
+    equippable=equippable.AccuracyRing(),
+    info="This precise band sharpens the instincts of any fighter who wears it.",
+)
+loot_tables.register_loot_item("accuracy_ring", accuracy_ring)
 
 # ARTEFACTS
 
@@ -1037,25 +1111,25 @@ true_orc = Actor(
 true_orc.on_spawn = _setup_creature_equipment
 
 skeleton = Actor(
-    char="K",
+    char="k",
     color=(180, 180, 180),
     name="Skeleton",
     ai_cls=HostileEnemy,
     equipment=Equipment(),
     fighter=Fighter(
         hp=16,
-        base_defense=5,
+        base_defense=4,
         base_to_hit=1,
         base_armor_value=2,
-        strength=2,
+        strength=1,
         recover_rate=0,
         fov=4,
         weapon_proficiency=PROFICIENCY_LEVELS["Apprentice"],
         aggressivity=5,
-        stamina=3,
-        max_stamina=3,
-        action_time_cost=9,
-        natural_weapon=NaturalWeapon(name="Bone blade", min_dmg=2, max_dmg=5),
+        stamina=8,
+        max_stamina=8,
+        action_time_cost=12,
+        natural_weapon=NaturalWeapon(name="Bone blade", min_dmg=1, max_dmg=5),
     ),
     inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Skeleton", amount=2)),
     level=Level(xp_given=8),

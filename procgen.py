@@ -21,8 +21,6 @@ if TYPE_CHECKING:
 import entity_factories
 import fixed_maps
 
-"""En la línea 289 aprox establecemos el número de niveles de la mazmorra"""
-
 # Direcciones cardinales (N, S, E, O) reutilizadas en varias rutinas.
 CARDINAL_DIRECTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 # Número máximo de puertas por nivel
@@ -478,6 +476,80 @@ def _can_place_entity(dungeon: GameMap, x: int, y: int) -> bool:
     if any(existing.x == x and existing.y == y for existing in dungeon.entities):
         return False
     return True
+
+
+def _place_town_old_man_with_campfire(
+    dungeon: GameMapTown,
+    *,
+    stairs_location: Optional[Tuple[int, int]],
+) -> None:
+    """Place El viejo and his eternal campfire near the Town stairs."""
+    if not stairs_location:
+        return
+
+    stairs_x, stairs_y = stairs_location
+    preferred_offsets = [8, 9]
+    old_man_position: Optional[Tuple[int, int]] = None
+    base_y = stairs_y + 2
+
+    for offset in preferred_offsets:
+        candidate_x = stairs_x - offset
+        if candidate_x < 0:
+            continue
+        candidate = (candidate_x, base_y)
+        if _can_place_entity(dungeon, *candidate):
+            old_man_position = candidate
+            break
+
+    if old_man_position is None:
+        # Fall back to tiles nearby but still west of the stairs.
+        for offset in preferred_offsets:
+            candidate_x = stairs_x - offset
+            if candidate_x < 0:
+                continue
+            for y_delta in (0, -1, 1, -2, 2):
+                candidate = (candidate_x, base_y + y_delta)
+                if _can_place_entity(dungeon, *candidate):
+                    old_man_position = candidate
+                    break
+            if old_man_position:
+                break
+
+    if old_man_position is None:
+        return
+
+    entity_factories.old_man.spawn(dungeon, *old_man_position)
+
+    preferred_direction = 1 if stairs_x >= old_man_position[0] else -1
+    neighbor_priority = [(preferred_direction, 0)]
+    fallback_offsets = [
+        (1, 0),
+        (-1, 0),
+        (0, 1),
+        (0, -1),
+        (1, 1),
+        (1, -1),
+        (-1, 1),
+        (-1, -1),
+    ]
+    for offset in fallback_offsets:
+        if offset not in neighbor_priority:
+            neighbor_priority.append(offset)
+
+    for dx, dy in neighbor_priority:
+        cx, cy = old_man_position[0] + dx, old_man_position[1] + dy
+        if _can_place_entity(dungeon, cx, cy):
+            entity_factories.eternal_campfire.spawn(dungeon, cx, cy)
+            return
+
+    for dx in range(-2, 3):
+        for dy in range(-2, 3):
+            if dx == 0 and dy == 0:
+                continue
+            cx, cy = old_man_position[0] + dx, old_man_position[1] + dy
+            if _can_place_entity(dungeon, cx, cy):
+                entity_factories.eternal_campfire.spawn(dungeon, cx, cy)
+                return
 
 
 def _spawn_entity_template(
@@ -1780,12 +1852,15 @@ def generate_town(
     elif entry_point is None:
         entry_point = new_room.center
 
+    downstairs = (35, 17)
+
+    _place_town_old_man_with_campfire(dungeon, stairs_location=downstairs)
+
     # Colocamos entidades genéricas
     place_entities(new_room, dungeon, floor_number)
 
     # Colocamos escaleras,
     if place_downstairs:
-        downstairs = (35, 17)
         dungeon.tiles[downstairs] = tile_types.floor
         dungeon.tiles[downstairs] = tile_types.down_stairs
         dungeon.downstairs_location = downstairs

@@ -35,26 +35,42 @@ def main() -> None:
 
     handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
 
+    window_flags = 0
+    if getattr(settings, "FULLSCREEN", False):
+        fullscreen_mode = str(getattr(settings, "FULLSCREEN_MODE", "desktop")).lower()
+        flag_attr = "SDL_WINDOW_FULLSCREEN"
+        if fullscreen_mode != "exclusive":
+            flag_attr = "SDL_WINDOW_FULLSCREEN_DESKTOP"
+        window_flags = getattr(tcod.context, flag_attr, 0)
+
     with tcod.context.new_terminal(
         screen_width,
         screen_heigth,
         tileset=tileset,
         title="Adventurers!",
         vsync=True,
+        sdl_window_flags=window_flags,
     ) as context:
         #root_console = tcod.Console(screen_width, screen_heigth, order="F")   # DEPRECATED
         root_console = tcod.console.Console(screen_width, screen_heigth, order="F")
         try:
             while True:
                 root_console.clear()
+                engine = getattr(handler, "engine", None)
+                if engine:
+                    engine.bind_display(context, root_console)
+                    engine.play_intro_if_ready()
+                    root_console.clear()
                 handler.on_render(console=root_console)
                 context.present(root_console)
-                engine = getattr(handler, "engine", None)
                 if engine:
                     engine.play_queued_animations(context, root_console)
 
                 try:
-                    for event in tcod.event.wait():
+                    events = list(tcod.event.get())
+                    if not events:
+                        tcod.sys_sleep_milli(16)
+                    for event in events:
                         context.convert_event(event)
                         handler = handler.handle_events(event)
                 except Exception:  # Handle exceptions in game.

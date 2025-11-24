@@ -13,6 +13,7 @@ import color
 import tile_types
 import exceptions
 import settings
+import dialog_settings
 from audio import update_campfire_audio
 
 if TYPE_CHECKING:
@@ -665,7 +666,7 @@ class AdventurerAI(BaseAI):
         self._combat_target: Optional[Tuple[int, int]] = None
         self._aggressor: Optional[Actor] = None
         self._relevant_greetings_remaining: int = getattr(
-            settings, "ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES", 2
+            dialog_settings, "ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES", 2
         )
 
     def perform(self) -> None:
@@ -909,9 +910,9 @@ class AdventurerAI(BaseAI):
         return max(abs(entity.x - self.entity.x), abs(entity.y - self.entity.y)) <= 1
 
     def _next_greeting_message(self) -> Optional[str]:
-        relevant = getattr(settings, "ADVENTURER_GREETING_MESSAGES", [])
+        relevant = getattr(dialog_settings, "ADVENTURER_GREETING_MESSAGES", [])
         irrelevant = getattr(
-            settings, "ADVENTURER_IRRELEVANT_GREETING_MESSAGES", []
+            dialog_settings, "ADVENTURER_IRRELEVANT_GREETING_MESSAGES", []
         )
 
         if self._relevant_greetings_remaining > 0 and relevant:
@@ -1228,3 +1229,73 @@ class Dummy(BaseAI):
                     )
 
             #if self.engine.game_map.visible[campfire.x, campfire.y]:
+
+
+class OldManAI(BaseAI):
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self._player_contact = False
+        self._messages_delivered = 0
+        max_messages = getattr(dialog_settings, "OLD_MAN_MAX_DIALOG_MESSAGES", 2)
+        try:
+            self._max_messages = max(0, int(max_messages))
+        except (TypeError, ValueError):
+            self._max_messages = 2
+        self._repeat_message = getattr(
+            dialog_settings,
+            "OLD_MAN_REPEAT_MESSAGE",
+            "Está escrito en el templo: «...e incontables niños retornarán a la noche primigenia.»",
+        )
+
+    def perform(self) -> None:
+        self._handle_player_contact()
+        return WaitAction(self.entity).perform()
+
+    def _handle_player_contact(self) -> None:
+        engine = getattr(self, "engine", None)
+        if not engine:
+            return
+        player = getattr(engine, "player", None)
+        gamemap = getattr(engine, "game_map", None)
+        if not player or not gamemap:
+            self._player_contact = False
+            return
+
+        adjacent = max(abs(player.x - self.entity.x), abs(player.y - self.entity.y)) <= 1
+        if not adjacent:
+            self._player_contact = False
+            return
+
+        if self._player_contact:
+            return
+
+        if not gamemap.visible[self.entity.x, self.entity.y]:
+            return
+
+        self._speak()
+        self._player_contact = True
+
+    def _speak(self) -> None:
+        engine = getattr(self, "engine", None)
+        if not engine:
+            return
+        message = self._next_message()
+        if not message:
+            return
+        engine.message_log.add_message(message)
+
+    def _next_message(self) -> Optional[str]:
+        if self._messages_delivered >= self._max_messages:
+            return self._repeat_message
+
+        messages = getattr(dialog_settings, "OLD_MAN_DIALOG_MESSAGES", [])
+        if not messages:
+            return self._repeat_message
+
+        self._messages_delivered += 1
+        return random.choice(messages)
+
+    def on_player_bump(self) -> None:
+        self._speak()
+        self._player_contact = True

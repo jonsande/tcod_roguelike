@@ -17,10 +17,19 @@ if TYPE_CHECKING:
 class Equipment(BaseComponent):
     parent: Actor
 
-    def __init__(self, weapon: Optional[Item] = None, armor: Optional[Item] = None, artefact: Optional[Item] = None):
+    def __init__(
+        self,
+        weapon: Optional[Item] = None,
+        armor: Optional[Item] = None,
+        artefact: Optional[Item] = None,
+        ring_left: Optional[Item] = None,
+        ring_right: Optional[Item] = None,
+    ):
         self.weapon = weapon
         self.armor = armor
         self.artefact = artefact
+        self.ring_left = ring_left
+        self.ring_right = ring_right
 
     @property
     def defense_bonus(self) -> int:
@@ -34,6 +43,12 @@ class Equipment(BaseComponent):
 
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.defense_bonus
+
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.defense_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.defense_bonus
 
         return bonus
 
@@ -55,6 +70,12 @@ class Equipment(BaseComponent):
             #total += self.artefact.equippable.weapon_dmg
             total += self.artefact.equippable.dmg_bonus
 
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            total += self.ring_left.equippable.dmg_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            total += self.ring_right.equippable.dmg_bonus
+
         return total
     
     @property
@@ -66,6 +87,12 @@ class Equipment(BaseComponent):
 
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.dmg_bonus
+
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.dmg_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.dmg_bonus
 
         return bonus
 
@@ -81,6 +108,12 @@ class Equipment(BaseComponent):
 
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.stealth_bonus
+
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.stealth_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.stealth_bonus
 
         return bonus
     
@@ -99,6 +132,12 @@ class Equipment(BaseComponent):
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.armor_value_bonus
 
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.armor_value_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.armor_value_bonus
+
         return bonus
     
     @property
@@ -113,6 +152,12 @@ class Equipment(BaseComponent):
 
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.to_hit_bonus
+
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.to_hit_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.to_hit_bonus
 
         return bonus
     
@@ -132,6 +177,12 @@ class Equipment(BaseComponent):
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.to_hit_penalty
 
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.to_hit_penalty
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.to_hit_penalty
+
         return bonus
     
     @property
@@ -144,10 +195,22 @@ class Equipment(BaseComponent):
         if self.artefact is not None and self.artefact.equippable is not None:
             bonus += self.artefact.equippable.armor_value_bonus
 
+        if self.ring_left is not None and self.ring_left.equippable is not None:
+            bonus += self.ring_left.equippable.armor_value_bonus
+
+        if self.ring_right is not None and self.ring_right.equippable is not None:
+            bonus += self.ring_right.equippable.armor_value_bonus
+
         return bonus
 
     def item_is_equipped(self, item: Item) -> bool:
-        return self.weapon == item or self.armor == item or self.artefact == item
+        return (
+            self.weapon == item
+            or self.armor == item
+            or self.artefact == item
+            or self.ring_left == item
+            or self.ring_right == item
+        )
 
     def unequip_message(self, item_name: str) -> None:
         self.parent.gamemap.engine.message_log.add_message(
@@ -184,6 +247,7 @@ class Equipment(BaseComponent):
             and equippable_item.equippable.equipment_type == EquipmentType.WEAPON
         ):
             slot = "weapon"
+            identify_on_equip = False
         else:
             if (
                 equippable_item.equippable
@@ -191,12 +255,36 @@ class Equipment(BaseComponent):
             ):
                 
                 slot = "artefact"
+                identify_on_equip = False
 
             else:
-
-                slot = "armor"
+                if (
+                    equippable_item.equippable
+                    and equippable_item.equippable.equipment_type == EquipmentType.RING
+                ):
+                    identify_on_equip = True
+                    if self.ring_left == equippable_item:
+                        slot = "ring_left"
+                    elif self.ring_right == equippable_item:
+                        slot = "ring_right"
+                    elif self.ring_left is None:
+                        slot = "ring_left"
+                    elif self.ring_right is None:
+                        slot = "ring_right"
+                    else:
+                        if add_message:
+                            self.parent.gamemap.engine.message_log.add_message(
+                                "You are already wearing two rings.",
+                                color.impossible,
+                            )
+                        return
+                else:
+                    slot = "armor"
+                    identify_on_equip = False
 
         if getattr(self, slot) == equippable_item:
             self.unequip_from_slot(slot, add_message)
         else:
+            if identify_on_equip and not equippable_item.identified:
+                equippable_item.identify()
             self.equip_to_slot(slot, equippable_item, add_message)

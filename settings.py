@@ -39,6 +39,45 @@ if GRAPHIC_MODE == "hardcore":
 #    "data/graphics/dejavu10x10_gs_tc_2x.png", 32, 8, tcod.tileset.CHARMAP_TCOD
 #)
 
+# -- Visual transitions ------------------------------------------------
+# Controla la animación de fundido al usar las escaleras.
+STAIR_TRANSITION_ENABLED = True
+STAIR_TRANSITION_STEPS = 12
+STAIR_TRANSITION_FRAME_TIME = 0.03  # segundos entre fotogramas
+
+# -- Window options -----------------------------------------------------
+# Define si la ventana arranca en modo pantalla completa. "desktop" usa el
+# fullscreen sin cambiar la resolución; "exclusive" intenta usar el modo
+# exclusivo de SDL2.
+FULLSCREEN = True
+FULLSCREEN_MODE = "desktop"  # "desktop" o "exclusive"
+
+# -- Intro cinematic ----------------------------------------------------
+# Controla si se muestra una breve introducción al iniciar una nueva partida.
+INTRO_ENABLED = True
+INTRO_FADE_DURATION = 2.0  # segundos para fundir a negro o desde él
+INTRO_SLIDE_DURATION = 3.5  # tiempo en pantalla antes de iniciar el fundido
+INTRO_SLIDES = [
+    {
+        "text": "Los ancianos te han elegido para la Gran Búsqueda.",
+        "hold": 2.8,
+    },
+    {
+        "text": "El ancestral artefacto se perdió generaciones atrás.\n"
+        "Los videntes de la tribu lo ven en sueños. Dicen verlo encerrado en\n"
+        "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
+        "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
+        "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
+        "muy anterior al Tercer Nacimiento.\n"
+        "Muchos han emprendido la Gran Búsqueda antes que tú.\n",
+        "hold": 17.3,
+    },
+    {
+        "text": "Nadie ha vuelto.",
+        "hold": 3.0,
+    },
+]
+
 # -- Audio settings ------------------------------------------------------
 # Configuración de audio movida a audio_settings.py
 
@@ -76,6 +115,7 @@ PLAYER_STARTING_EQUIP_LIMITS = {
     "weapon": 2,
     "armor": 2,
     "artefact": 2,
+    "ring": 2,
 }
 
 # -- Dungeon generation ------------------------------------------------
@@ -124,6 +164,7 @@ DEBRIS_CHANCES = {
 
 # -- Chest generation -------------------------------------------------
 # Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
+# TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_SPAWN_CHANCES = [
     (1, 1),
     (2, 0.20),
@@ -131,34 +172,68 @@ CHEST_SPAWN_CHANCES = [
     (8, 0.20),
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
+# TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_ITEM_COUNT_BY_FLOOR = [
     (1, (6, 6)),
     (4, (1, 3)),
     (8, (1, 3)),
 ]
+# Listado de todos los objetos. Útil para las CHEST_LOOT_TABLES
+ALL_ITEMS = [
+    ("strength_potion", 1), 
+    ("increase_max_stamina", 1), 
+    ("life_potion", 1), 
+    ("infra_vision_potion", 1), 
+    ("antidote", 1), 
+    ("health_potion", 1), 
+    ("poison_potion", 1), 
+    ("power_potion", 1), 
+    ("stamina_potion", 1), 
+    ("temporal_infra_vision_potion", 1), 
+    ("blindness_potion", 1), 
+    ("confusion_potion", 1), 
+    ("paralysis_potion", 1), 
+    ("petrification_potion", 1), 
+    ("precission_potion", 1),
+    ("confusion_scroll", 1),
+    ("paralisis_scroll", 1),
+    ("lightning_scroll", 1),
+    ("fireball_scroll", 1),
+    ("descend_scroll", 1),
+    ("teleport_scroll", 1),
+    ("prodigious_memory_scroll", 1),
+    ("chain_mail", 1),
+    ("leather_armor", 1),
+    ("short_sword", 1),
+    ("short_sword_plus", 1),
+    ("long_sword", 1),
+    ("long_sword_plus", 1),
+    ("spear", 1),
+    ("spear_plus", 1),
+    ("poisoned_triple_ration", 1),
+    ("triple_ration", 1),
+    ("banana", 1),
+    ]
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
+# TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_LOOT_TABLES = {
     1: [
-        ("infra_vision_potion", 6),
+        ("accuracy_ring", 6),
+        ("plain_ring", 2),
         # ("health_potion", 5),
         # ("stamina_potion", 5),
         # ("triple_ration", 4),
         # ("sand_bag", 2),
         # ("antidote", 2),
     ],
-    4: [
-        ("power_potion", 3),
-        ("strength_potion", 2),
-        ("short_sword", 1),
-        ("leather_armor", 1),
-        ("confusion_scroll", 2),
-    ],
+    2: ALL_ITEMS,
     8: [
         ("short_sword_plus", 2),
         ("spear_plus", 2),
         ("chain_mail", 1),
         ("fireball_scroll", 2),
         ("paralisis_scroll", 2),
+        ("accuracy_ring", 2),
     ],
 }
 
@@ -341,31 +416,6 @@ ADVENTURER_CORPSE_COLOR = (100, 100, 100)
 ADVENTURER_CORPSE_NAME = "Remains of an adventurer"
 # Base probability (0-1) added per floor after they descend to find their corpse.
 ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
-ADVENTURER_GREETING_MESSAGES = [
-    "Greetings, fellow explorer!",
-    "Get out of my way!",
-    "Have you checked every bookshelf? Some hide switches.",
-    "Keep your torch lit; shadows bite.",
-    "The old man said the deeper you go, the smarter the traps.",
-    "Doors whisper if you listen—sometimes they open twice.",
-    "Share the stairs whenever you need; danger awaits below.",
-    "Rumor says campfires hide secrets once extinguished.",
-    "Stay quiet near goblins—they hear everything.",
-    "Don't forget to rest; stamina saves lives.",
-    "If you see me running, follow—or flee.",
-    "Stairs rarely wait, but I'll take them soon.",
-]
-ADVENTURER_IRRELEVANT_GREETING_MESSAGES = [
-    "Did I leave the stove on… wherever that was?",
-    "These boots squeak louder than the bats.",
-    "I swear this place smells like soup today.",
-    "If you see a spare sock, it might be mine.",
-    "I keep hearing music—maybe it's just the echoes.",
-    "Do you think moss has a favorite color?",
-    "I don't like this place.",
-]
-ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES = 2
-
 # STANDARD DUNGEON GENERATOR SETTINGS
 
 # -- Loot generation -----------------------------------------------------------
@@ -416,6 +466,9 @@ ITEM_SPAWN_RULES = {
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    # RINGS
+    "accuracy_ring": {"min_floor": 1, "max_instances": 1, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
+    "plain_ring": {"min_floor": 1, "max_instances": 8, "weight_progression": [(1, 2), (4, 7), (6, 9)]},
     # OTHER
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
     "table": {"min_floor": 2, "weight_progression": [(2, 15)]},

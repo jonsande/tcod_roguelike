@@ -4,16 +4,19 @@ the map and entities, as well as handling the player’s input."""
 from __future__ import annotations
 
 import random
+import time
 
 import lzma
 import pickle
-from typing import TYPE_CHECKING, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
 
 import tcod
+import tcod.event
 from tcod.context import Context
 from tcod.console import Console
 from tcod.map import compute_fov
 from tcod import constants
+import numpy as np
 import settings
 
 import components.ai
@@ -87,6 +90,9 @@ class Engine:
         # lista y no se produce un parón en el juego.
         preload_campfire_audio()
         self._animation_queue: List[List[AnimationFrame]] = []
+        self._active_context: Optional[Context] = None
+        self._root_console: Optional[Console] = None
+        self._intro_slides: Optional[List[dict]] = None
 
     def clock(self):
         """
@@ -360,6 +366,8 @@ class Engine:
             gamemap.visible |= light_mask
 
     def _tick_campfire(self, campfire: Actor, fighter: components.fighter.Fighter) -> None:
+        if getattr(fighter, "never_extinguish", False):
+            return
         if fighter.hp <= 0:
             return
         fighter.hp -= 1
@@ -510,6 +518,8 @@ class Engine:
                 fighter.update_fire()
             name = getattr(entity, "name", "")
             if name and name.lower() == "campfire" and fighter:
+                if getattr(fighter, "never_extinguish", False):
+                    continue
                 self._tick_campfire(entity, fighter)
 
 
@@ -663,6 +673,164 @@ class Engine:
         save_data = lzma.compress(pickle.dumps(self))
         with open(filename, "wb") as f:
             f.write(save_data)
+
+    def bind_display(self, context: Context, console: Console) -> None:
+        """Mantiene una referencia a la superficie activa para efectos especiales."""
+        self._active_context = context
+        self._root_console = console
+
+    def perform_floor_transition(self, change_operation: Callable[[], bool]) -> bool:
+        """Envuelve un cambio de piso opcionalmente con un efecto de fundido."""
+        if not settings.STAIR_TRANSITION_ENABLED:
+            return change_operation()
+        if not self._active_context or not self._root_console:
+            return change_operation()
+
+        self._run_floor_fade(fade_out=True)
+        try:
+            result = change_operation()
+        finally:
+            self._run_floor_fade(fade_out=False)
+        return result
+
+    def _run_floor_fade(self, *, fade_out: bool) -> None:
+        context = self._active_context
+        console = self._root_console
+        if not context or not console:
+            return
+        steps = max(1, int(settings.STAIR_TRANSITION_STEPS))
+        delay = max(0.0, float(settings.STAIR_TRANSITION_FRAME_TIME))
+        for step in range(steps + 1):
+            progress = step / steps
+            strength = progress if fade_out else 1.0 - progress
+            self._draw_fade_frame(console, context, strength)
+            if delay > 0:
+                tcod.sys_sleep_milli(int(delay * 1000))
+
+    def _draw_fade_frame(self, console: Console, context: Context, strength: float) -> None:
+        console.clear()
+        self.render(console)
+        if strength > 0:
+            self._darken_console(console, strength)
+        context.present(console)
+
+    def _darken_console(self, console: Console, strength: float) -> None:
+        strength = max(0.0, min(strength, 1.0))
+        factor = 1.0 - strength
+        fg = console.rgb["fg"]
+        bg = console.rgb["bg"]
+        np.multiply(fg, factor, out=fg, casting="unsafe")
+        np.multiply(bg, factor, out=bg, casting="unsafe")
+
+    def schedule_intro(self, slides: Sequence[dict]) -> None:
+        """Configura las pantallas de introducción que se reproducirán al iniciar partida."""
+        if not slides:
+            self._intro_slides = None
+            return
+        prepared: List[dict] = []
+        default_hold = max(0.0, float(getattr(settings, "INTRO_SLIDE_DURATION", 2.5)))
+        for slide in slides:
+            slide_text = str(slide.get("text", "")) if isinstance(slide, dict) else str(slide)
+            hold_value = slide.get("hold") if isinstance(slide, dict) else None
+            try:
+                hold = float(hold_value) if hold_value is not None else default_hold
+            except (TypeError, ValueError):
+                hold = default_hold
+            prepared.append({"text": slide_text, "hold": max(0.0, hold)})
+        self._intro_slides = prepared
+
+    def play_intro_if_ready(self) -> None:
+        if not self._intro_slides:
+            return
+        if not self._active_context or not self._root_console:
+            return
+        slides = self._intro_slides
+        self._intro_slides = None
+        self._run_intro_slides(slides)
+
+    def _run_intro_slides(self, slides: Sequence[dict]) -> None:
+        context = self._active_context
+        console = self._root_console
+        if not context or not console:
+            return
+        for slide in slides:
+            text = slide.get("text", "") if isinstance(slide, dict) else str(slide)
+            hold = slide.get("hold", getattr(settings, "INTRO_SLIDE_DURATION", 2.5)) if isinstance(slide, dict) else getattr(settings, "INTRO_SLIDE_DURATION", 2.5)
+            if not self._play_intro_slide(console, context, text, float(hold)):
+                break
+
+    def _play_intro_slide(self, console: Console, context: Context, text: str, hold_duration: float) -> bool:
+        fade_duration = max(0.0, float(getattr(settings, "INTRO_FADE_DURATION", 1.0)))
+        hold_time = max(0.0, hold_duration)
+        stage = "fade_in"
+        stage_elapsed = 0.0
+        last_time = time.perf_counter()
+
+        while True:
+            now = time.perf_counter()
+            dt = now - last_time
+            last_time = now
+            stage_elapsed += dt
+
+            if stage == "fade_in":
+                brightness = 1.0 if fade_duration == 0 else min(1.0, stage_elapsed / fade_duration)
+                finished = fade_duration == 0 or stage_elapsed >= fade_duration
+            elif stage == "hold":
+                brightness = 1.0
+                finished = stage_elapsed >= hold_time
+            else:  # fade_out
+                brightness = 0.0 if fade_duration == 0 else max(0.0, 1.0 - (stage_elapsed / fade_duration))
+                finished = fade_duration == 0 or stage_elapsed >= fade_duration
+
+            self._render_intro_slide(console, text, brightness)
+            context.present(console)
+
+            if self._process_intro_events():
+                return False
+
+            if finished:
+                if stage == "fade_in":
+                    if hold_time > 0:
+                        stage = "hold"
+                        stage_elapsed = 0.0
+                    else:
+                        stage = "fade_out"
+                        stage_elapsed = 0.0
+                elif stage == "hold":
+                    stage = "fade_out"
+                    stage_elapsed = 0.0
+                else:
+                    return True
+
+            tcod.sys_sleep_milli(16)
+
+    def _render_intro_slide(self, console: Console, text: str, brightness: float) -> None:
+        console.clear(bg=color.black)
+        lines = text.splitlines() or [""]
+        fg_color = tuple(int(component * max(0.0, min(brightness, 1.0))) for component in color.white)
+        start_y = console.height // 2 - len(lines) // 2
+        for offset, line in enumerate(lines):
+            console.print(
+                console.width // 2,
+                start_y + offset,
+                line,
+                fg=fg_color,
+                bg=color.black,
+                alignment=constants.CENTER,
+            )
+
+    def _process_intro_events(self) -> bool:
+        context = self._active_context
+        if not context:
+            return False
+        for event in tcod.event.get():
+            context.convert_event(event)
+            if isinstance(event, tcod.event.Quit):
+                raise SystemExit()
+            if isinstance(event, tcod.event.KeyDown):
+                if event.sym == tcod.event.KeySym.ESCAPE:
+                    return True
+        return False
 
     def queue_animation(self, frames: List[AnimationFrame]) -> None:
         if frames:

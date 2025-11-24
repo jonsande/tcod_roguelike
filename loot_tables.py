@@ -31,7 +31,7 @@ from entity import Item
 # Mapping between creature names and the loot keys they can roll from.
 # Sólo para las criaturas que usan build_monster_inventory().
 MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
-    "Adventurer": ("short_sword", "leather_armor", "stamina_potion"),
+    "Adventurer": ("short_sword", "leather_armor", "stamina_potion", "plain_ring", "accuracy_ring"),
     "Giant rat": ("meat",),
     "Monkey": ("banana", "dagger", "strength_potion", "increase_max_stamina", "life_potion", "infra_vision_potion", "antidote", "health_potion", "poison_potion", "power_potion", "stamina_potion", "temporal_infra_vision_potion", "blindness_potion","confusion_potion", "paralysis_potion", "petrification_potion", "precission_potion"),
     "Goblin": ("meat", "dagger"),
@@ -72,6 +72,8 @@ SPECIAL_DROP_TABLES: Dict[str, Dict[str, object]] = {
             ("strength_potion", 1),
             ("life_potion", 1),
             ("infra_vision_potion", 1),
+            ("plain_ring", 2),
+            ("accuracy_ring", 1),
         ),
     },
     "Giant rat": {

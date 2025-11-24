@@ -6,9 +6,11 @@ import copy
 import lzma
 import pickle
 import traceback
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import tcod
+import threading
+import time
 
 import color
 from engine import Engine
@@ -17,6 +19,7 @@ from equipment_types import EquipmentType
 import input_handlers
 from game_map import GameWorld
 from audio import ambient_sound
+import settings
 from settings import (
     INTRO_MESSAGE,
     PLAYER_STARTING_EQUIP_LIMITS,
@@ -39,6 +42,7 @@ _EQUIPMENT_SLOT_NAMES = {
     EquipmentType.WEAPON: "weapon",
     EquipmentType.ARMOR: "armor",
     EquipmentType.ARTEFACT: "artefact",
+    EquipmentType.RING: "ring",
 }
 
 
@@ -168,6 +172,9 @@ def new_game() -> Engine:
 
     _add_starting_items(player)
 
+    if getattr(settings, "INTRO_ENABLED", False):
+        engine.schedule_intro(getattr(settings, "INTRO_SLIDES", []))
+
     return engine
 
 
@@ -241,6 +248,135 @@ class MainMenu(input_handlers.BaseEventHandler):
                 traceback.print_exc()  # Print to stderr.
                 return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
         elif event.sym == tcod.event.KeySym.n:
-            return input_handlers.MainGameEventHandler(new_game())
+            return LoadingScreenHandler(self, new_game)
 
         return None
+
+
+class LoadingScreenHandler(input_handlers.BaseEventHandler):
+    """Simple ASCII loading animation shown while the dungeon is generated."""
+
+    _SPINNER = ["|", "/", "-", "\\"]
+
+    def __init__(self, parent_handler: input_handlers.BaseEventHandler, loader: Callable[[], Engine]):
+        if not isinstance(parent_handler, input_handlers.BaseEventHandler):
+            raise TypeError("parent_handler must inherit from BaseEventHandler")
+        self.parent = parent_handler
+        self._loader = loader
+        self._engine_result: Optional[Engine] = None
+        self._error: Optional[str] = None
+        self._done = False
+        self._start_time = time.perf_counter()
+        self._thread = threading.Thread(target=self._run_loader, daemon=True)
+        self._thread.start()
+
+    def _run_loader(self) -> None:
+        try:
+            engine = self._loader()
+            self._engine_result = engine
+        except Exception:
+            traceback.print_exc()
+            self._error = traceback.format_exc()
+        finally:
+            self._done = True
+
+    def on_render(self, console: tcod.Console) -> None:
+        console.clear()
+        center_x = console.width // 2
+        center_y = console.height // 2 - 2
+
+        console.print(
+            center_x,
+            center_y - 4,
+            "Creando juego nuevo...",
+            fg=color.menu_text,
+            alignment=libtcodpy.CENTER,
+        )
+
+        elapsed = time.perf_counter() - self._start_time
+        bar_width = 28
+        bar_chars = ["-"] * bar_width
+
+        if self._done and self._engine_result and not self._error:
+            bar_chars = ["="] * bar_width
+        else:
+            head = int((elapsed * 8) % bar_width)
+            trail = 5
+            for offset in range(trail):
+                idx = (head - offset) % bar_width
+                bar_chars[idx] = "*"
+        bar = "[" + "".join(bar_chars) + "]"
+
+        spinner = self._SPINNER[int(elapsed * 6) % len(self._SPINNER)]
+        ascii_pick = [
+            r"   /\\",
+            r"  /__\\   {}".format(spinner),
+            r"     /",
+        ]
+        for idx, line in enumerate(ascii_pick):
+            console.print(
+                center_x,
+                center_y - 1 + idx,
+                line,
+                fg=color.menu_text,
+                alignment=libtcodpy.CENTER,
+            )
+
+        console.print(
+            center_x,
+            center_y + 3,
+            bar,
+            fg=color.white,
+            alignment=libtcodpy.CENTER,
+        )
+
+        if self._done:
+            if self._engine_result and not self._error:
+                status = "¡Listo!"
+                console.print(
+                    center_x,
+                    center_y + 5,
+                    status,
+                    fg=color.green,
+                    alignment=libtcodpy.CENTER,
+                )
+                console.print(
+                    center_x,
+                    center_y + 7,
+                    "Pulsa cualquier tecla para continuar",
+                    fg=color.menu_text,
+                    alignment=libtcodpy.CENTER,
+                )
+            else:
+                console.print(
+                    center_x,
+                    center_y + 5,
+                    "Hubo un problema al generar el juego.",
+                    fg=color.red,
+                    alignment=libtcodpy.CENTER,
+                )
+                console.print(
+                    center_x,
+                    center_y + 7,
+                    "Pulsa cualquier tecla para volver al menú.",
+                    fg=color.menu_text,
+                    alignment=libtcodpy.CENTER,
+                )
+        else:
+            console.print(
+                center_x,
+                center_y + 5,
+                "Tallando túneles...",
+                fg=color.menu_text,
+                alignment=libtcodpy.CENTER,
+            )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[input_handlers.BaseEventHandler]:
+        if not self._done:
+            return None
+
+        if self._engine_result and not self._error:
+            return input_handlers.MainGameEventHandler(self._engine_result)
+
+        # Algo salió mal; vuelve al menú principal.
+        return self.parent

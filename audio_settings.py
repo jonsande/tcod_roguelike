@@ -4,12 +4,25 @@
 AMBIENT_SOUND_ENABLED = True
 AMBIENT_SOUND_VOLUME = 1.0  # 0.0 - 1.0
 AMBIENT_SOUND_TRACKS = {
-    # 1: "data/audio/ambient/town.ogg",
-    # 2: "data/audio/ambient/dungeon_floor_2.ogg",
-    1: "data/audio/ambient/CO.AG_InTheHeartOfThisAncientCity.ogg",
-    2: "data/audio/ambient/CO.AG_DarkRooms.ogg",
+    # Puedes usar un string o una lista/tupla para elegir aleatoriamente entre varias pistas.
+    1: [
+        "data/audio/ambient/CO.AG_InTheHeartOfThisAncientCity.ogg",
+        "data/audio/ambient/CO.AG_16_TheDesert.ogg",
+    ],
+    3: [
+        "data/audio/ambient/CO.AG_DarkRooms.ogg",
+        "data/audio/ambient/CO.AG_12_LetsRead.ogg",
+    ],
+    4: ["data/audio/ambient/CO.AG_09_ForTerror.ogg"],
 }
-AMBIENT_SOUND_DEFAULT_TRACK = None
+# Se acepta string único o lista/tupla para escoger aleatoriamente.
+AMBIENT_SOUND_DEFAULT_TRACK = [
+    "data/audio/ambient/CO.AG_DarkRooms.ogg",
+    "data/audio/ambient/CO.AG_09_ForTerror.ogg",
+    "data/audio/ambient/CO.AG_12_LetsRead.ogg",
+    "data/audio/ambient/CO.AG_22_Magnetic.ogg",
+    "data/audio/ambient/underground_1.ogg",
+]
 
 # Player footsteps -----------------------------------------------------------
 PLAYER_FOOTSTEP_SOUND_ENABLED = True
@@ -111,7 +124,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Impact Hit 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
         "hit_no_damage": {
             "tracks": [
@@ -123,7 +136,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Parry 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
         "miss": {
             "tracks": [
@@ -132,7 +145,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Attack 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
     },
     "short_sword": _empty_melee_sound_entry(),
@@ -148,7 +161,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_4.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
         "hit_no_damage": {
             "tracks": [
@@ -157,7 +170,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
         "miss": {
             "tracks": [
@@ -166,7 +179,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/no_hit/generic/fist_3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.6
+                "volume": 0.3
                 },
     },
 }

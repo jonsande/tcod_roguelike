@@ -995,7 +995,7 @@ class DescendScrollConsumable(ScrollConsumable):
         game_world = self.engine.game_world
         if game_world.current_floor >= len(game_world.levels):
             raise Impossible("You can't descend any further.")
-        if not game_world.advance_floor():
+        if not self.engine.perform_floor_transition(game_world.advance_floor):
             raise Impossible("You can't descend any further.")
         new_map = self.engine.game_map
         x, y = game_world._find_random_free_tile(new_map)

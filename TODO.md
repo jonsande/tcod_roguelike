@@ -61,6 +61,7 @@ EFECTOS VISUALES
 - [x] Efectos luz adventurers.
 - [x] Efectos lightnin bolt.
 - [x] Efectos lanzamiento de objetos.
+- [ ] Efecto de transición al/del negro al cambiar de niveles (fading).
 - [ ] Ahora mismo la luz (el fov) de los adventurers sólo se ve si el adventurer es visible. Esto lo ideal es cambiarlo. Aunque el adventurer no sea visible, si alguna de las casillas que sí es visible para el adventurer es visible por el personaje jugador, esa casilla debe verse iluminada.
 
 PERGAMINOS
@@ -95,10 +96,11 @@ ARMADURAS MÁGICAS
 COFRES
 - [x] Dibujar un sprite para los cofres para el psuedo-ascii.
 - [ ] Sonido al abrir (y cerrar) cofres.
-- [ ] Una vez abiertos no se pueden cerrar (arreglar esto).
+- [DESCARTADO] Una vez abiertos no se pueden cerrar (arreglar esto).
 - [ ] Tenemos que implementar la mecánica para introducir objetos dentro de un cofre. Es decir, para transferir objetos del inventario al cofre abierto.
 
 MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
+- [ ] Rediseñar de un modo coherente las mesas. Ahora mismo son un fighter de la clase Door. Esto es muy raro. Unificar criterios y buscar una forma más elegante e intuitiva de gestionar el ser de las tablas.
 - [ ] Librerías Con libros y/o pergaminos.
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
@@ -110,7 +112,14 @@ ARTEFACTOS
 - [ ] Crear artefacto revolver. Es un objeto único. Se tiene en el inventario, y al activarlo, permite disparar. El revolver tiene 6 balas (y no se puede recargar, pues no existirán más balas en toda la mazmorra). Cuando se dispara el revolver, el jugador escoge el objetivo. Son objetivos válidos las criaturas que sean visibles y que se encuentren en un radio de 25 casillas o menos. La probabilidad de impactar será como sigue: 100% a la distancia de una casilla.... El daño será variable.
 
 HUD
-- [ ] Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen).
+- [ ] Intro. Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen). Texto útil:
+
+«Está escrito en el templo: ...e incontables niños retornarán a la noche primigenia.»
+«Estás aterrorizado. Nadie te preparó para esta oscuridad.»
+«Has sido elegido para la gran búsqueda»
+
+- [ ] Animación de carga al generar una nueva partida.
+- [x] Posibilidad de ejecutar el juego en pantalla completa.
 - [!] Pantalla de ayuda, con descripción de teclas y comandos.
 - [!] Arreglar el combat panel.
 - [ ] Idioma inglés y español.
@@ -192,6 +201,8 @@ Retroceder:                   +1    |  reset   |   -1
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- [ ] Esperar junto a una puerta cerrada para oir/escuchar. Te dice si hay alguna criatura a unas 5 o 6 casillas a distancia tras la puerta.
+- [!] Solucionar el tema de la lámpara/linterna y el fov!!
 - [ ] La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
 - [x] Cofres!
 - [!] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida.

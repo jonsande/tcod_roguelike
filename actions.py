@@ -216,7 +216,10 @@ class TakeStairsAction(Action):
             # Reinicia el contador para la generación de monstruos
             self.engine.spawn_monsters_counter = 0
 
-            if not self.engine.game_world.advance_floor():
+            if self.engine.game_world.current_floor >= len(self.engine.game_world.levels):
+                raise exceptions.Impossible("You can't descend any further.")
+
+            if not self.engine.perform_floor_transition(self.engine.game_world.advance_floor):
                 raise exceptions.Impossible("You can't descend any further.")
 
             self.engine.message_log.add_message(
@@ -233,7 +236,10 @@ class TakeStairsAction(Action):
                 print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TakeStairsAction (ascend)")
                 print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
-            if not self.engine.game_world.retreat_floor():
+            if self.engine.game_world.current_floor <= 1:
+                raise exceptions.Impossible("You can't ascend any further.")
+
+            if not self.engine.perform_floor_transition(self.engine.game_world.retreat_floor):
                 raise exceptions.Impossible("You can't ascend any further.")
 
             self.engine.spawn_monsters_counter = 0
@@ -1119,7 +1125,10 @@ class MovementAction(ActionWithDirection):
         player_moved = False
 
         if not game_map.in_bounds(dest_x, dest_y):
-            raise exceptions.Impossible("That way is blocked.")
+            if self.engine.game_world.current_floor == 1:
+                raise exceptions.Impossible("Debo recuperar el artefacto.")
+            else:
+                raise exceptions.Impossible("That way is blocked.")
         if not game_map.tiles["walkable"][dest_x, dest_y]:
             if game_map.try_open_door(dest_x, dest_y):
                 door_opened = True
@@ -1454,6 +1463,11 @@ class BumpAction(ActionWithDirection):
             self_name = getattr(self.entity, "name", "").lower()
             target_name = getattr(target, "name", "").lower()
             if self_name == "adventurer" and target_name == "adventurer":
+                return WaitAction(self.entity).perform()
+            if target_name in ("el viejo", "the old man"):
+                ai = getattr(target, "ai", None)
+                if self.entity is self.engine.player and hasattr(ai, "on_player_bump"):
+                    ai.on_player_bump()
                 return WaitAction(self.entity).perform()
             if getattr(target, "name", "").lower() == "door":
                 fighter = getattr(target, "fighter", None)
