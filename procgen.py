@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
+from dataclasses import dataclass
 import heapq
 import copy
 from game_map import GameMap, GameMapTown
@@ -462,6 +463,593 @@ class TownRoom:
 
         return center_x, center_y
 """
+
+
+@dataclass
+class RoomEntrance:
+    inner: Tuple[int, int]
+    outer: Tuple[int, int]
+    direction: Tuple[int, int]
+    connected: bool = False
+
+
+@dataclass
+class V2RoomNode:
+    rect: RectangularRoom
+    entrances: List[RoomEntrance]
+    floor_tiles: Set[Tuple[int, int]]
+
+
+OPPOSITE_DIRECTION = {
+    (1, 0): (-1, 0),
+    (-1, 0): (1, 0),
+    (0, 1): (0, -1),
+    (0, -1): (0, 1),
+}
+
+
+def _within_bounds(x: int, y: int, width: int, height: int, *, margin: int = 1) -> bool:
+    if x < margin or y < margin:
+        return False
+    if x >= width - margin or y >= height - margin:
+        return False
+    return True
+
+
+def _random_v2_room_dimensions() -> Tuple[int, int]:
+    """Return actual RectangularRoom width/height for v2 generator."""
+    interior_width = random.randint(
+        settings.DUNGEON_V2_ROOM_MIN_SIZE,
+        settings.DUNGEON_V2_ROOM_MAX_SIZE,
+    )
+    interior_height = random.randint(
+        settings.DUNGEON_V2_ROOM_MIN_SIZE,
+        settings.DUNGEON_V2_ROOM_MAX_SIZE,
+    )
+    # RectangularRoom digs tiles in the [x1 + 1, x2) range, so interior width = width - 1.
+    width = max(2, interior_width + 1)
+    height = max(2, interior_height + 1)
+    return width, height
+
+
+def _room_fits_within_bounds(room: RectangularRoom, map_width: int, map_height: int) -> bool:
+    if room.x1 < 1 or room.y1 < 1:
+        return False
+    if room.x2 >= map_width - 1 or room.y2 >= map_height - 1:
+        return False
+    return True
+
+
+def _gather_room_entry_candidates(
+    room: RectangularRoom,
+    map_width: int,
+    map_height: int,
+) -> List[RoomEntrance]:
+    candidates: List[RoomEntrance] = []
+
+    for x in range(room.x1 + 1, room.x2):
+        north_inner = (x, room.y1 + 1)
+        north_outer = (x, room.y1)
+        if _within_bounds(north_outer[0], north_outer[1], map_width, map_height):
+            candidates.append(RoomEntrance(north_inner, north_outer, (0, -1)))
+        south_inner = (x, room.y2 - 1)
+        south_outer = (x, room.y2)
+        if _within_bounds(south_outer[0], south_outer[1], map_width, map_height):
+            candidates.append(RoomEntrance(south_inner, south_outer, (0, 1)))
+
+    for y in range(room.y1 + 1, room.y2):
+        west_inner = (room.x1 + 1, y)
+        west_outer = (room.x1, y)
+        if _within_bounds(west_outer[0], west_outer[1], map_width, map_height):
+            candidates.append(RoomEntrance(west_inner, west_outer, (-1, 0)))
+        east_inner = (room.x2 - 1, y)
+        east_outer = (room.x2, y)
+        if _within_bounds(east_outer[0], east_outer[1], map_width, map_height):
+            candidates.append(RoomEntrance(east_inner, east_outer, (1, 0)))
+
+    return candidates
+
+
+def _entrances_are_adjacent(a: RoomEntrance, b: RoomEntrance) -> bool:
+    dx = abs(a.inner[0] - b.inner[0])
+    dy = abs(a.inner[1] - b.inner[1])
+    return dx <= 1 and dy <= 1
+
+
+def _build_room_entrances(
+    room: RectangularRoom,
+    map_width: int,
+    map_height: int,
+    *,
+    forced_entry: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None,
+    min_entries: int = 1,
+) -> Optional[List[RoomEntrance]]:
+    candidates = _gather_room_entry_candidates(room, map_width, map_height)
+    if not candidates:
+        return None
+
+    forced_instance: Optional[RoomEntrance] = None
+    if forced_entry:
+        forced_inner, forced_dir = forced_entry
+        for candidate in candidates:
+            if candidate.inner == forced_inner and candidate.direction == forced_dir:
+                forced_instance = candidate
+                break
+        if not forced_instance:
+            return None
+
+    max_entries = min(4, len(candidates))
+    min_entries = min(max_entries, max(1, min_entries))
+    target_entries = random.randint(min_entries, max_entries)
+    selected: List[RoomEntrance] = []
+
+    if forced_instance:
+        forced_instance.connected = True
+        selected.append(forced_instance)
+        candidates = [c for c in candidates if c is not forced_instance]
+        target_entries = max(target_entries, min_entries)
+
+    random.shuffle(candidates)
+    for candidate in candidates:
+        if len(selected) >= target_entries:
+            break
+        if any(_entrances_are_adjacent(candidate, existing) for existing in selected):
+            continue
+        selected.append(candidate)
+
+    if len(selected) < min_entries:
+        return None
+    return selected
+
+
+def _build_straight_corridor_path(
+    start: Tuple[int, int],
+    end: Tuple[int, int],
+) -> Optional[List[Tuple[int, int]]]:
+    if start == end:
+        return [start]
+    if start[0] != end[0] and start[1] != end[1]:
+        return None
+
+    path: List[Tuple[int, int]] = []
+    if start[0] == end[0]:
+        x = start[0]
+        y_start = min(start[1], end[1])
+        y_end = max(start[1], end[1])
+        for y in range(y_start, y_end + 1):
+            path.append((x, y))
+    else:
+        y = start[1]
+        x_start = min(start[0], end[0])
+        x_end = max(start[0], end[0])
+        for x in range(x_start, x_end + 1):
+            path.append((x, y))
+    return path
+
+
+def _corridor_path_is_clear(
+    path: List[Tuple[int, int]],
+    blocked_tiles: Set[Tuple[int, int]],
+    *,
+    allowed: Optional[Set[Tuple[int, int]]] = None,
+) -> bool:
+    allowed_positions = allowed or set()
+    for coord in path:
+        if coord in blocked_tiles and coord not in allowed_positions:
+            return False
+    return True
+
+
+def _carve_corridor(
+    dungeon: GameMap,
+    path: List[Tuple[int, int]],
+) -> None:
+    for x, y in path:
+        dungeon.tiles[x, y] = tile_types.floor
+
+
+def _collect_room_floor_tiles(room: RectangularRoom) -> Set[Tuple[int, int]]:
+    return set(room.iter_floor_tiles())
+
+
+def _manhattan_distance(a: Tuple[int, int], b: Tuple[int, int]) -> int:
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def _rooms_intersect_with_padding(a: RectangularRoom, b: RectangularRoom, padding: int = 0) -> bool:
+    return not (
+        a.x2 + padding < b.x1
+        or a.x1 - padding > b.x2
+        or a.y2 + padding < b.y1
+        or a.y1 - padding > b.y2
+    )
+
+
+def _room_contains_point(room: RectangularRoom, pt: Tuple[int, int]) -> bool:
+    x, y = pt
+    return room.x1 <= x < room.x2 and room.y1 <= y < room.y2
+
+
+class _DisjointSet:
+    def __init__(self, size: int):
+        self.parent = list(range(size))
+        self.rank = [0] * size
+
+    def find(self, x: int) -> int:
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x: int, y: int) -> bool:
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return False
+        if self.rank[rx] < self.rank[ry]:
+            self.parent[rx] = ry
+        elif self.rank[rx] > self.rank[ry]:
+            self.parent[ry] = rx
+        else:
+            self.parent[ry] = rx
+            self.rank[rx] += 1
+        return True
+
+
+def _shortest_room_path(
+    centers: List[Tuple[int, int]],
+    connections: List[Tuple[int, int]],
+    start_idx: int,
+    goal_idx: int,
+) -> List[int]:
+    """Compute shortest path between rooms (by centers) using Dijkstra."""
+    import heapq
+
+    graph: Dict[int, List[Tuple[int, int]]] = {i: [] for i in range(len(centers))}
+    for i, j in connections:
+        w = _manhattan_distance(centers[i], centers[j])
+        graph[i].append((j, w))
+        graph[j].append((i, w))
+
+    heap: List[Tuple[int, int]] = [(0, start_idx)]
+    dist: Dict[int, int] = {start_idx: 0}
+    prev: Dict[int, Optional[int]] = {start_idx: None}
+
+    while heap:
+        d, node = heapq.heappop(heap)
+        if node == goal_idx:
+            break
+        if d != dist.get(node, 1_000_000):
+            continue
+        for neigh, w in graph.get(node, []):
+            nd = d + w
+            if nd < dist.get(neigh, 1_000_000):
+                dist[neigh] = nd
+                prev[neigh] = node
+                heapq.heappush(heap, (nd, neigh))
+
+    if goal_idx not in prev and goal_idx != start_idx:
+        return []
+
+    path: List[int] = []
+    cursor: Optional[int] = goal_idx
+    while cursor is not None:
+        path.append(cursor)
+        cursor = prev.get(cursor)
+    path.reverse()
+    return path
+
+
+def _draw_hot_path(
+    dungeon: GameMap,
+    hot_path: List[Tuple[int, int]],
+    *,
+    glyph: str = "*",
+    dark_color: Tuple[int, int, int] = (180, 50, 50),
+    light_color: Tuple[int, int, int] = (255, 90, 90),
+) -> None:
+    """Pinta sobre el mapa el camino del hot_path para depuración."""
+    if len(hot_path) < 2:
+        return
+
+    coords: Set[Tuple[int, int]] = set()
+    for a, b in zip(hot_path[:-1], hot_path[1:]):
+        coords.update(tunnel_between(a, b))
+
+    char_code = ord(glyph)
+    for x, y in coords:
+        if not dungeon.in_bounds(x, y):
+            continue
+        if not dungeon.tiles["walkable"][x, y]:
+            continue
+        if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
+            continue
+        if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+            continue
+        dungeon.tiles["dark"]["ch"][x, y] = char_code
+        dungeon.tiles["light"]["ch"][x, y] = char_code
+        dungeon.tiles["dark"]["fg"][x, y] = dark_color
+        dungeon.tiles["light"]["fg"][x, y] = light_color
+
+
+def _normalize_feature_probs(raw: Dict[str, float]) -> List[Tuple[str, float]]:
+    options = []
+    for key, value in raw.items():
+        try:
+            weight = float(value)
+        except Exception:
+            weight = 0.0
+        if weight > 0:
+            options.append((key, weight))
+    if not options:
+        return [("none", 1.0)]
+    total = sum(w for _, w in options)
+    return [(k, w / total) for k, w in options]
+
+
+def _collect_room_entry_candidates_v3(
+    dungeon: GameMap,
+    room_tiles: Set[Tuple[int, int]],
+) -> List[Tuple[int, int]]:
+    """Return corridor tiles adyacentes a la sala (no dentro de la sala)."""
+    candidates: Set[Tuple[int, int]] = set()
+    for x, y in room_tiles:
+        for dx, dy in CARDINAL_DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in room_tiles:
+                continue
+            if not dungeon.in_bounds(nx, ny):
+                continue
+            if not dungeon.tiles["walkable"][nx, ny]:
+                continue
+            candidates.add((nx, ny))
+    return list(candidates)
+
+
+def _maybe_place_entry_feature(
+    dungeon: GameMap,
+    coord: Tuple[int, int],
+    options: List[Tuple[str, float]],
+) -> None:
+    def _has_opposing_walls(x: int, y: int) -> bool:
+        north = dungeon.in_bounds(x, y - 1) and not dungeon.tiles["walkable"][x, y - 1]
+        south = dungeon.in_bounds(x, y + 1) and not dungeon.tiles["walkable"][x, y + 1]
+        east = dungeon.in_bounds(x + 1, y) and not dungeon.tiles["walkable"][x + 1, y]
+        west = dungeon.in_bounds(x - 1, y) and not dungeon.tiles["walkable"][x - 1, y]
+        return (north and south) or (east and west)
+
+    if dungeon.upstairs_location and coord == dungeon.upstairs_location:
+        return
+    if dungeon.downstairs_location and coord == dungeon.downstairs_location:
+        return
+    if any(ent.x == coord[0] and ent.y == coord[1] for ent in dungeon.entities):
+        return
+    if not _has_opposing_walls(coord[0], coord[1]):
+        return
+
+    keys, weights = zip(*options)
+    choice = random.choices(keys, weights=weights, k=1)[0]
+    x, y = coord
+
+    if choice == "door":
+        dungeon.tiles[x, y] = tile_types.closed_door
+        spawn_door_entity(dungeon, x, y)
+    elif choice == "breakable":
+        convert_tile_to_breakable(dungeon, x, y)
+
+
+def _choose_room_location_for_entry(
+    width: int,
+    height: int,
+    target_inner: Tuple[int, int],
+    direction: Tuple[int, int],
+    map_width: int,
+    map_height: int,
+) -> Optional[Tuple[int, int]]:
+    """Place a room so that `target_inner` lies on the wall defined by `direction`."""
+    tx, ty = target_inner
+
+    def _clamp_range(a: int, b: int) -> Optional[int]:
+        if a > b:
+            return None
+        return random.randint(a, b)
+
+    if direction == (1, 0):
+        # Entrada en pared este: target_inner = x2 - 1
+        x1 = tx - (width - 1)
+        if x1 < 1 or x1 + width >= map_width - 1:
+            return None
+        y_min = max(1, ty - (height - 1))
+        y_max = min(map_height - height - 1, ty - 1)
+        y1 = _clamp_range(y_min, y_max)
+        if y1 is None:
+            return None
+        return x1, y1
+
+    if direction == (-1, 0):
+        # Entrada en pared oeste: target_inner = x1 + 1
+        x1 = tx - 1
+        if x1 < 1 or x1 + width >= map_width - 1:
+            return None
+        y_min = max(1, ty - (height - 1))
+        y_max = min(map_height - height - 1, ty - 1)
+        y1 = _clamp_range(y_min, y_max)
+        if y1 is None:
+            return None
+        return x1, y1
+
+    if direction == (0, 1):
+        # Entrada en pared sur: target_inner = y2 - 1
+        y1 = ty - (height - 1)
+        if y1 < 1 or y1 + height >= map_height - 1:
+            return None
+        x_min = max(1, tx - (width - 1))
+        x_max = min(map_width - width - 1, tx - 1)
+        x1 = _clamp_range(x_min, x_max)
+        if x1 is None:
+            return None
+        return x1, y1
+
+    if direction == (0, -1):
+        # Entrada en pared norte: target_inner = y1 + 1
+        y1 = ty - 1
+        if y1 < 1 or y1 + height >= map_height - 1:
+            return None
+        x_min = max(1, tx - (width - 1))
+        x_max = min(map_width - width - 1, tx - 1)
+        x1 = _clamp_range(x_min, x_max)
+        if x1 is None:
+            return None
+        return x1, y1
+
+    return None
+
+
+def _create_initial_v2_room(
+    dungeon: GameMap,
+    floor_number: int,
+    *,
+    place_player: bool,
+    upstairs_location: Optional[Tuple[int, int]],
+    room_tiles_global: Set[Tuple[int, int]],
+) -> Optional[Tuple[V2RoomNode, Tuple[int, int]]]:
+    attempts = settings.DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS
+    for _ in range(attempts):
+        width, height = _random_v2_room_dimensions()
+        if dungeon.width - width - 2 <= 1 or dungeon.height - height - 2 <= 1:
+            return None
+        if upstairs_location:
+            anchor_x, anchor_y = upstairs_location
+            x1 = max(1, min(anchor_x - width // 2, dungeon.width - width - 2))
+            y1 = max(1, min(anchor_y - height // 2, dungeon.height - height - 2))
+        else:
+            max_x = max(1, dungeon.width - width - 2)
+            max_y = max(1, dungeon.height - height - 2)
+            x1 = random.randint(1, max_x)
+            y1 = random.randint(1, max_y)
+
+        room = RectangularRoom(x1, y1, width, height)
+        if not _room_fits_within_bounds(room, dungeon.width, dungeon.height):
+            continue
+
+        entries = _build_room_entrances(
+            room,
+            dungeon.width,
+            dungeon.height,
+            min_entries=1,
+        )
+        if not entries:
+            continue
+
+        if upstairs_location:
+            if (
+                upstairs_location[0] <= room.x1
+                or upstairs_location[0] >= room.x2
+                or upstairs_location[1] <= room.y1
+                or upstairs_location[1] >= room.y2
+            ):
+                continue
+            upstairs_coord = upstairs_location
+        else:
+            upstairs_coord = room.center
+
+        carve_room(dungeon, room)
+        floor_tiles = _collect_room_floor_tiles(room)
+        room_tiles_global.update(floor_tiles)
+
+        dungeon.tiles[upstairs_coord] = tile_types.up_stairs
+        dungeon.upstairs_location = upstairs_coord
+
+        if place_player:
+            dungeon.engine.player.place(*upstairs_coord, dungeon)
+            entry_point = (dungeon.engine.player.x, dungeon.engine.player.y)
+        else:
+            entry_point = upstairs_coord
+
+        place_entities(room, dungeon, floor_number)
+        uniques.place_uniques(floor_number, room.center, dungeon)
+
+        return V2RoomNode(room, entries, floor_tiles), entry_point
+    return None
+
+
+def _expand_room_from_entry(
+    dungeon: GameMap,
+    *,
+    parent_entry: RoomEntrance,
+    floor_number: int,
+    room_tiles_global: Set[Tuple[int, int]],
+    corridor_tiles: Set[Tuple[int, int]],
+    rooms: List[V2RoomNode],
+) -> Optional[V2RoomNode]:
+    attempts = settings.DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS
+    min_distance = settings.DUNGEON_V2_MIN_ROOM_DISTANCE
+    max_distance = settings.DUNGEON_V2_MAX_ROOM_DISTANCE
+
+    for _ in range(attempts):
+        corridor_length = random.randint(min_distance, max_distance)
+        target_inner = (
+            parent_entry.inner[0] + parent_entry.direction[0] * corridor_length,
+            parent_entry.inner[1] + parent_entry.direction[1] * corridor_length,
+        )
+        if not _within_bounds(target_inner[0], target_inner[1], dungeon.width, dungeon.height):
+            continue
+
+        width, height = _random_v2_room_dimensions()
+        anchor = _choose_room_location_for_entry(
+            width,
+            height,
+            target_inner,
+            OPPOSITE_DIRECTION[parent_entry.direction],
+            dungeon.width,
+            dungeon.height,
+        )
+        if not anchor:
+            continue
+        x1, y1 = anchor
+        room = RectangularRoom(x1, y1, width, height)
+        if not _room_fits_within_bounds(room, dungeon.width, dungeon.height):
+            continue
+        if any(room.intersects(node.rect) for node in rooms):
+            continue
+
+        room_tiles = _collect_room_floor_tiles(room)
+        if room_tiles & (room_tiles_global | corridor_tiles):
+            continue
+
+        forced_dir = OPPOSITE_DIRECTION[parent_entry.direction]
+        entries = _build_room_entrances(
+            room,
+            dungeon.width,
+            dungeon.height,
+            forced_entry=(target_inner, forced_dir),
+            min_entries=1,
+        )
+        if not entries:
+            continue
+
+        forced_entry = next((entry for entry in entries if entry.inner == target_inner), None)
+        if not forced_entry:
+            continue
+
+        path = _build_straight_corridor_path(parent_entry.inner, target_inner)
+        if not path:
+            continue
+        allowed_tiles = {parent_entry.inner, target_inner}
+        if not _corridor_path_is_clear(path, room_tiles_global, allowed=allowed_tiles):
+            continue
+
+        carve_room(dungeon, room)
+        room_tiles_global.update(room_tiles)
+        _carve_corridor(dungeon, path)
+        corridor_tiles.update(path)
+
+        forced_entry.connected = True
+        node = V2RoomNode(room, entries, room_tiles)
+
+        place_entities(room, dungeon, floor_number)
+        uniques.place_uniques(floor_number, room.center, dungeon)
+
+        return node
+    return None
 
 
 def _can_place_entity(dungeon: GameMap, x: int, y: int) -> bool:
@@ -1604,6 +2192,268 @@ def generate_cavern(
 
     dungeon.center_rooms = []
     return dungeon
+
+
+def generate_dungeon_v3(
+    map_width: int,
+    map_height: int,
+    engine: Engine,
+    *,
+    floor_number: int,
+    place_player: bool,
+    place_downstairs: bool,
+    upstairs_location: Optional[Tuple[int, int]] = None,
+) -> GameMap:
+    """Experimental generator focused en mazmorras con varias salas conectadas por MST + conexiones extra."""
+    entities = [engine.player] if place_player else []
+    dungeon = GameMap(engine, map_width, map_height, entities=entities)
+
+    rooms: List[RectangularRoom] = []
+    padding = max(0, settings.DUNGEON_V3_PADDING)
+
+    target_rooms = random.randint(settings.DUNGEON_V3_MIN_ROOMS, settings.DUNGEON_V3_MAX_ROOMS)
+    attempts = 0
+    max_attempts = settings.DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS
+
+    while len(rooms) < target_rooms and attempts < max_attempts:
+        attempts += 1
+        template = None
+        if settings.DUNGEON_V3_FIXED_ROOMS_ENABLED:
+            fixed_choice = get_fixed_room_choice(floor_number)
+            if fixed_choice:
+                _, template = fixed_choice
+
+        if template:
+            height = len(template)
+            width = len(template[0]) if height else 0
+        else:
+            width = random.randint(settings.DUNGEON_V3_ROOM_MIN_SIZE, settings.DUNGEON_V3_ROOM_MAX_SIZE)
+            height = random.randint(settings.DUNGEON_V3_ROOM_MIN_SIZE, settings.DUNGEON_V3_ROOM_MAX_SIZE)
+
+        x = random.randint(1, max(1, dungeon.width - width - 2))
+        y = random.randint(1, max(1, dungeon.height - height - 2))
+        shape = "rectangle" if template else choose_room_shape(width, height)
+        new_room = RectangularRoom(x, y, width, height, shape=shape)
+        if not _room_fits_within_bounds(new_room, dungeon.width, dungeon.height):
+            continue
+        if any(_rooms_intersect_with_padding(new_room, other[0], padding) for other in rooms):
+            continue
+        rooms.append((new_room, template))
+
+    if not rooms:
+        raise RuntimeError("generate_dungeon_v3 failed to place any rooms.")
+
+    # Carve rooms and place entities.
+    entry_point: Optional[Tuple[int, int]] = upstairs_location
+    for index, (room, template) in enumerate(rooms):
+        carve_room(dungeon, room)
+        used_fixed_room = False
+        if template:
+            if carve_fixed_room(dungeon, room, template):
+                used_fixed_room = True
+
+        if not used_fixed_room:
+            add_room_decorations(dungeon, room)
+
+        if index == 0:
+            if place_player:
+                engine.player.place(*room.center, dungeon)
+                entry_point = (engine.player.x, engine.player.y)
+            elif not entry_point:
+                entry_point = room.center
+            dungeon.upstairs_location = entry_point
+            dungeon.tiles[entry_point] = tile_types.up_stairs
+        place_entities(room, dungeon, floor_number)
+        uniques.place_uniques(floor_number, room.center, dungeon)
+
+    # Conectamos salas con un MST + conexiones extra.
+    centers = [room.center for room, _ in rooms]
+    edges: List[Tuple[int, int, int]] = []
+    for i in range(len(centers)):
+        for j in range(i + 1, len(centers)):
+            dist = _manhattan_distance(centers[i], centers[j])
+            edges.append((dist, i, j))
+    edges.sort(key=lambda e: e[0])
+
+    ds = _DisjointSet(len(rooms))
+    connections: List[Tuple[int, int]] = []
+    for dist, i, j in edges:
+        if ds.union(i, j):
+            connections.append((i, j))
+        if len(connections) >= len(rooms) - 1:
+            break
+
+    extra_attempts = settings.DUNGEON_V3_EXTRA_CONNECTIONS
+    for _ in range(extra_attempts):
+        candidates = [edge for edge in edges if edge[1:] not in connections and (edge[2], edge[1]) not in connections]
+        if not candidates:
+            break
+        dist, i, j = random.choice(candidates)
+        if random.random() < settings.DUNGEON_V3_EXTRA_CONNECTION_CHANCE:
+            connections.append((i, j))
+
+    for i, j in connections:
+        carve_tunnel_path(dungeon, centers[i], centers[j])
+
+    # Añadimos puertas/muros rompibles opcionales en puntos de entrada a sala.
+    feature_probs = _normalize_feature_probs(
+        getattr(settings, "DUNGEON_V3_ENTRY_FEATURE_PROBS", {"none": 1.0})
+    )
+    room_tile_sets = [set(room.iter_floor_tiles()) for room, _ in rooms]
+    for room_tiles in room_tile_sets:
+        for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles):
+            _maybe_place_entry_feature(dungeon, coord, feature_probs)
+
+    # Escaleras
+    if place_downstairs:
+        target_room = max(
+            rooms,
+            key=lambda r: _manhattan_distance(r[0].center, entry_point or r[0].center),
+        )
+        downstairs_location = target_room[0].center
+        dungeon.tiles[downstairs_location] = tile_types.down_stairs
+        dungeon.downstairs_location = downstairs_location
+    else:
+        dungeon.downstairs_location = None
+
+    # Hot path: camino más corto entre sala de subida y bajada.
+    upstairs_room_idx = None
+    downstairs_room_idx = None
+    if entry_point:
+        for idx, (room, _) in enumerate(rooms):
+            if _room_contains_point(room, entry_point):
+                upstairs_room_idx = idx
+                break
+    if dungeon.downstairs_location:
+        for idx, (room, _) in enumerate(rooms):
+            if _room_contains_point(room, dungeon.downstairs_location):
+                downstairs_room_idx = idx
+                break
+    if upstairs_room_idx is None and rooms:
+        upstairs_room_idx = 0
+    if downstairs_room_idx is None and rooms:
+        downstairs_room_idx = len(rooms) - 1
+
+    hot_path_centers: List[Tuple[int, int]] = []
+    if upstairs_room_idx is not None and downstairs_room_idx is not None:
+        idx_path = _shortest_room_path(centers, connections, upstairs_room_idx, downstairs_room_idx)
+        if idx_path:
+            hot_path_centers = [centers[i] for i in idx_path]
+    dungeon.hot_path = hot_path_centers
+    if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
+        _draw_hot_path(dungeon, hot_path_centers)
+
+    # Accesibilidad
+    if place_downstairs and dungeon.downstairs_location and entry_point:
+        if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):
+            if not guarantee_downstairs_access(dungeon, entry_point, dungeon.downstairs_location):
+                raise RuntimeError("generate_dungeon_v3 failed to connect upstairs and downstairs.")
+
+    maybe_place_chest(dungeon, floor_number, [room for room, _ in rooms])
+    dungeon.center_rooms = [room.center for room, _ in rooms]
+    dungeon.engine.update_center_rooms_array(list(dungeon.center_rooms))
+    return dungeon
+
+
+def generate_dungeon_v2(
+    map_width: int,
+    map_height: int,
+    engine: Engine,
+    *,
+    floor_number: int,
+    place_player: bool,
+    place_downstairs: bool,
+    upstairs_location: Optional[Tuple[int, int]] = None,
+) -> GameMap:
+    """Experimental generator that builds a fully connected graph of rooms."""
+    max_attempts = max(1, settings.DUNGEON_V2_MAX_MAP_ATTEMPTS)
+    for _ in range(max_attempts):
+        entities = [engine.player] if place_player else []
+        dungeon = GameMap(engine, map_width, map_height, entities=entities)
+        room_tiles_global: Set[Tuple[int, int]] = set()
+        corridor_tiles: Set[Tuple[int, int]] = set()
+
+        initial_result = _create_initial_v2_room(
+            dungeon,
+            floor_number,
+            place_player=place_player,
+            upstairs_location=upstairs_location,
+            room_tiles_global=room_tiles_global,
+        )
+        if not initial_result:
+            continue
+        initial_room, entry_point = initial_result
+        rooms: List[V2RoomNode] = [initial_room]
+        rooms_array: List[Tuple[int, int]] = [initial_room.rect.center]
+
+        pending = deque(
+            (initial_room, entry)
+            for entry in initial_room.entrances
+            if not entry.connected
+        )
+        success = True
+
+        while pending:
+            if len(rooms) >= settings.DUNGEON_V2_MAX_ROOMS:
+                success = False
+                break
+            room_node, entry = pending.popleft()
+            if entry.connected:
+                continue
+            new_room = _expand_room_from_entry(
+                dungeon,
+                parent_entry=entry,
+                floor_number=floor_number,
+                room_tiles_global=room_tiles_global,
+                corridor_tiles=corridor_tiles,
+                rooms=rooms,
+            )
+            if not new_room:
+                success = False
+                break
+            entry.connected = True
+            rooms.append(new_room)
+            rooms_array.append(new_room.rect.center)
+            for room_entry in new_room.entrances:
+                if not room_entry.connected:
+                    pending.append((new_room, room_entry))
+
+        if not success or pending:
+            continue
+
+        if place_downstairs:
+            if not rooms:
+                continue
+            target_room = max(
+                rooms,
+                key=lambda node: _manhattan_distance(node.rect.center, entry_point),
+            )
+            downstairs_location = target_room.rect.center
+            dungeon.tiles[downstairs_location] = tile_types.down_stairs
+            dungeon.downstairs_location = downstairs_location
+        else:
+            dungeon.downstairs_location = None
+
+        if entry_point:
+            path_start = entry_point
+        elif place_player:
+            path_start = (engine.player.x, engine.player.y)
+        elif dungeon.upstairs_location:
+            path_start = dungeon.upstairs_location
+        else:
+            path_start = rooms[0].rect.center
+
+        if place_downstairs and dungeon.downstairs_location and path_start:
+            if not ensure_path_between(dungeon, path_start, dungeon.downstairs_location):
+                if not guarantee_downstairs_access(dungeon, path_start, dungeon.downstairs_location):
+                    continue
+
+        maybe_place_chest(dungeon, floor_number, [node.rect for node in rooms])
+        dungeon.center_rooms = [center for center in rooms_array]
+        dungeon.engine.update_center_rooms_array(list(rooms_array))
+        return dungeon
+
+    raise RuntimeError("generate_dungeon_v2 failed to build a valid layout.")
 
 
 def generate_dungeon(

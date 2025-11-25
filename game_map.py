@@ -384,6 +384,8 @@ class GameWorld:
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,
+            generate_dungeon_v2,
+            generate_dungeon_v3,
         )
 
         for floor in range(1, settings.TOTAL_FLOORS + 1):
@@ -413,7 +415,7 @@ class GameWorld:
         ambient_sound.play_for_floor(self.current_floor)
 
     def _select_generator(self, floor: int):
-        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern
+        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern, generate_dungeon_v2, generate_dungeon_v3
 
         # NIVEL INICIAL
         if floor == 1:
@@ -454,11 +456,10 @@ class GameWorld:
         weights = [variant.get("weight", 1.0) for variant in variants]
         variant = random.choices(variants, weights=weights, k=1)[0]
 
-        return generate_dungeon, {
-            "max_rooms": variant["max_rooms"],
-            "room_min_size": variant["room_min_size"],
-            "room_max_size": variant["room_max_size"],
-        }
+        # El generador estándar pasa a ser generate_dungeon_v2,
+        # pero conservamos la lógica de variantes por si en el futuro
+        # queremos que influyan en parámetros específicos.
+        return generate_dungeon_v3, {}
 
     def _find_spawn_location(self, game_map: GameMap, *, prefer_downstairs: bool = False) -> Tuple[int, int]:
         """Return a valid spawn location for entering an existing floor."""

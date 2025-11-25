@@ -149,18 +149,22 @@ CUEVAS
 - [x] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
 
 DUNGEON GENERATION
-- [ ] El max_instances de un objeto parece que no está funcionando. Esta configuración tiene que ser total. Es decir, que nada pueda alterarla, generar una instancia de un objeto que tiene max_instances = 1.
+- [x] Hot path.
+- [ ] Green zone: función que te devuelve el conjunto de habitaciones que son accesibles desde una habitación cualquiera.
+- [ ] Cerciorarse de que el max_instances de un objeto está funcionando.
 - [x] La probabilidad de generarse un objeto por habitación debe ser independiente. Ahora mismo se aplica la tirada a todas las habitaciones de la planta. Esto hace que el jugador sepa rápido si en esa planta merece la pena buscar o no.
 - [ ] El color de los sprites de muro debe ser relativo y fijo al nivel. 
 - [ ] Arreglar problemas con la generación de fixed rooms (custom rooms)
 - [ ] Las fixed rooms deberían poder crearse con objetos estas salas. Donde aparezca el carácter '~' debe generarse un scroll (aleatorio), donde aparezca el caracter '!' debe generarse una poción aleatoria, y donde aparezca el caracter '/' debe aparecer un arma aleatoria. La probabilidad de que aparezca una cosa u otra debe ser configurable, así como la probabilidad de que aparezca un tipo u otro de pócima (si lo que se genera es una pócima), un tipo u otro de pergamino (si lo que se genera es un pergamino), un tipo u otro de arma (si lo que se genera es un arma).
 
 FIXED DUNGEONS
+- [ ] El generate_fixed_dungeon() es algo primitivo. Por ejemplo, sólo genera las criaturas que tiene hardcodeadas dentro de la función. Revisarlo.
 - [ ] En cada dungeon total sólo debe haber dos fixed dungeons: una a mitad del descenso, la otra en el nivel final. 
 - [ ] La fixed dungeon del nivel final ha de ser siempre igual. Diseñarla.
 La fixed dungeon de mitad de descenso se escogerá entre una batería de posibles:
     - [ ] Templo de los monos (templo abandonado, lleno de monos)
     - [ ] Capilla de los centinelas (los centinelas guardando tres puertas, y solo detrás de una de ellas están las escaleras. Estaría bien que hubiera alguna pista en las plantas anteriores indicando cuál es la puerta. O que algún adventurer le contara un rumor al respecto).
+    - [ ] Librería. Inspirada en la librería de Indiana Jones: las escaleras de bajada estarán escondidas. En la librería habrá un juego de pistas que te dira cuál es la casilla correcta en la que se encuentran las escaleras de bajada. Habrá que excavar en esa casilla para poder seguir bajando. Para ello hará falta tener un pico o una pala.
     - [ ] Otros.
 
 COMBATE
@@ -170,40 +174,11 @@ COMBATE
 - [!] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
 - [ ] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes).
 - [x] Modificar la mecánica del combate táctico. Actualmente es:
-
-Cuando se entra en melee (aparece un indicador de melee) se pueden hacer tres cosas, con distintos resultados para la STAMINA, el índice TO-HIT y el índice de DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá se pueda hacer relativo a algo):
-
-Sistema Actual
-                            STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |  reset   |  reset 
-Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |   +1
-
-
-Alternativa A
-                            STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |  reset   |   -1 
-Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |   reset
-
-Alternativa B
-                            STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |  reset   |  reset 
-Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |    -
-
-Alternativa C
-                            STAMINA |  TO-HIT  | DEFENSE
-Atacar:                       -1    |  reset   |  reset
-Defenderse (pasar turno):     -1    |   +1     |   +1
-Retroceder:                   +1    |  reset   |   -1
-
-- [ ] Si el enemigo está paralizado, no debería bajarte stamina por luchar contra él o pasar turno junto a él.
+- [ ] Si el enemigo está paralizado (o ciego), no debería bajarte stamina por luchar contra él o pasar turno junto a él. Tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. Debe tmb haber un bonus a tu hit muy grande.
 - [ ] Ataques especiales!! Por ejemplo, que puedas hacer un ataque al mismo tiempo que retrocedes una casilla, o una carga, o un ataque con desplazamiento lateral... Algo que le de un rollo ajedrez.
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
-- [ ] Si el enemigo está paralizado, tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. Debe tmb haber un bonus a tu hit muy grande.
 - [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
 - [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
 - [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.

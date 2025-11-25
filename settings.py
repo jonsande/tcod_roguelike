@@ -99,7 +99,7 @@ INTRO_SLIDES = [
         "labyrinth, and venture into its depths.\n"
         "Many before have embarked on the Great Quest. None have ever returned.",
         "hold": 13.0,
-    },
+    },False
 ]
 
 # -- Audio settings ------------------------------------------------------
@@ -107,9 +107,10 @@ INTRO_SLIDES = [
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = False
+GOD_MODE = True
 GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+DEBUG_DRAW_HOT_PATH = True
 
 # -- Game settings ------------------------------------------------------
 
@@ -145,6 +146,31 @@ PLAYER_STARTING_EQUIP_LIMITS = {
 # sólo estilo. Debería hacerse la tirada por cada nivel, de forma que pueda pasar
 # que en el nivel 2 el WALL_STYLE es 1 pero en el nivel 3 es 1, por ejemplo.
 WALL_STYLE = None
+
+# Parámetros experimentales para el generador generate_dungeon_v2().
+DUNGEON_V2_ROOM_MIN_SIZE = 3
+DUNGEON_V2_ROOM_MAX_SIZE = 8
+DUNGEON_V2_MIN_ROOM_DISTANCE = 2
+DUNGEON_V2_MAX_ROOM_DISTANCE = 12
+DUNGEON_V2_MAX_ROOMS = 75
+DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS = 150
+DUNGEON_V2_MAX_MAP_ATTEMPTS = 150
+
+# Parámetros experimentales para generate_dungeon_v3().
+DUNGEON_V3_MIN_ROOMS = 8
+DUNGEON_V3_MAX_ROOMS = 20
+DUNGEON_V3_ROOM_MIN_SIZE = 3
+DUNGEON_V3_ROOM_MAX_SIZE = 8
+DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 220
+DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
+DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
+DUNGEON_V3_EXTRA_CONNECTIONS = 3
+DUNGEON_V3_FIXED_ROOMS_ENABLED = True
+DUNGEON_V3_ENTRY_FEATURE_PROBS = {
+    "none": 0.5,
+    "door": 0.55,
+    "breakable": 0.15,
+}
 
 # -- Dungeon structure -------------------------------------------------------
 TOTAL_FLOORS = 16
@@ -300,25 +326,25 @@ CHEST_LOOT_TABLES = {
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
-    "room_01": [(1, 0.00), (6, 0.00)],
-    # "room_secret": [(1, 0.10), (8, 0.10)],
-    "room_door": [(1, 0.00), (5, 0.00)],
-    "room_secret_B": [(1, 0.00), (8, 0.00)],
+    "room_01": [(2, 0.08), (6, 0.00)],
+    # "room_secret": [(2, 0.10), (8, 0.10)],
+    "room_door": [(2, 0.08), (5, 0.00)],
+    "room_secret_B": [(2, 0.08), (8, 0.00)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------
 # Probabilidades relativas de que una sala se genere como círculo, elipse o cruz (rectángulo siempre pesa 1.0).
 ROOM_SHAPE_WEIGHTS = {
-    "circle": 0.45,
-    "ellipse": 0.35,
-    "cross": 0.28,
+    "circle": 0.0,
+    "ellipse": 0.0,
+    "cross": 0.0,
 }
 
 # Tamaños mínimos requeridos (lado más corto) antes de permitir cada forma alternativa.
 ROOM_MIN_SIZE_SHAPES = {
-    "circle": 6,
-    "ellipse": 7,
-    "cross": 7,
+    "circle": 5,
+    "ellipse": 5,
+    "cross": 5,
 }
 
 # Generación de mapas de habitaciones y pasillos.
@@ -448,10 +474,10 @@ CAVERN_ITEM_SPAWN_RULES = {
 # -- Column decorations -------------------------------------------------------
 # Probabilidad de que las salas generadas (rectangulares, circulares, elípticas o en cruz) aparezcan con columnas.
 ROOM_DECORATION_CHANCE = {
-    "rectangle": 0.10,
+    "rectangle": 0.15,
     "circle": 0.12,
-    "ellipse": 0.07,
-    "cross": 0.07,
+    "ellipse": 0.12,
+    "cross": 0.12,
 }
 
 # -- Dungeon population tables ------------------------------------------------

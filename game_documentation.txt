@@ -94,20 +94,57 @@ Redibir daño:                 -     |  reset   |  reset          x
 
 
 
+### NOTAS
+
+GENERACIÓN DE NIVELES
+Ahora mismo en el juego existen cuatro generadores de mapas:  generate_town(), generate_fixed_dungeon(), generate_cavern() y generate_dungeon(). El generador generate_dungeon() es ahora mismo el generador estándar, es decir, el generador que se usa en la mayoría de niveles.
+
+GENERATE_DUNGEON
+generate_dungeon (procgen.py (line 1609)) es el “estándar”. Su flujo funciona así:
+
+Prepara un GameMap, reutiliza RectangularRoom para cada intento de sala (forma básica o choose_room_shape, posibles círculos/elipses/cruces) y limpia el hueco con carve_room.
+En cada iteración puede reemplazar la sala por un “fixed room” (get_fixed_room_choice, carve_fixed_room) según tablas de settings.
+Conecta salas con pasillos en L (carve_tunnel_path + extras opcionales para reducir cul-de-sacs) y registra sus centros para telemetría.
+Pone entidades por sala (place_entities usa reglas de aparición definidas en settings, tracking con GenerationTracker), añade decoraciones/columnas, y llama a uniques.place_uniques para eventos especiales.
+Las escaleras abajo se asignan al último centro válido; las de subida se fuerzan si nadie colocó al jugador.
+Post-procesa: garantiza camino entre escaleras (ensure_path_between o guarantee_downstairs_access tallando muros rompibles), recoge candidatos a portas paredes (collect_door_candidates, place_doors también crea muros rompibles si sobra), asegura consistencia de muros frágiles y coloca cofres (maybe_place_chest con loot tables).
+Toda la lógica depende fuertemente de constantes tuning (settings.py: límites de puertas, decoración, spawn, etc.).
+
+GENERATE_CAVERN
+generate_cavern (procgen.py (line 1508) + caverns.py) se basa en autómatas celulares:
+
+Inicializa la rejilla entera como muro y genera un mapa booleano (caverns.generate_cavern_map) con ruido + varias iteraciones CA para suavizar.
+connect_cavern_regions une todas las regiones (busca regiones por flood fill en caverns.py, las conecta abriendo pasillos, y devuelve un punto inicial y uno para escaleras).
+Una vez asignadas las tiles “walkable/transparent”, resuelve la posición del jugador/escaleras (si subidas heredadas, las respeta).
+Las criaturas y objetos no usan habitaciones: populate_cavern limpia todo lo anterior (menos el jugador) y hace sampling aleatorio en el mapa walkable, usando tablas especiales CAVERN_*_SPAWN_RULES. También siembra escombros sueltos.
+Igual que en mazmorras, se comprueba conectividad y se pone cofre opcional.
+
+GENERATE_FIXED_DUNGEON
+generate_fixed_dungeon (procgen.py (line 1281)) carga una plantilla ASCII de fixed_maps:
+
+Usa arrays precalculados (muro #, especiales, escaleras, monstruos scriptados como g, o, etc.) para pintar el mapa. Hay una lista de forbidden_cells para impedir que el relleno aleatorio coloque entidades encima de contenido fijado.
+Las entidades aleatorias se colocan con place_entities_fixdungeon, que usa la misma lógica de spawn pero restringida a las celdas permitidas (ningún “tile” especial).
+Las puertas y muros rompibles se crean explícitamente desde la plantilla (incluso spawnea entidades breakable_wall para sincronizar tile/entidad), además de relleno manual de monstruos selectos y ruleta para monstruos genéricos.
+La posición del jugador viene de la plantilla (fixed_maps.place_player), pero si place_player es falso se marca como subida.
+Se vuelve a garantizar camino entre escaleras, se colocan cofres y se valida consistencia de muros especiales.
+
+GENERATE_TOWN
+generate_town (procgen.py (line 1855)) es básicamente un mapa único de pueblo:
+
+Usa GameMapTown y una única TownRoom (80×36) como zona principal con tile town_floor.
+Coloca directamente al jugador en el centro del “pueblo” (o reutiliza upstairs_location). Las escaleras bajan siempre en las coordenadas fijas (35, 17).
+Spawnea NPC fijo “el viejo” y su hoguera cerca de las escaleras (_place_town_old_man_with_campfire), con cofre garantizado en planta 1 (_place_town_old_man_chest).
+Luego llama a place_entities para añadir monstruos/ítems/props según reglas estándar, y si aplica, cofre random + chequeo de acceso a escaleras.
+Piezas compartidas relevantes:
+
+place_entities (procgen.py:603) decide cuántos monstruos/ítems/escombros poner según tablas por planta, elige entradas de spawn (_select_spawn_entries) y usa un “location provider” (sala actual o lista permitida en plantillas) para instanciar. El GenerationTracker contabiliza spawns por tipo/planta.
+maybe_place_chest y _build_chest_loot manejan cofres en todos los generadores, con reglas de drop configurables.
+Decoración y topología adicional (formas de salas, columnas, pasillos extra, puertas/muros frágiles) están centralizados en procgen.py para que cualquier nuevo generador pueda reutilizar trozos.
+Con este repaso ya tenemos una visión clara de qué hace cada generador y qué utilidades existen (túneles, plantillas, spawn rules, validación). Listo para definir requisitos/diseño de generate_dungeon_v2 cuando quieras.
 
 
-***[
-damage = ((self.entity.fighter.strength + weapon_dmg(1dx+y) + Equipment bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
 
-Definiciones:
-total_equipment_dmg =  weapon_dmg(1dx+y) + equipment_bonus
-weapon_dmg = weapon_dmg_dice (la daga, por ejemplo, hace 1d4) + dmg_bonus (algunas armas tienen un bonus)
-equipment_bonus = suma de todos los dmg_bonus que tengan los ítems del equipo
-]
-
-
-***[
-SISTEMA DE PROGRESIÓN
+SISTEMA DE PROGRESIÓN DE PERSONAJE Y DIFICULTAD
 
 No habrá weapon proficiency (no merece la pena: el mismo resultado se puede conseguir con un sistema más simple).
 De momento se puede dejar el sistema proficiency, haciendo que todas las criaturas tengan el nivel por defecto "Novice".	
@@ -121,6 +158,4 @@ Máximo de bonus por equipo al to_hit: 2 (por arma) + 1 (por artefacto) = 3
 Máximo de bonus al to_hit por WaitAction en combate: 3
 Total: 8
 
-La dificultad del juego tiene que aumental más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.
-
-]
+La dificultad del juego tiene que aumentaR más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.
