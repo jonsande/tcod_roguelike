@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple
+from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set
 
 import numpy as np  # type: ignore
 from tcod.console import Console
@@ -430,6 +430,8 @@ class GameWorld:
             generate_dungeon_v3,
         )
 
+        keys_placed: Set[str] = set()
+        key_positions: List[Tuple[str, int, Tuple[int, int]]] = []
         for floor in range(1, settings.TOTAL_FLOORS + 1):
             place_player = floor == 1
             place_downstairs = floor < settings.TOTAL_FLOORS
@@ -451,7 +453,15 @@ class GameWorld:
 
             self.levels.append(game_map)
 
+            locked_colors = getattr(game_map, "locked_door_colors", set())
+            if locked_colors:
+                self._ensure_keys_for_locked_doors(floor, locked_colors, keys_placed, key_positions)
+
         self.current_floor = 1
+        if settings.DEBUG_MODE and key_positions:
+            print("DEBUG: Key placements:")
+            for color, floor, pos in key_positions:
+                print(f"  {color} key -> floor {floor} at {pos}")
 
     def _sync_ambient_sound(self) -> None:
         ambient_sound.play_for_floor(self.current_floor)
@@ -552,6 +562,58 @@ class GameWorld:
         self.engine.update_fov()
         self._sync_ambient_sound()
         return True
+
+    def _ensure_keys_for_locked_doors(
+        self,
+        current_floor: int,
+        locked_colors: Set[str],
+        keys_placed: Set[str],
+        key_positions: List[Tuple[str, int, Tuple[int, int]]],
+    ) -> None:
+        """Si hay puertas con cerradura en este nivel, asegura que exista al menos una llave previa."""
+        if current_floor <= 1:
+            return
+        for color in locked_colors:
+            if color in keys_placed:
+                continue
+            min_floor = settings.DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR.get(color, 1)
+            # # Este adjusted_min es para manejar el problema de que el número real de nivel 
+            # # es siempre uno más que el que se marca en pantalla, lo cual estaba dando
+            # # problemas en la generación de llaves.
+            adjusted_min = max(1, min_floor - 2)
+            candidate_indexes = [idx for idx in range(max(1, adjusted_min) - 1, current_floor - 1)]
+            if not candidate_indexes:
+                continue
+            target_idx = random.choice(candidate_indexes)
+            pos = self._place_key_on_floor(target_idx, color)
+            if pos:
+                key_positions.append((color, target_idx + 1, pos))
+            keys_placed.add(color)
+
+    def _place_key_on_floor(self, idx: int, color: str) -> Optional[Tuple[int, int]]:
+        if idx < 0 or idx >= len(self.levels):
+            return None
+        game_map = self.levels[idx]
+        prototype = getattr(entity_factories, f"{color}_key", None)
+        if not prototype:
+            return None
+        max_attempts = 200
+        for _ in range(max_attempts):
+            x = random.randint(1, game_map.width - 2)
+            y = random.randint(1, game_map.height - 2)
+            if not game_map.in_bounds(x, y):
+                continue
+            if not game_map.tiles["walkable"][x, y]:
+                continue
+            if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+                continue
+            if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+                continue
+            if game_map.get_blocking_entity_at_location(x, y):
+                continue
+            prototype.spawn(game_map, x, y)
+            return (x, y)
+        return None
 
     def register_adventurer_descent(self, loot: List[Item]) -> None:
         """Schedule an adventurer corpse with its loot deeper in the dungeon."""

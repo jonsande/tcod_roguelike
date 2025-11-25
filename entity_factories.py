@@ -62,26 +62,26 @@ door = Obstacle(
 
 # Keys
 black_key = Item(
-    char="!",
-    color=(20, 20, 20),
+    char="?",
+    color=(30, 30, 30),
     name="Black key",
     id_name="black_key",
 )
 red_key = Item(
-    char="!",
+    char="?",
     color=(200, 30, 30),
     name="Red key",
     id_name="red_key",
 )
 white_key = Item(
-    char="!",
+    char="?",
     color=(230, 230, 230),
     name="White key",
     id_name="white_key",
 )
 gray_key = Item(
-    char="!",
-    color=(120, 120, 120),
+    char="?",
+    color=(170, 170, 170),
     name="Gray key",
     id_name="gray_key",
 )
@@ -1075,7 +1075,7 @@ monkey = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=8, 
-        base_defense=5, 
+        base_defense=4, 
         strength=1, 
         recover_rate=1, 
         fov=random.randint(3, 6), 

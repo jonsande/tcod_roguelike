@@ -839,6 +839,97 @@ def _shortest_tile_path(
     path.reverse()
     return path
 
+
+def _get_door_entity_at(dungeon: GameMap, x: int, y: int):
+    for ent in dungeon.entities:
+        if getattr(ent, "x", None) == x and getattr(ent, "y", None) == y:
+            name = getattr(ent, "name", "").lower()
+            if "door" in name:
+                return ent
+    return None
+
+
+def _is_locked_door(dungeon: GameMap, x: int, y: int) -> bool:
+    tile = dungeon.tiles[x, y]
+    if not np.array_equal(tile, tile_types.closed_door):
+        # Si el tile no es puerta cerrada, asumimos que no bloquea por cerradura.
+        return False
+    ent = _get_door_entity_at(dungeon, x, y)
+    if not ent:
+        return False
+    fighter = getattr(ent, "fighter", None)
+    if not fighter:
+        return False
+    if getattr(fighter, "is_open", False):
+        return False
+    return bool(getattr(fighter, "lock_color", None))
+
+
+def _is_traversable_for_green_zone(dungeon: GameMap, x: int, y: int) -> bool:
+    """Considera transitables suelo, puertas (incluyendo cerradas sin llave) y muros rompibles. Bloquea puertas cerradas con llave."""
+    if not dungeon.in_bounds(x, y):
+        return False
+    if _is_locked_door(dungeon, x, y):
+        return False
+    if dungeon.tiles["walkable"][x, y]:
+        return True
+    tile = dungeon.tiles[x, y]
+    if np.array_equal(tile, tile_types.closed_door):
+        return True
+    if np.array_equal(tile, tile_types.breakable_wall):
+        return True
+    blocking = dungeon.get_blocking_entity_at_location(x, y)
+    if blocking:
+        name = getattr(blocking, "name", "").lower()
+        if "wall" in name:
+            return True
+        if "door" in name and not _is_locked_door(dungeon, x, y):
+            return True
+    return False
+
+# BUG: La idea parecía buena, pero muchas veces no está funcionando.
+def green_zone(dungeon: GameMap, origin: Tuple[int, int]) -> List[Tuple[int, int]]:
+    """Devuelve centros de salas alcanzables desde origin sin atravesar puertas cerradas con llave."""
+    from collections import deque
+
+    if not dungeon.in_bounds(*origin):
+        return []
+
+    visited: Set[Tuple[int, int]] = set()
+    q = deque([origin])
+    visited.add(origin)
+
+    while q:
+        x, y = q.popleft()
+        for dx, dy in CARDINAL_DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in visited:
+                continue
+            if not _is_traversable_for_green_zone(dungeon, nx, ny):
+                continue
+            visited.add((nx, ny))
+            q.append((nx, ny))
+
+    return [center for center in getattr(dungeon, "center_rooms", []) if center in visited]
+
+
+def _draw_green_zone(
+    dungeon: GameMap,
+    origin: Tuple[int, int],
+    *,
+    dark_color: Tuple[int, int, int] = (50, 180, 50),
+    light_color: Tuple[int, int, int] = (90, 255, 90),
+) -> None:
+    """Colorea los centros de las habitaciones alcanzables desde origin sin pasar por puertas cerradas con llave."""
+    zone = green_zone(dungeon, origin)
+    if not zone:
+        return
+    for cx, cy in zone:
+        if not dungeon.in_bounds(cx, cy):
+            continue
+        dungeon.tiles["dark"]["fg"][cx, cy] = dark_color
+        dungeon.tiles["light"]["fg"][cx, cy] = light_color
+
 # BUG: Funciona bastante bien, pero sigue incluyendo algunas casillas intransitables en el
 # camino. Esto ya pasó al intentar programar el movimiento de los adventurers. Al final lo
 # solucionamos (no sé por qué) buscando el camino más corto "por fases"; es decir, buscando
@@ -939,6 +1030,8 @@ def _maybe_place_entry_feature(
     room_center: Optional[Tuple[int, int]] = None,
     lock_chance: float = 0.0,
     dug_tiles: Optional[Set[Tuple[int, int]]] = None,
+    allowed_lock_colors: Optional[List[str]] = None,
+    locked_colors_registry: Optional[Set[str]] = None,
 ) -> None:
     def _has_opposing_walls(x: int, y: int) -> bool:
         north = dungeon.in_bounds(x, y - 1) and not dungeon.tiles["walkable"][x, y - 1]
@@ -963,11 +1056,15 @@ def _maybe_place_entry_feature(
     if choice == "door":
         lock_color: Optional[str] = None
         if lock_chance > 0 and random.random() < lock_chance:
-            lock_color = random.choice(entity_factories.KEY_COLORS)
+            palette = allowed_lock_colors if allowed_lock_colors is not None else list(entity_factories.KEY_COLORS)
+            if palette:
+                lock_color = random.choice(palette)
         dungeon.tiles[x, y] = tile_types.closed_door
         spawn_door_entity(dungeon, x, y, lock_color=lock_color, room_center=room_center)
         if dug_tiles is not None:
             dug_tiles.add((x, y))
+        if lock_color and locked_colors_registry is not None:
+            locked_colors_registry.add(lock_color)
     elif choice == "breakable":
         convert_tile_to_breakable(dungeon, x, y)
         if dug_tiles is not None:
@@ -2459,7 +2556,13 @@ def generate_dungeon_v3(
         getattr(settings, "DUNGEON_V3_ENTRY_FEATURE_PROBS", {"none": 1.0})
     )
     room_tile_sets = [set(room.iter_floor_tiles()) for room, _ in rooms]
-    lock_chance = max(0.0, min(1.0, getattr(settings, "DUNGEON_V3_LOCKED_DOOR_CHANCE", 0.0)))
+    base_lock_chance = max(0.0, min(1.0, getattr(settings, "DUNGEON_V3_LOCKED_DOOR_CHANCE", 0.0)))
+    lock_min_floor = getattr(settings, "DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR", {})
+    allowed_lock_colors = [
+        color for color in entity_factories.KEY_COLORS if floor_number >= lock_min_floor.get(color, 1)
+    ]
+    lock_chance = base_lock_chance if allowed_lock_colors else 0.0
+    locked_colors_in_floor: Set[str] = set()
     for room_tiles, (room, _) in zip(room_tile_sets, rooms):
         for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles, dug_tiles):
             _maybe_place_entry_feature(
@@ -2469,6 +2572,8 @@ def generate_dungeon_v3(
                 room_center=room.center,
                 lock_chance=lock_chance,
                 dug_tiles=dug_tiles,
+                allowed_lock_colors=allowed_lock_colors,
+                locked_colors_registry=locked_colors_in_floor,
             )
 
     # Escaleras
@@ -2510,6 +2615,7 @@ def generate_dungeon_v3(
             hot_path_coords = _collect_hot_path_coords(dungeon, hot_path_centers, allowed_tiles=dug_tiles)
     dungeon.hot_path = hot_path_centers
     dungeon.shortest_path = hot_path_coords
+    dungeon.locked_door_colors = locked_colors_in_floor
     if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
         _draw_hot_path(dungeon, hot_path_coords, allowed_tiles=dug_tiles)
 

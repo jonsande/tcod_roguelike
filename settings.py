@@ -107,10 +107,10 @@ INTRO_SLIDES = [
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = True
+GOD_MODE = False
 GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
-DEBUG_DRAW_HOT_PATH = True
+DEBUG_DRAW_HOT_PATH = False
 
 # -- Game settings ------------------------------------------------------
 
@@ -129,12 +129,12 @@ PLAYER_LEVELING_ENABLED = False
 PLAYER_STARTING_INVENTORY = [
     # {"item": "dagger", "equip": True},
     # {"item": "leather_armor", "equip": True},
-    # {"item": "dagger", "quantity": 3},
-    {"item": "triple_ration", "quantity": 2},
-    {"item": "black_key", "quantity": 1},
-    {"item": "red_key", "quantity": 1},
-    {"item": "white_key", "quantity": 1},
-    {"item": "gray_key", "quantity": 1},
+    {"item": "dagger", "quantity": 3},
+    # {"item": "triple_ration", "quantity": 2},
+    # {"item": "black_key", "quantity": 1},
+    # {"item": "red_key", "quantity": 1},
+    # {"item": "white_key", "quantity": 1},
+    # {"item": "gray_key", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -169,7 +169,13 @@ DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 220
 DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
 DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
 DUNGEON_V3_EXTRA_CONNECTIONS = 3
-DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.70
+DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR = {
+    "black": 4, # Tiene que ser 4 o más, de lo contrario se generarán llaves en el nivel 1 (en la superficie)
+    "red": 8,
+    "white": 7,
+    "gray": 12,
+}
 DUNGEON_V3_FIXED_ROOMS_ENABLED = True
 DUNGEON_V3_ENTRY_FEATURE_PROBS = {
     "none": 0.5,
