@@ -3,10 +3,12 @@
 # Ambient loops --------------------------------------------------------------
 AMBIENT_SOUND_ENABLED = True
 AMBIENT_SOUND_VOLUME = 1.0  # 0.0 - 1.0
+AMBIENT_SOUND_FADE_OUT_MS = 650  # Duración del fade out al cambiar de nivel
+AMBIENT_SOUND_FADE_IN_MS = 650   # Duración del fade in al iniciar la nueva pista
 AMBIENT_SOUND_TRACKS = {
     # Puedes usar un string o una lista/tupla para elegir aleatoriamente entre varias pistas.
     1: [
-        "data/audio/ambient/CO.AG_InTheHeartOfThisAncientCity.ogg",
+        # "data/audio/ambient/CO.AG_InTheHeartOfThisAncientCity.ogg",
         "data/audio/ambient/CO.AG_16_TheDesert.ogg",
     ],
     3: [

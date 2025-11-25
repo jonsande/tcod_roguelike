@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set
+from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set, Callable
 
 import numpy as np  # type: ignore
 from tcod.console import Console
@@ -417,6 +417,7 @@ class GameWorld:
 
         self.current_floor = 1
         self.levels: List[GameMap] = []
+        self._debug_key_positions: List[Tuple[str, int, Tuple[int, int]]] = []
         self._generate_world()
         self._sync_ambient_sound()
 
@@ -457,11 +458,40 @@ class GameWorld:
             if locked_colors:
                 self._ensure_keys_for_locked_doors(floor, locked_colors, keys_placed, key_positions)
 
+        self._debug_key_positions = key_positions
         self.current_floor = 1
-        if settings.DEBUG_MODE and key_positions:
-            print("DEBUG: Key placements:")
-            for color, floor, pos in key_positions:
-                print(f"  {color} key -> floor {floor} at {pos}")
+        if settings.DEBUG_MODE:
+            self.debug_print_key_locations()
+
+    def debug_print_key_locations(self) -> None:
+        """Imprime en consola las llaves generadas y su ubicación por piso."""
+        positions = list(self._debug_key_positions)
+        seen = {(color, floor, pos) for color, floor, pos in positions}
+
+        # Añadimos cualquier llave que exista actualmente en los mapas, por si se generaron fuera del registro inicial.
+        for idx, game_map in enumerate(self.levels):
+            floor = idx + 1
+            for entity in game_map.entities:
+                if isinstance(entity, Item):
+                    id_name = getattr(entity, "id_name", "")
+                    if id_name.endswith("_key"):
+                        color = id_name.replace("_key", "")
+                        pos = (entity.x, entity.y)
+                        entry = (color, floor, pos)
+                        if entry not in seen:
+                            positions.append(entry)
+                            seen.add(entry)
+
+        if not positions:
+            print("DEBUG: No se registraron llaves generadas.")
+            return
+
+        print("DEBUG: Llaves generadas:")
+        for color, floor, pos in positions:
+            print(f"  {color} key -> piso {floor} en {pos}")
+
+        # Actualizamos el registro interno para futuras llamadas.
+        self._debug_key_positions = positions
 
     def _sync_ambient_sound(self) -> None:
         ambient_sound.play_for_floor(self.current_floor)
@@ -533,14 +563,24 @@ class GameWorld:
         # Fallback to the map center if no walkable tile was found.
         return game_map.width // 2, game_map.height // 2
 
-    def advance_floor(self) -> bool:
-        """Move the player to the next pre-generated floor, if available."""
+    def advance_floor(
+        self,
+        spawn_selector: Optional[Callable[[GameMap], Tuple[int, int]]] = None,
+    ) -> bool:
+        """Move the player to the next pre-generated floor, if available.
+
+        `spawn_selector`, when provided, chooses the coordinates where the player will
+        appear on the target map. Defaults to the standard spawn logic.
+        """
         if self.current_floor >= len(self.levels):
             return False
 
         self.current_floor += 1
         next_map = self.levels[self.current_floor - 1]
-        spawn_x, spawn_y = self._find_spawn_location(next_map)
+        if spawn_selector:
+            spawn_x, spawn_y = spawn_selector(next_map)
+        else:
+            spawn_x, spawn_y = self._find_spawn_location(next_map)
         self.engine.player.place(spawn_x, spawn_y, next_map)
         self.engine.game_map = next_map
         self._update_center_rooms(next_map)

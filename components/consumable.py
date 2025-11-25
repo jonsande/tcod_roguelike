@@ -14,6 +14,7 @@ from exceptions import Impossible
 from input_handlers import (
     ActionOrHandler,
     AreaRangedAttackHandler,
+    InventoryIdentifyHandler,
     SingleRangedAttackHandler,
 )
 
@@ -123,6 +124,7 @@ SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Descend scroll": "Un remolino de runas te arrastra hasta el siguiente nivel.",
     "Teleport scroll": "Las runas chispean y el aire distorsiona mientras desapareces.",
     "Prodigious memory scroll": "Tus pasos recientes quedaron grabados en tu mente como si el mapa entero se hubiera movido contigo.",
+    "Identify scroll": "Las runas arden y revelan la verdadera identidad del objeto.",
 }
 
 class ScrollConsumable(Consumable):
@@ -995,12 +997,14 @@ class DescendScrollConsumable(ScrollConsumable):
         game_world = self.engine.game_world
         if game_world.current_floor >= len(game_world.levels):
             raise Impossible("You can't descend any further.")
-        if not self.engine.perform_floor_transition(game_world.advance_floor):
+
+        def random_spawn(next_map):
+            return game_world._find_random_free_tile(next_map)
+
+        if not self.engine.perform_floor_transition(
+            lambda: game_world.advance_floor(spawn_selector=random_spawn)
+        ):
             raise Impossible("You can't descend any further.")
-        new_map = self.engine.game_map
-        x, y = game_world._find_random_free_tile(new_map)
-        consumer.place(x, y, new_map)
-        self.engine.update_fov()
         self._effect_message(
             consumer,
             "Un remolino de runas se abre bajo ti y caes en el siguiente nivel.",
@@ -1027,6 +1031,42 @@ class TeleportScrollConsumable(ScrollConsumable):
             color.status_effect_applied,
         )
         return {"affected": 1}
+
+
+class IdentificationScrollConsumable(ScrollConsumable):
+    """Let the reader identify an unidentified inventory item."""
+
+    def _unidentified_items(self, consumer: Actor):
+        return [
+            item
+            for item in consumer.inventory.items
+            if not getattr(item, "identified", False) and item is not self.parent
+        ]
+
+    def get_action(self, consumer: Actor) -> Optional[ActionOrHandler]:
+        if not self._unidentified_items(consumer):
+            self.engine.message_log.add_message(
+                "No tienes objetos sin identificar en tu inventario.",
+                color.impossible,
+            )
+            return None
+        return InventoryIdentifyHandler(self.engine, self.parent)
+
+    def _activate_scroll(self, action: actions.IdentifyItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        target_item = getattr(action, "target_item", None)
+        if not target_item:
+            raise Impossible("Debes elegir un objeto para identificar.")
+        if target_item not in consumer.inventory.items:
+            raise Impossible("Sólo puedes identificar objetos de tu inventario.")
+        if getattr(target_item, "identified", False):
+            raise Impossible("Ese objeto ya está identificado.")
+        target_item.identify()
+        self.engine.message_log.add_message(
+            f"Identificas {target_item.name}.",
+            color.status_effect_applied,
+        )
+        return {"affected": 1, "item": target_item.name}
 
 
 class ProdigiousMemoryConsumable(ScrollConsumable):

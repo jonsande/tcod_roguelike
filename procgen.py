@@ -2619,6 +2619,11 @@ def generate_dungeon_v3(
     if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
         _draw_hot_path(dungeon, hot_path_coords, allowed_tiles=dug_tiles)
 
+    # Colocamos artefactos únicos dependientes del hot_path (último piso).
+    if floor_number == settings.TOTAL_FLOORS:
+        last_hot_room_center = hot_path_centers[-1] if hot_path_centers else (0, 0)
+        uniques.place_uniques(floor_number, last_hot_room_center, dungeon)
+
     # Accesibilidad
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):

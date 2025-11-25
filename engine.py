@@ -443,6 +443,11 @@ class Engine:
         if settings.DEBUG_MODE:
             print(f"DEBUG: DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}", color.red)
 
+        # En el último piso no hay escaleras de bajada; usa las de subida si es necesario.
+        spawn_location = getattr(self.game_map, "downstairs_location", None) or getattr(self.game_map, "upstairs_location", None)
+        if not spawn_location:
+            return
+
         self.spawn_monsters_counter = self.spawn_monsters_counter + 1
 
         dice = random.randint(1, 20)
@@ -475,13 +480,13 @@ class Engine:
                     # Generate random monsters upstairs
                     if self.game_world.current_floor <= 4:
                         selected_monster = monster_roulette(choices=[goblin,])
-                        selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
                     if self.game_world.current_floor > 4:
                         selected_monster = monster_roulette(choices=[orc, goblin, true_orc,])
-                        selected_monster.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
                     
                     # Generate single type monster upstairs
-                    #entity_factories.goblin.spawn(self.game_map, self.game_map.downstairs_location[0], self.game_map.downstairs_location[1])
+                    #entity_factories.goblin.spawn(self.game_map, spawn_location[0], spawn_location[1])
             
             self.spawn_monsters_counter = 0
 

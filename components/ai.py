@@ -276,7 +276,11 @@ class HostileEnemyPlus(BaseAI):
         # Camino hacia la posición de origen
         self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
         # Camino hacia las escaleras
-        self.path_to_stairs = self.get_path_to(self.engine.game_map.downstairs_location[0], self.engine.game_map.downstairs_location[1])
+        stairs_location = getattr(self.engine.game_map, "downstairs_location", None)
+        if stairs_location:
+            self.path_to_stairs = self.get_path_to(stairs_location[0], stairs_location[1])
+        else:
+            self.path_to_stairs = []
 
 
         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:

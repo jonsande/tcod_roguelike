@@ -133,6 +133,24 @@ class ItemAction(Action):
             self.item.consumable.activate(self)
                     
 
+class IdentifyItemAction(Action):
+    """Identify an item from the actor inventory using a scroll."""
+
+    def __init__(self, entity: Actor, scroll: Item, target_item: Item):
+        super().__init__(entity)
+        self.item = scroll
+        self.target_item = target_item
+
+    def perform(self) -> None:
+        if not self.item.consumable:
+            raise exceptions.Impossible("This scroll has no effect.")
+        if self.target_item not in self.entity.inventory.items:
+            raise exceptions.Impossible("You must pick an item from your inventory.")
+        if getattr(self.target_item, "identified", False):
+            raise exceptions.Impossible("That item is already identified.")
+        self.item.consumable.activate(self)
+
+
 class DropItem(ItemAction):
     def perform(self) -> None:
         if self.entity.equipment.item_is_equipped(self.item):
@@ -1135,6 +1153,13 @@ class MovementAction(ActionWithDirection):
 
         if not game_map.in_bounds(dest_x, dest_y):
             if self.engine.game_world.current_floor == 1:
+                if (
+                    self.entity is self.engine.player
+                    and any(getattr(item, "id_name", "") == "The Artifact" for item in self.entity.inventory.items)
+                ):
+                    self.engine.message_log.add_message("You escape with The Artifact!", color.ascend)
+                    self.engine.player.ai = None
+                    return
                 raise exceptions.Impossible("Debo recuperar el artefacto.")
             else:
                 raise exceptions.Impossible("That way is blocked.")

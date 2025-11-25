@@ -42,10 +42,11 @@ AVENTURERS
 PERSONAJES
 - [ ] Personajes únicos o especiales:
 - [ ] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje).
-- [ ] Anciano del fuego eterno. Normalmente en el nivel de superficie. Junto a un campfire que nunca se apaga. Le da consejos cripticos al PJ. En ocasiones le puede obsequiar con un objeto mágico. En otras partidas el viejo no está, y sólo están los restos de la fogata.
+- [-] Anciano del fuego eterno. Normalmente en el nivel de superficie. Junto a un campfire que nunca se apaga. Le da consejos cripticos al PJ. En ocasiones le puede obsequiar con un objeto mágico. En otras partidas el viejo no está, y sólo están los restos de la fogata.
 - [ ] Robot estropeado pero aún operativo.
 
 EFECTOS SONOROS / SONIDO
+- [ ] Sonido de viento en el nivel de superficie.
 - [ ] Sonido de queja/lamento al recibir daño (específico de cada criatura).
 - [-] Sonido de ataques con armas y desarmado. [Sistema implementado, pero sin configurar]
 - [x] Sonidos de recoger objetos.
@@ -56,6 +57,7 @@ EFECTOS SONOROS / SONIDO
 - [ ] Más sonidos (algunos personalizados, que marquen alguna diferencia) de pisadas, risas, armas, fuego.
 
 EFECTOS VISUALES
+- [ ] Efecto de partículas (viento) en movimiento en el nivel de superficie.
 - [x] Efecto explosión bola de fuego.
 - [x] Efectos especiales fogatas.
 - [x] Efectos luz adventurers.
@@ -82,7 +84,12 @@ POCIONES
 - [x] Crear animación genérica para lanzamiento de cualquier objeto.
 
 ANILLOS
-
+- [ ] Anillos malditos.
+- [ ] Anillo de fuerza +1
+- [ ] Anillo de invisibilidad
+- [ ] Anillo de estamina.
+- [ ] Anillo de infravisión.
+- [ ] Anilos mixtos, con propiedades mágicas buenas y también malas.
 
 COLGANTES Y AMULETOS
 
@@ -149,11 +156,14 @@ CUEVAS
 - [ ] Las paredes de las cavernas tienen que usar otro sprite.
 - [x] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
 
+WORLD GENERATION
+- [ ] Ramas. En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa.
+
 DUNGEON GENERATION
 - [x] Hot path.
-- [ ] Green zone: función que te devuelve el conjunto de habitaciones que son accesibles desde una habitación cualquiera.
+- [-] Green zone: función que te devuelve el conjunto de habitaciones que son accesibles desde una habitación cualquiera. [Hecho pero con defectos. Hay función específica para debugging]
 - [ ] Cerciorarse de que el max_instances de un objeto está funcionando.
-- [x] La probabilidad de generarse un objeto por habitación debe ser independiente. Ahora mismo se aplica la tirada a todas las habitaciones de la planta. Esto hace que el jugador sepa rápido si en esa planta merece la pena buscar o no.
+- [x] La probabilidad de generarse un objeto por habitación debe ser independiente.
 - [ ] El color de los sprites de muro debe ser relativo y fijo al nivel. 
 - [ ] Arreglar problemas con la generación de fixed rooms (custom rooms)
 - [ ] Las fixed rooms deberían poder crearse con objetos estas salas. Donde aparezca el carácter '~' debe generarse un scroll (aleatorio), donde aparezca el caracter '!' debe generarse una poción aleatoria, y donde aparezca el caracter '/' debe aparecer un arma aleatoria. La probabilidad de que aparezca una cosa u otra debe ser configurable, así como la probabilidad de que aparezca un tipo u otro de pócima (si lo que se genera es una pócima), un tipo u otro de pergamino (si lo que se genera es un pergamino), un tipo u otro de arma (si lo que se genera es un arma).
@@ -165,7 +175,8 @@ FIXED DUNGEONS
 La fixed dungeon de mitad de descenso se escogerá entre una batería de posibles:
     - [ ] Templo de los monos (templo abandonado, lleno de monos)
     - [ ] Capilla de los centinelas (los centinelas guardando tres puertas, y solo detrás de una de ellas están las escaleras. Estaría bien que hubiera alguna pista en las plantas anteriores indicando cuál es la puerta. O que algún adventurer le contara un rumor al respecto).
-    - [ ] Librería. Inspirada en la librería de Indiana Jones: las escaleras de bajada estarán escondidas. En la librería habrá un juego de pistas que te dira cuál es la casilla correcta en la que se encuentran las escaleras de bajada. Habrá que excavar en esa casilla para poder seguir bajando. Para ello hará falta tener un pico o una pala.
+    - [ ] Biblioteca. Inspirada en la librería de Indiana Jones: las escaleras de bajada estarán escondidas. En la librería habrá un juego de pistas que te dira cuál es la casilla correcta en la que se encuentran las escaleras de bajada. Habrá que excavar en esa casilla para poder seguir bajando. Para ello hará falta tener un pico o una pala.
+    - [ ] Catacumbas (bajo la biblioteca).
     - [ ] Otros.
 
 COMBATE

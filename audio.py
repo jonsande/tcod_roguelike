@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import random
 import random
+import time
 from pathlib import Path
 from typing import Dict, Optional, Set, TYPE_CHECKING
 
@@ -208,10 +209,24 @@ class AmbientSoundController:
         if self._current_track == resolved:
             if pygame.mixer.music.get_busy():
                 return
+        fade_out_ms = max(0, int(getattr(audio_cfg, "AMBIENT_SOUND_FADE_OUT_MS", 0)))
+        fade_in_ms = max(0, int(getattr(audio_cfg, "AMBIENT_SOUND_FADE_IN_MS", 0)))
+        if self._current_track and self._current_track != resolved and pygame.mixer.music.get_busy():
+            try:
+                if fade_out_ms > 0:
+                    pygame.mixer.music.fadeout(fade_out_ms)
+                    self._wait_for_music_stop(timeout_ms=fade_out_ms)
+                else:
+                    pygame.mixer.music.stop()
+            except Exception:
+                pass
         try:
             pygame.mixer.music.load(str(resolved))
             self.set_volume(audio_cfg.AMBIENT_SOUND_VOLUME)
-            pygame.mixer.music.play(-1)
+            if fade_in_ms > 0:
+                pygame.mixer.music.play(-1, fade_ms=fade_in_ms)
+            else:
+                pygame.mixer.music.play(-1)
         except Exception as exc:  # pragma: no cover - runtime environment issue
             if settings.DEBUG_MODE:
                 print(f"[audio] Unable to play '{resolved}': {exc}")
@@ -219,6 +234,14 @@ class AmbientSoundController:
 
         self._current_track = resolved
         self._current_floor = floor
+
+    def _wait_for_music_stop(self, *, timeout_ms: int, poll_interval: float = 0.05) -> None:
+        """Wait briefly for the current music to finish fading out."""
+        if pygame is None:
+            return
+        end_time = time.monotonic() + max(0.0, timeout_ms) / 1000.0
+        while pygame.mixer.music.get_busy() and time.monotonic() < end_time:
+            time.sleep(max(0.0, poll_interval))
 
     def _track_for_floor(self, floor: int) -> Optional[str]:
         tracks = getattr(audio_cfg, "AMBIENT_SOUND_TRACKS", {}) or {}

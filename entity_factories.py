@@ -240,6 +240,14 @@ prodigious_memory_scroll = Item(
     consumable=consumable.ProdigiousMemoryConsumable(),
 )
 loot_tables.register_loot_item("prodigious_memory_scroll", prodigious_memory_scroll)
+identify_scroll = Item(
+    char="~",
+    color=color_roulette(),
+    name=scroll_name_roulette(),
+    id_name="Identify scroll",
+    consumable=consumable.IdentificationScrollConsumable(),
+)
+loot_tables.register_loot_item("identify_scroll", identify_scroll)
 
 # Breakable wall loot table (scrolls and similar findings hidden in walls)
 BREAKABLE_WALL_LOOT_TABLE = [
@@ -247,6 +255,7 @@ BREAKABLE_WALL_LOOT_TABLE = [
     paralisis_scroll,
     lightning_scroll,
     fireball_scroll,
+    identify_scroll,
 ]
 
 # POTIONS:
@@ -790,7 +799,14 @@ accuracy_ring = Item(
 )
 loot_tables.register_loot_item("accuracy_ring", accuracy_ring)
 
-# ARTEFACTS
+# ARTIFACTS
+
+the_artifact = Item(
+    char="*", 
+    color=(139, 69, 19), 
+    name="The Artifact",
+    id_name="The Artifact",
+)
 
 grial = Item(
     char="y", 

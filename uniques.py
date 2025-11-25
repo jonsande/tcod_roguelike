@@ -1,16 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import entity_factories
 import random
+from settings import TOTAL_FLOORS
 
+if TYPE_CHECKING:
+    from game_map import GameMap
 
 # Chequeadores de si existen ya o no:
 sauron_exists = False
 grial_exists = False
 goblin_amulet_exists = False
+artifact_exists = False
 
+artifact_location: Optional[Tuple[int, Tuple[int, int]]] = None
 
 campfire_counter = 0
 campfire_exist = False
@@ -18,11 +23,85 @@ campfire_exist = False
 # Asignamos nivel en que generar el artefacto
 grial_floor = random.randint(10, 16)
 goblin_amulet_floor = random.randint(4,8)
+the_artifact_floor = TOTAL_FLOORS
+
+
+def _get_hot_path_target(dungeon: "GameMap") -> Optional[Tuple[int, int]]:
+    hot_path = getattr(dungeon, "hot_path", None) or []
+    if not hot_path:
+        return None
+    return hot_path[-1]
+
+
+def _place_the_artifact(dungeon: "GameMap") -> bool:
+    """Coloca The Artifact en la última sala del hot_path del último piso."""
+    global artifact_exists, artifact_location
+
+    if artifact_exists:
+        return False
+
+    target = _get_hot_path_target(dungeon)
+    if not target:
+        return False
+
+    x, y = target
+    if hasattr(dungeon, "in_bounds") and not dungeon.in_bounds(x, y):
+        return False
+    if hasattr(dungeon, "tiles") and not dungeon.tiles["walkable"][x, y]:
+        return False
+
+    # Evitar superponer con entidades que bloqueen movimiento, buscando una casilla cercana.
+    blocking_entity = (
+        dungeon.get_blocking_entity_at_location(x, y)
+        if hasattr(dungeon, "get_blocking_entity_at_location")
+        else None
+    )
+    final_target = (x, y)
+    if blocking_entity:
+        found_spot = False
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
+                nx, ny = x + dx, y + dy
+                if not dungeon.in_bounds(nx, ny):
+                    continue
+                if not dungeon.tiles["walkable"][nx, ny]:
+                    continue
+                if hasattr(dungeon, "get_blocking_entity_at_location") and dungeon.get_blocking_entity_at_location(nx, ny):
+                    continue
+                final_target = (nx, ny)
+                found_spot = True
+                break
+            if found_spot:
+                break
+        if not found_spot:
+            return False
+
+    entity_factories.the_artifact.spawn(dungeon, *final_target)
+    artifact_exists = True
+    artifact_location = (the_artifact_floor, final_target)
+    return True
+
+
+def debug_print_artifact_location() -> None:
+    """Imprime en consola dónde se ha generado The Artifact."""
+    if artifact_location:
+        floor, (x, y) = artifact_location
+        print(f"DEBUG: The Artifact -> piso {floor} en ({x}, {y})")
+    elif artifact_exists:
+        print("DEBUG: The Artifact se marcó como generado, pero no hay ubicación registrada.")
+    else:
+        print("DEBUG: The Artifact aún no se ha generado.")
+
 
 # Colocamos entidades especiales
 def place_uniques(floor, center_of_last_room, dungeon):
 
     # Artefactos:
+
+    ## The Artifact
+
+    if floor == the_artifact_floor:
+        _place_the_artifact(dungeon)
 
     ## Grial
     if floor == 13:

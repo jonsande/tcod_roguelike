@@ -21,13 +21,13 @@ class Equipment(BaseComponent):
         self,
         weapon: Optional[Item] = None,
         armor: Optional[Item] = None,
-        artefact: Optional[Item] = None,
+        artifact: Optional[Item] = None,
         ring_left: Optional[Item] = None,
         ring_right: Optional[Item] = None,
     ):
         self.weapon = weapon
         self.armor = armor
-        self.artefact = artefact
+        self.artifact = artifact
         self.ring_left = ring_left
         self.ring_right = ring_right
 
@@ -41,8 +41,8 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.defense_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.defense_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.defense_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.defense_bonus
@@ -66,9 +66,9 @@ class Equipment(BaseComponent):
             # total += self.armor.equippable.weapon_dmg
             total += self.armor.equippable.dmg_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            #total += self.artefact.equippable.weapon_dmg
-            total += self.artefact.equippable.dmg_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            #total += self.artifact.equippable.weapon_dmg
+            total += self.artifact.equippable.dmg_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             total += self.ring_left.equippable.dmg_bonus
@@ -85,8 +85,8 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.dmg_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.dmg_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.dmg_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.dmg_bonus
@@ -106,8 +106,8 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.stealth_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.stealth_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.stealth_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.stealth_bonus
@@ -129,8 +129,8 @@ class Equipment(BaseComponent):
             #bonus += self.armor.equippable.stealth_penalty
             bonus += self.armor.equippable.armor_value_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.armor_value_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.armor_value_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.armor_value_bonus
@@ -150,8 +150,8 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.to_hit_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.to_hit_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.to_hit_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.to_hit_bonus
@@ -174,8 +174,8 @@ class Equipment(BaseComponent):
             bonus += self.armor.equippable.to_hit_penalty
             #bonus += 1 
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.to_hit_penalty
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.to_hit_penalty
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.to_hit_penalty
@@ -192,8 +192,8 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.armor_value_bonus
 
-        if self.artefact is not None and self.artefact.equippable is not None:
-            bonus += self.artefact.equippable.armor_value_bonus
+        if self.artifact is not None and self.artifact.equippable is not None:
+            bonus += self.artifact.equippable.armor_value_bonus
 
         if self.ring_left is not None and self.ring_left.equippable is not None:
             bonus += self.ring_left.equippable.armor_value_bonus
@@ -207,7 +207,7 @@ class Equipment(BaseComponent):
         return (
             self.weapon == item
             or self.armor == item
-            or self.artefact == item
+            or self.artifact == item
             or self.ring_left == item
             or self.ring_right == item
         )
@@ -251,10 +251,10 @@ class Equipment(BaseComponent):
         else:
             if (
                 equippable_item.equippable
-                and equippable_item.equippable.equipment_type == EquipmentType.ARTEFACT
+                and equippable_item.equippable.equipment_type == EquipmentType.ARTIFACT
             ):
                 
-                slot = "artefact"
+                slot = "artifact"
                 identify_on_equip = False
 
             else:

@@ -83,7 +83,7 @@ INTRO_SLIDE_DURATION = 3.5  # tiempo en pantalla antes de iniciar el fundido
 INTRO_SLIDES = [
     {
         "text": "The elders have chosen.",
-        "hold": 4.2,
+        "hold": 2.2,
     },
     {
         "text": "The ancient artifact was lost generations ago.\n"
@@ -99,7 +99,7 @@ INTRO_SLIDES = [
         "labyrinth, and venture into its depths.\n"
         "Many before have embarked on the Great Quest. None have ever returned.",
         "hold": 13.0,
-    },False
+    },
 ]
 
 # -- Audio settings ------------------------------------------------------
@@ -127,20 +127,22 @@ PLAYER_LEVELING_ENABLED = False
 # jugador. `quantity` permite añadir varias copias y `equip` marca si se intenta
 # equipar esa copia en cuanto empiece la partida.
 PLAYER_STARTING_INVENTORY = [
-    # {"item": "dagger", "equip": True},
+    {"item": "triple_ration", "quantity": 2},
+    # {"item": "accuracy_ring", "equip": True},
     # {"item": "leather_armor", "equip": True},
-    {"item": "dagger", "quantity": 3},
-    # {"item": "triple_ration", "quantity": 2},
+    # {"item": "spear", "quantity": 1, "equip": True},
+    # {"item": "descend_scroll", "quantity": 16},
     # {"item": "black_key", "quantity": 1},
     # {"item": "red_key", "quantity": 1},
     # {"item": "white_key", "quantity": 1},
     # {"item": "gray_key", "quantity": 1},
+    # {"item": "identify_scroll", "quantity": 6},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
     "weapon": 2,
     "armor": 2,
-    "artefact": 2,
+    "artifact": 1,
     "ring": 2,
 }
 
@@ -184,7 +186,7 @@ DUNGEON_V3_ENTRY_FEATURE_PROBS = {
 }
 
 # -- Dungeon structure -------------------------------------------------------
-TOTAL_FLOORS = 16
+TOTAL_FLOORS = 16 # Debido al diseño del juego, 16 niveles son 15 (pues la superficie es el verdadero nivel 1)
 MAX_DOORS_BY_LEVEL = 8
 MAX_BREAKABLE_WALLS = 6
 
@@ -225,15 +227,20 @@ DEBRIS_CHANCES = {
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_SPAWN_CHANCES = [
     (2, 0.20),
-    (4, 0.20),
-    (8, 0.20),
+    (4, 0.40),
+    (8, 0.40),
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_ITEM_COUNT_BY_FLOOR = [
     (1, (1, 1)), # En el primer nivel se genera siempre un cofre junto al viejo.
-    (4, (1, 3)),
-    (8, (1, 3)),
+    (4, (2, 4)),
+    (6, (3, 4)),
+    (8, (3, 4)),
+    (10, (3, 4)),
+    (12, (3, 5)),
+    (14, (3, 5)),
+    (16, (3, 5)),
 ]
 
 OLD_MAN_CHEST = ["dagger", "leather_armor"]
@@ -257,6 +264,7 @@ ALL_ITEMS = [
     ("precission_potion", 1),
     ("confusion_scroll", 1),
     ("paralisis_scroll", 1),
+    ("identify_scroll", 1),
     ("lightning_scroll", 1),
     ("fireball_scroll", 1),
     ("descend_scroll", 1),
@@ -282,7 +290,7 @@ CHEST_LOOT_TABLES = {
         ("plain_ring", 1),
     ],
     2: [
-        ("dagger", 1),
+        # ("dagger", 1),
         # ("leather_armor", 1),
         ("strength_potion", 1), 
         ("increase_max_stamina", 1), 
@@ -308,10 +316,10 @@ CHEST_LOOT_TABLES = {
         ("fireball_scroll", 2),
         ("paralisis_scroll", 2),
         ("accuracy_ring", 2),
-        ("strength_potion", 1), 
-        ("increase_max_stamina", 1), 
-        ("life_potion", 1), 
-        ("infra_vision_potion", 1), 
+        ("strength_potion", 2), 
+        ("increase_max_stamina", 2), 
+        ("life_potion", 2), 
+        ("infra_vision_potion", 2), 
         ("antidote", 1), 
         ("health_potion", 1), 
         ("poison_potion", 1), 
@@ -325,6 +333,7 @@ CHEST_LOOT_TABLES = {
         ("precission_potion", 1),
         ("confusion_scroll", 1),
         ("paralisis_scroll", 1),
+        ("identify_scroll", 1),
         ("lightning_scroll", 1),
         ("fireball_scroll", 1),
         ("descend_scroll", 1),
@@ -464,6 +473,7 @@ CAVERN_ITEM_SPAWN_RULES = {
     # SCROLLS
     "confusion_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
     "paralisis_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "identify_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(1, 8), (4, 12)]},
     "lightning_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
     "fireball_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
     "descend_scroll": {"min_floor": 2, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
@@ -515,7 +525,7 @@ MAX_ITEMS_BY_FLOOR = [
     (3, 1),
     (4, 1),
     (6, 1),
-    (7, randint(1, 2)),
+    (7, 1),
     (11, 1),
     (12, 1),
 ]
@@ -525,8 +535,8 @@ MAX_MONSTERS_BY_FLOOR = [
     #(1, 0),
     (2, 1),
     (3, 1),
-    (5, randint(1,2)),
-    (6, 0),
+    (5, 1),
+    (6, 1),
     (7, 1),
     (11, randint(1,2)),
 ]
@@ -566,10 +576,10 @@ ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
 # - weight_progression: lista de (nivel, peso) que sobreescribe el peso a partir de ese nivel.
 ITEM_SPAWN_RULES = {
     # HI VALUE POTIONS
-    "strength_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "increase_max_stamina": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "life_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "infra_vision_potion": {"min_floor": 2, "max_instances": 8, "base_weight": 8, "weight_progression": [(2, 6)]},
+    "strength_potion": {"min_floor": 2, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "increase_max_stamina": {"min_floor": 2, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "life_potion": {"min_floor": 2, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "infra_vision_potion": {"min_floor": 2, "max_instances": 5, "base_weight": 8, "weight_progression": [(2, 6)]},
     # POTIONS
     "antidote": {"min_floor": 2, "weight_progression": [(1, 5)]},
     "sand_bag": {"min_floor": 2, "weight_progression": [(1, 5)]},
@@ -597,11 +607,12 @@ ITEM_SPAWN_RULES = {
     # SCROLLS
     "confusion_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
     "paralisis_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 10), (4, 12), (4, 15)]},
+    "identify_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(1, 8), (4, 12)]},
     "lightning_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
     "fireball_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(1, 7), (4, 10), (4, 10)]},
     "descend_scroll": {"min_floor": 2, "max_instances": 4, "weight_progression": [(3, 2), (6, 3)]},
     "teleport_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(2, 3), (5, 4)]},
-    "prodigious_memory_scroll": {"min_floor": 5, "max_instances": 2, "weight_progression": [(5, 1), (8, 2)]},
+    "prodigious_memory_scroll": {"min_floor": 5, "max_instances": 2, "weight_progression": [(5, 2), (8, 7)]},
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
@@ -623,10 +634,12 @@ ENEMY_SPAWN_RULES = {
     "adventurer": {
         "min_floor": 1, 
         "weight_progression": [
-            (1, 7),
-            (2, 7),
-            (3, 7),
+            (1, 0),
+            (2, 6),
+            (3, 6),
             (4, 6),
+            (8, 4),
+            (16, 0),
             ],
     },
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
@@ -640,18 +653,18 @@ ENEMY_SPAWN_RULES = {
             (16, 0),
         ],
     },
-    "snake": {"min_floor": 1, "weight_progression": [(1, 10)]},
+    "snake": {"min_floor": 1, "weight_progression": [(1, 10), (8, 0)]},
     "rat": {"min_floor": 1, "weight_progression": [(1, 50), (3, 0)]},
-    "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10)]},
-    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (7, 3)]},
+    "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10), (8, 0)]},
+    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
     "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 50), (4, 30), (6, 20), (10, 15)]},
     "monkey": {"min_floor": 1, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
-    "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 20)]},
-    "true_orc": {"min_floor": 5, "weight_progression": [(5, 5), (8, 20)]},
-    "skeleton": {"min_floor": 4, "weight_progression": [(4, 15), (6, 18), (9, 12)]},
-    "troll": {"min_floor": 5, "weight_progression": [(7, 5)]},
+    "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
+    "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
+    "skeleton": {"min_floor": 4, "weight_progression": [(4, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
+    "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
-    "cultist": {"min_floor": 6, "weight_progression": [(6, 8), (9, 16)]},
+    "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
 }
 
 PROFICIENCY_LEVELS = {

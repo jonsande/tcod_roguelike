@@ -16,7 +16,7 @@ class Equippable(BaseComponent):
 
     def __init__(
         self,
-        equipment_type: EquipmentType, # Actualmente weapon, armor, artefact, pero aquí podrían añadirse tipos más específicos, como MeleeWeapon, etc.
+        equipment_type: EquipmentType, # Actualmente weapon, armor, artifact, pero aquí podrían añadirse tipos más específicos, como MeleeWeapon, etc.
         min_dmg: int = 0,
         max_dmg: int = 0,
         dmg_bonus: int = 0,
@@ -195,7 +195,7 @@ class ChainMail(Equippable):
 class Grial(Equippable):
     def __init__(self) -> None:
         super().__init__(
-            equipment_type=EquipmentType.ARTEFACT, 
+            equipment_type=EquipmentType.ARTIFACT, 
             defense_bonus=3, 
             to_hit_bonus=2
             )
@@ -204,7 +204,7 @@ class Grial(Equippable):
 class GoblinAmulet(Equippable):
     def __init__(self) -> None:
         super().__init__(
-            equipment_type=EquipmentType.ARTEFACT, 
+            equipment_type=EquipmentType.ARTIFACT, 
             defense_bonus=4, 
             stealth_bonus=4, 
             to_hit_penalty=6

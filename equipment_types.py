@@ -5,5 +5,5 @@ class EquipmentType(Enum):
     WEAPON = auto()
     #RANGEDWEAPON = auto()
     ARMOR = auto()
-    ARTEFACT = auto()
+    ARTIFACT = auto()
     RING = auto()

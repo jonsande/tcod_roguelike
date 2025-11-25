@@ -41,7 +41,7 @@ background_image = tcod.image.load("data/graphics/menu_background.png")[:, :, :3
 _EQUIPMENT_SLOT_NAMES = {
     EquipmentType.WEAPON: "weapon",
     EquipmentType.ARMOR: "armor",
-    EquipmentType.ARTEFACT: "artefact",
+    EquipmentType.ARTIFACT: "artifact",
     EquipmentType.RING: "ring",
 }
 

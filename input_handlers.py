@@ -839,6 +839,78 @@ class InventoryActivateHandler(InventoryEventHandler):
             return actions.EquipAction(self.engine.player, item)
         else:
             return None
+
+
+class InventoryIdentifyHandler(InventoryEventHandler):
+    """Handle picking an unidentified item to reveal with a scroll."""
+
+    TITLE = "Elige un objeto sin identificar"
+
+    def __init__(self, engine: Engine, scroll: Item):
+        super().__init__(engine)
+        self.scroll = scroll
+
+    def _unidentified_groups(self):
+        item_groups = defaultdict(list)
+        for item in self.engine.player.inventory.items:
+            if getattr(item, "identified", False):
+                continue
+            if item is self.scroll:
+                continue
+            item_groups[item.name].append(item)
+        return sorted(item_groups.items(), key=lambda x: x[0])
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        sorted_groups = self._unidentified_groups()
+        height = max(3, len(sorted_groups) + 2)
+        x = 1
+        y = 1
+        width = 78
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        if sorted_groups:
+            for i, (item_name, items) in enumerate(sorted_groups):
+                count = len(items)
+                item = items[0]
+                item_key = chr(ord("a") + i)
+                is_equipped = self.engine.player.equipment.item_is_equipped(item)
+                item_string = f"({item_key}) {item_name}"
+                if count > 1:
+                    item_string = f"{item_string} ({count})"
+                if is_equipped:
+                    item_string = f"{item_string} (E)"
+                console.print(x + 1, y + i + 1, item_string)
+        else:
+            console.print(x + 1, y + 1, "(Sin objetos sin identificar)")
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+        index = key - tcod.event.KeySym.a
+        sorted_groups = self._unidentified_groups()
+
+        if 0 <= index < len(sorted_groups):
+            try:
+                _, items = sorted_groups[index]
+                selected_item = items[0]
+            except IndexError:
+                self.engine.message_log.add_message("Invalid entry.", color.invalid)
+                return None
+            return self.on_item_selected(selected_item)
+        return super().ev_keydown(event)
+
+    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+        return actions.IdentifyItemAction(self.engine.player, self.scroll, item)
         
     
 class InventoryThrowHandler(InventoryEventHandler):
