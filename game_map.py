@@ -119,7 +119,6 @@ class GameMapTown:
                         break
             if not key_item:
                 raise exceptions.Impossible(f"You need a {lock_color} key.")
-            inv.items.remove(key_item)
             self.engine.message_log.add_message(f"You use a {lock_color} key.", color.white)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(True)
@@ -302,7 +301,6 @@ class GameMap:
                         break
             if not key_item:
                 raise exceptions.Impossible(f"You need a {lock_color} key.")
-            inv.items.remove(key_item)
             self.engine.message_log.add_message(f"You use a {lock_color} key.", color.white)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(True)

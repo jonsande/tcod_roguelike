@@ -180,6 +180,8 @@ COMBATE
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- Sistema de puestas con llave:
+    - [ ] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.
 - [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
 - [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
 - [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.

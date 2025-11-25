@@ -738,41 +738,159 @@ def _shortest_room_path(
     return path
 
 
+def _is_traversable_for_hot_path(
+    dungeon: GameMap,
+    x: int,
+    y: int,
+    *,
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> bool:
+    """Considera transitables suelo, puertas (abiertas o cerradas) y muros rompibles."""
+    if not dungeon.in_bounds(x, y):
+        return False
+    if allowed_tiles is not None and (x, y) not in allowed_tiles:
+        return False
+    if dungeon.tiles["walkable"][x, y]:
+        return True
+    tile = dungeon.tiles[x, y]
+    if np.array_equal(tile, tile_types.closed_door):
+        return True
+    if np.array_equal(tile, tile_types.breakable_wall):
+        return True
+    blocking = dungeon.get_blocking_entity_at_location(x, y)
+    if blocking:
+        name = getattr(blocking, "name", "").lower()
+        if "door" in name or "wall" in name:
+            return True
+    return False
+
+# BUG: Funciona bastante bien, pero sigue incluyendo algunas casillas intransitables en el
+# camino. Esto ya pasó al intentar programar el movimiento de los adventurers. Al final lo
+# solucionamos (no sé por qué) buscando el camino más corto "por fases"; es decir, buscando
+# primero el camino más corte de la habitación A a la B (sin tener en cuenta el destino
+# final total), y repitiendo. En este caso las habitaciones elegidas deberían extraerse de
+# del hot_path (a saber, la serie de los centros de las habitaciones que componen el camino
+# más corto a las escaleras).
+def _shortest_tile_path(
+    dungeon: GameMap,
+    start: Tuple[int, int],
+    goal: Tuple[int, int],
+    *,
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
+    """Dijkstra sobre rejilla cardinal usando _is_traversable_for_hot_path."""
+    import heapq
+
+    def _nearest_traversable(pt: Tuple[int, int], allowed_tiles: Optional[Set[Tuple[int, int]]]) -> Optional[Tuple[int, int]]:
+        if _is_traversable_for_hot_path(dungeon, *pt, allowed_tiles=allowed_tiles):
+            return pt
+        from collections import deque
+        seen = {pt}
+        q = deque([pt])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in CARDINAL_DIRECTIONS:
+                nx, ny = x + dx, y + dy
+                if (nx, ny) in seen:
+                    continue
+                seen.add((nx, ny))
+                if not dungeon.in_bounds(nx, ny):
+                    continue
+                if _is_traversable_for_hot_path(dungeon, nx, ny, allowed_tiles=allowed_tiles):
+                    return (nx, ny)
+                q.append((nx, ny))
+        return None
+
+    start_pt = _nearest_traversable(start, allowed_tiles)
+    goal_pt = _nearest_traversable(goal, allowed_tiles)
+    if not start_pt or not goal_pt:
+        return []
+    if start_pt == goal_pt:
+        return [start_pt]
+
+    heap: List[Tuple[int, Tuple[int, int]]] = [(0, start_pt)]
+    dist: Dict[Tuple[int, int], int] = {start_pt: 0}
+    prev: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {start_pt: None}
+
+    while heap:
+        d, (x, y) = heapq.heappop(heap)
+        if (x, y) == goal_pt:
+            break
+        if d != dist.get((x, y), 1_000_000):
+            continue
+        for dx, dy in CARDINAL_DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if not _is_traversable_for_hot_path(dungeon, nx, ny, allowed_tiles=allowed_tiles):
+                continue
+            nd = d + 1
+            if nd < dist.get((nx, ny), 1_000_000):
+                dist[(nx, ny)] = nd
+                prev[(nx, ny)] = (x, y)
+                heapq.heappush(heap, (nd, (nx, ny)))
+
+    if goal_pt not in prev and goal_pt != start_pt:
+        return []
+
+    path: List[Tuple[int, int]] = []
+    cursor: Optional[Tuple[int, int]] = goal_pt
+    while cursor is not None:
+        path.append(cursor)
+        cursor = prev.get(cursor)
+    path.reverse()
+    return path
+
+# BUG: Funciona bastante bien, pero sigue incluyendo algunas casillas intransitables en el
+# camino. Esto ya pasó al intentar programar el movimiento de los adventurers. Al final lo
+# solucionamos (no sé por qué) buscando el camino más corto "por fases"; es decir, buscando
+# primero el camino más corte de la habitación A a la B (sin tener en cuenta el destino
+# final total), y repitiendo. En este caso las habitaciones elegidas deberían extraerse de
+# del hot_path (a saber, la serie de los centros de las habitaciones que componen el camino
+# más corto a las escaleras).
 def _draw_hot_path(
     dungeon: GameMap,
-    hot_path: List[Tuple[int, int]],
+    shortest_path: List[Tuple[int, int]],
     *,
-    glyph: str = "*",
     dark_color: Tuple[int, int, int] = (180, 50, 50),
     light_color: Tuple[int, int, int] = (255, 90, 90),
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
 ) -> None:
-    """Pinta sobre el mapa el camino del hot_path para depuración."""
-    coords = _collect_hot_path_coords(hot_path)
-    if not coords:
+    """Pinta sobre el mapa el shortest_path para depuración sin modificar el glyph."""
+    if not shortest_path:
         return
 
-    char_code = ord(glyph)
-    for x, y in coords:
+    for x, y in shortest_path:
         if not dungeon.in_bounds(x, y):
             continue
-        if not dungeon.tiles["walkable"][x, y]:
+        if not _is_traversable_for_hot_path(dungeon, x, y, allowed_tiles=allowed_tiles):
             continue
         if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
             continue
         if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
             continue
-        dungeon.tiles["dark"]["ch"][x, y] = char_code
-        dungeon.tiles["light"]["ch"][x, y] = char_code
         dungeon.tiles["dark"]["fg"][x, y] = dark_color
         dungeon.tiles["light"]["fg"][x, y] = light_color
 
 
-def _collect_hot_path_coords(hot_path: List[Tuple[int, int]]) -> Set[Tuple[int, int]]:
-    coords: Set[Tuple[int, int]] = set()
+def _collect_hot_path_coords(
+    dungeon: GameMap,
+    hot_path: List[Tuple[int, int]],
+    *,
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
+    coords: List[Tuple[int, int]] = []
     if len(hot_path) < 2:
-        return coords
+        return []
     for a, b in zip(hot_path[:-1], hot_path[1:]):
-        coords.update(tunnel_between(a, b))
+        segment = _shortest_tile_path(dungeon, a, b, allowed_tiles=allowed_tiles)
+        if not segment:
+            continue
+        segment = [pt for pt in segment if _is_traversable_for_hot_path(dungeon, *pt, allowed_tiles=allowed_tiles)]
+        if not segment:
+            continue
+        if coords and coords[-1] == segment[0]:
+            coords.extend(segment[1:])
+        else:
+            coords.extend(segment)
     return coords
 
 
@@ -794,6 +912,7 @@ def _normalize_feature_probs(raw: Dict[str, float]) -> List[Tuple[str, float]]:
 def _collect_room_entry_candidates_v3(
     dungeon: GameMap,
     room_tiles: Set[Tuple[int, int]],
+    dug_tiles: Optional[Set[Tuple[int, int]]] = None,
 ) -> List[Tuple[int, int]]:
     """Return corridor tiles adyacentes a la sala (no dentro de la sala)."""
     candidates: Set[Tuple[int, int]] = set()
@@ -806,6 +925,8 @@ def _collect_room_entry_candidates_v3(
                 continue
             if not dungeon.tiles["walkable"][nx, ny]:
                 continue
+            if dug_tiles is not None:
+                dug_tiles.add((nx, ny))
             candidates.add((nx, ny))
     return list(candidates)
 
@@ -817,6 +938,7 @@ def _maybe_place_entry_feature(
     *,
     room_center: Optional[Tuple[int, int]] = None,
     lock_chance: float = 0.0,
+    dug_tiles: Optional[Set[Tuple[int, int]]] = None,
 ) -> None:
     def _has_opposing_walls(x: int, y: int) -> bool:
         north = dungeon.in_bounds(x, y - 1) and not dungeon.tiles["walkable"][x, y - 1]
@@ -844,8 +966,12 @@ def _maybe_place_entry_feature(
             lock_color = random.choice(entity_factories.KEY_COLORS)
         dungeon.tiles[x, y] = tile_types.closed_door
         spawn_door_entity(dungeon, x, y, lock_color=lock_color, room_center=room_center)
+        if dug_tiles is not None:
+            dug_tiles.add((x, y))
     elif choice == "breakable":
         convert_tile_to_breakable(dungeon, x, y)
+        if dug_tiles is not None:
+            dug_tiles.add((x, y))
 
 
 def _choose_room_location_for_entry(
@@ -2274,8 +2400,10 @@ def generate_dungeon_v3(
 
     # Carve rooms and place entities.
     entry_point: Optional[Tuple[int, int]] = upstairs_location
+    dug_tiles: Set[Tuple[int, int]] = set()
     for index, (room, template) in enumerate(rooms):
         carve_room(dungeon, room)
+        dug_tiles.update(room.iter_floor_tiles())
         used_fixed_room = False
         if template:
             if carve_fixed_room(dungeon, room, template):
@@ -2323,6 +2451,8 @@ def generate_dungeon_v3(
 
     for i, j in connections:
         carve_tunnel_path(dungeon, centers[i], centers[j])
+        for coord in tunnel_between(centers[i], centers[j]):
+            dug_tiles.add(coord)
 
     # Añadimos puertas/muros rompibles opcionales en puntos de entrada a sala.
     feature_probs = _normalize_feature_probs(
@@ -2331,13 +2461,14 @@ def generate_dungeon_v3(
     room_tile_sets = [set(room.iter_floor_tiles()) for room, _ in rooms]
     lock_chance = max(0.0, min(1.0, getattr(settings, "DUNGEON_V3_LOCKED_DOOR_CHANCE", 0.0)))
     for room_tiles, (room, _) in zip(room_tile_sets, rooms):
-        for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles):
+        for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles, dug_tiles):
             _maybe_place_entry_feature(
                 dungeon,
                 coord,
                 feature_probs,
                 room_center=room.center,
                 lock_chance=lock_chance,
+                dug_tiles=dug_tiles,
             )
 
     # Escaleras
@@ -2371,13 +2502,16 @@ def generate_dungeon_v3(
         downstairs_room_idx = len(rooms) - 1
 
     hot_path_centers: List[Tuple[int, int]] = []
+    hot_path_coords: List[Tuple[int, int]] = []
     if upstairs_room_idx is not None and downstairs_room_idx is not None:
         idx_path = _shortest_room_path(centers, connections, upstairs_room_idx, downstairs_room_idx)
         if idx_path:
             hot_path_centers = [centers[i] for i in idx_path]
+            hot_path_coords = _collect_hot_path_coords(dungeon, hot_path_centers, allowed_tiles=dug_tiles)
     dungeon.hot_path = hot_path_centers
+    dungeon.shortest_path = hot_path_coords
     if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
-        _draw_hot_path(dungeon, hot_path_centers)
+        _draw_hot_path(dungeon, hot_path_coords, allowed_tiles=dug_tiles)
 
     # Accesibilidad
     if place_downstairs and dungeon.downstairs_location and entry_point:
