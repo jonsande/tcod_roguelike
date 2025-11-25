@@ -968,7 +968,7 @@ adventurer.on_spawn = _setup_adventurer_equipment
 
 rat = Actor(
     char="r",
-    color=(80,80,110),
+    color=(60,60,90),
     name="Giant rat",
     ai_cls=SleepingEnemy,
     equipment=Equipment(),
@@ -994,7 +994,7 @@ rat = Actor(
 
 swarm_rat = Actor(
     char="r",
-    color=(80,80,110),
+    color=(60,60,90),
     name="Hungry rat",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy]),
     equipment=Equipment(),

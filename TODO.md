@@ -216,6 +216,8 @@ VARIOS
 
 BUGS
 
+BUG: Parece que si queda un meat donde hay una puerta, y la puerta se cierra, el sprite de meat se queda por encima del de la puerta. Lo mismo pasa con los cadáveres. No sé cón otros objetos.
+
 BUG: El hot_path a veces no se genera correctamente. Puede ser que tenga que ver con el modo en que construye el camino la máquina. Ahora mismo no lo construye siguiendo las casillas transitables.
 
 BUG: Cuando se lanza una poción de ceguera contra una criatura y la criatura recupera la visión al de un tiempo, se recibe el mensaje: "Shapes slowly emerge again around you". Es incorrecto. Hay que relativizar el mensaje.

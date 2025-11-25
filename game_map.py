@@ -422,7 +422,7 @@ class GameWorld:
         self._sync_ambient_sound()
 
     def _generate_world(self) -> None:
-        from procgen import (
+        from generators import (
             generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
@@ -497,7 +497,7 @@ class GameWorld:
         ambient_sound.play_for_floor(self.current_floor)
 
     def _select_generator(self, floor: int):
-        from procgen import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern, generate_dungeon_v2, generate_dungeon_v3
+        from generators import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern, generate_dungeon_v2, generate_dungeon_v3
 
         # NIVEL INICIAL
         if floor == 1:
