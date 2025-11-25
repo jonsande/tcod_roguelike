@@ -43,6 +43,8 @@ from settings import (
     PROFICIENCY_LEVELS,
 )
 
+KEY_COLORS = ("black", "red", "white", "gray")
+
 # OBSTACLES:
 
 door = Obstacle(
@@ -58,6 +60,31 @@ door = Obstacle(
     equipment=Equipment(),
 )
 
+# Keys
+black_key = Item(
+    char="!",
+    color=(20, 20, 20),
+    name="Black key",
+    id_name="black_key",
+)
+red_key = Item(
+    char="!",
+    color=(200, 30, 30),
+    name="Red key",
+    id_name="red_key",
+)
+white_key = Item(
+    char="!",
+    color=(230, 230, 230),
+    name="White key",
+    id_name="white_key",
+)
+gray_key = Item(
+    char="!",
+    color=(120, 120, 120),
+    name="Gray key",
+    id_name="gray_key",
+)
 chest = Chest(
     char="ε",
     open_char="ε",

@@ -747,6 +747,7 @@ class Door(FireStatusMixin, BaseComponent):
             #poisoned_counter: int = 0,
             #poison_dmg: int = 0,
             fire_resistance: int = 1,
+            lock_color: Optional[str] = None,
             ):
         self.max_hp = hp
         self._hp = hp
@@ -776,6 +777,7 @@ class Door(FireStatusMixin, BaseComponent):
         self.is_poisoned = is_poisoned
         self._init_fire_status(fire_resistance)
         self.is_open = False
+        self.lock_color = lock_color
         self.closed_char = "+"
         self.open_char = "-"
         self.closed_color = (93, 59, 0)

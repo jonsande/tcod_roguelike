@@ -23,23 +23,24 @@ room_01 = (
 #     "############",
 # )
 
-# BUG: Esta habitación genera un bug muy extraño, que ni yo ni Codex hemos sido capaces
+# BUG: Esta habitación genera un bug extraño, que ni yo ni Codex hemos sido capaces
 # de entender: las puertas no funcionan, como si fueran muros. Lo raro es que las puertas
-# de la room_door, en cambio, sí funcionan.
+# de la room_door, en cambio, A VECES sí funcionan.
 # room_secret_B = (
 #     ".....#..#.....",
 #     ".....+..+.....",
 #     ".....#..#.....",
 # )
 
-room_door = (
-    "############",
-    "#.......#..#",
-    "#.......#..#",
-    "#.......+..#",
-    "#.......#..#",
-    "############",
-)
+# BUG: ver descripción del bug más arriba.
+# room_door = (
+#     "############",
+#     "#.......#..#",
+#     "#.......#..#",
+#     "#.......+..#",
+#     "#.......#..#",
+#     "############",
+# )
 
 # cross_road = (
 #     "###.###",

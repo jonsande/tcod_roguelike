@@ -131,6 +131,10 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "leather_armor", "equip": True},
     # {"item": "dagger", "quantity": 3},
     {"item": "triple_ration", "quantity": 2},
+    {"item": "black_key", "quantity": 1},
+    {"item": "red_key", "quantity": 1},
+    {"item": "white_key", "quantity": 1},
+    {"item": "gray_key", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -165,6 +169,7 @@ DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 220
 DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
 DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
 DUNGEON_V3_EXTRA_CONNECTIONS = 3
+DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.70
 DUNGEON_V3_FIXED_ROOMS_ENABLED = True
 DUNGEON_V3_ENTRY_FEATURE_PROBS = {
     "none": 0.5,
@@ -327,8 +332,8 @@ CHEST_LOOT_TABLES = {
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
     "room_01": [(2, 0.08), (6, 0.00)],
-    # "room_secret": [(2, 0.10), (8, 0.10)],
-    "room_door": [(2, 0.08), (5, 0.00)],
+    # "room_secret": [(2, 0.10), (8, 0.10)], # BUGGED
+    # "room_door": [(2, 0.08), (5, 0.00)], # BUGGED
     "room_secret_B": [(2, 0.08), (8, 0.00)],
 }
 

@@ -747,12 +747,9 @@ def _draw_hot_path(
     light_color: Tuple[int, int, int] = (255, 90, 90),
 ) -> None:
     """Pinta sobre el mapa el camino del hot_path para depuración."""
-    if len(hot_path) < 2:
+    coords = _collect_hot_path_coords(hot_path)
+    if not coords:
         return
-
-    coords: Set[Tuple[int, int]] = set()
-    for a, b in zip(hot_path[:-1], hot_path[1:]):
-        coords.update(tunnel_between(a, b))
 
     char_code = ord(glyph)
     for x, y in coords:
@@ -768,6 +765,15 @@ def _draw_hot_path(
         dungeon.tiles["light"]["ch"][x, y] = char_code
         dungeon.tiles["dark"]["fg"][x, y] = dark_color
         dungeon.tiles["light"]["fg"][x, y] = light_color
+
+
+def _collect_hot_path_coords(hot_path: List[Tuple[int, int]]) -> Set[Tuple[int, int]]:
+    coords: Set[Tuple[int, int]] = set()
+    if len(hot_path) < 2:
+        return coords
+    for a, b in zip(hot_path[:-1], hot_path[1:]):
+        coords.update(tunnel_between(a, b))
+    return coords
 
 
 def _normalize_feature_probs(raw: Dict[str, float]) -> List[Tuple[str, float]]:
@@ -808,6 +814,9 @@ def _maybe_place_entry_feature(
     dungeon: GameMap,
     coord: Tuple[int, int],
     options: List[Tuple[str, float]],
+    *,
+    room_center: Optional[Tuple[int, int]] = None,
+    lock_chance: float = 0.0,
 ) -> None:
     def _has_opposing_walls(x: int, y: int) -> bool:
         north = dungeon.in_bounds(x, y - 1) and not dungeon.tiles["walkable"][x, y - 1]
@@ -830,8 +839,11 @@ def _maybe_place_entry_feature(
     x, y = coord
 
     if choice == "door":
+        lock_color: Optional[str] = None
+        if lock_chance > 0 and random.random() < lock_chance:
+            lock_color = random.choice(entity_factories.KEY_COLORS)
         dungeon.tiles[x, y] = tile_types.closed_door
-        spawn_door_entity(dungeon, x, y)
+        spawn_door_entity(dungeon, x, y, lock_color=lock_color, room_center=room_center)
     elif choice == "breakable":
         convert_tile_to_breakable(dungeon, x, y)
 
@@ -1720,17 +1732,34 @@ def ensure_breakable_entity(dungeon: GameMap, x: int, y: int) -> None:
         entity_factories.breakable_wall.spawn(dungeon, x, y)
 
 
-def spawn_door_entity(dungeon: GameMap, x: int, y: int, open_state: bool = False) -> None:
+def spawn_door_entity(
+    dungeon: GameMap,
+    x: int,
+    y: int,
+    open_state: bool = False,
+    lock_color: Optional[str] = None,
+    room_center: Optional[Tuple[int, int]] = None,
+) -> None:
     for entity in dungeon.entities:
         if getattr(entity, "name", "").lower() == "door" and entity.x == x and entity.y == y:
             fighter = getattr(entity, "fighter", None)
-            if fighter and hasattr(fighter, "set_open"):
-                fighter.set_open(open_state)
+            if fighter:
+                if lock_color is not None and hasattr(fighter, "lock_color"):
+                    fighter.lock_color = lock_color
+                if hasattr(fighter, "set_open"):
+                    fighter.set_open(open_state)
+            if room_center is not None:
+                setattr(entity, "room_center", room_center)
             return
     door_entity = entity_factories.door.spawn(dungeon, x, y)
     fighter = getattr(door_entity, "fighter", None)
-    if fighter and hasattr(fighter, "set_open"):
-        fighter.set_open(open_state)
+    if fighter:
+        if lock_color is not None and hasattr(fighter, "lock_color"):
+            fighter.lock_color = lock_color
+        if hasattr(fighter, "set_open"):
+            fighter.set_open(open_state)
+    if room_center is not None:
+        setattr(door_entity, "room_center", room_center)
 
 
 
@@ -2300,9 +2329,16 @@ def generate_dungeon_v3(
         getattr(settings, "DUNGEON_V3_ENTRY_FEATURE_PROBS", {"none": 1.0})
     )
     room_tile_sets = [set(room.iter_floor_tiles()) for room, _ in rooms]
-    for room_tiles in room_tile_sets:
+    lock_chance = max(0.0, min(1.0, getattr(settings, "DUNGEON_V3_LOCKED_DOOR_CHANCE", 0.0)))
+    for room_tiles, (room, _) in zip(room_tile_sets, rooms):
         for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles):
-            _maybe_place_entry_feature(dungeon, coord, feature_probs)
+            _maybe_place_entry_feature(
+                dungeon,
+                coord,
+                feature_probs,
+                room_center=room.center,
+                lock_chance=lock_chance,
+            )
 
     # Escaleras
     if place_downstairs:

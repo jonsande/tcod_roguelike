@@ -1139,7 +1139,7 @@ class MovementAction(ActionWithDirection):
             else:
                 raise exceptions.Impossible("That way is blocked.")
         if not game_map.tiles["walkable"][dest_x, dest_y]:
-            if game_map.try_open_door(dest_x, dest_y):
+            if game_map.try_open_door(dest_x, dest_y, actor=self.entity):
                 door_opened = True
             else:
                 raise exceptions.Impossible("That way is blocked.")

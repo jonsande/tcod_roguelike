@@ -9,6 +9,8 @@ import tile_types
 import entity_factories
 import settings
 from audio import ambient_sound
+import exceptions
+import color
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -100,19 +102,40 @@ class GameMapTown:
     def is_open_door(self, x: int, y: int) -> bool:
         return self.tiles["dark"]["ch"][x, y] == OPEN_DOOR_CHAR
 
-    def open_door(self, x: int, y: int) -> None:
+    def open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:
+        """Intentar abrir puerta; devuelve True si se abrió."""
         if not self.is_closed_door(x, y):
-            return
+            return False
         door_entity = self._get_door_entity(x, y)
+        lock_color = getattr(door_entity.fighter, "lock_color", None) if door_entity and hasattr(door_entity, "fighter") else None
+        if lock_color and actor:
+            key_id = f"{lock_color}_key"
+            inv = getattr(actor, "inventory", None)
+            key_item = None
+            if inv:
+                for item in list(inv.items):
+                    if getattr(item, "id_name", "") == key_id:
+                        key_item = item
+                        break
+            if not key_item:
+                raise exceptions.Impossible(f"You need a {lock_color} key.")
+            inv.items.remove(key_item)
+            self.engine.message_log.add_message(f"You use a {lock_color} key.", color.white)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(True)
+            try:
+                door_entity.fighter.lock_color = None
+                door_entity.name = "Door"
+                setattr(door_entity, "id_name", "Door")
+            except Exception:
+                pass
         else:
             self.tiles[x, y] = tile_types.open_door
+        return True
 
-    def try_open_door(self, x: int, y: int) -> bool:
+    def try_open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:
         if self.is_closed_door(x, y):
-            self.open_door(x, y)
-            return True
+            return self.open_door(x, y, actor=actor)
         return False
 
     def close_door(self, x: int, y: int) -> None:
@@ -262,19 +285,40 @@ class GameMap:
     def is_open_door(self, x: int, y: int) -> bool:
         return self.tiles["dark"]["ch"][x, y] == OPEN_DOOR_CHAR
 
-    def open_door(self, x: int, y: int) -> None:
+    def open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:
+        """Intentar abrir puerta; devuelve True si se abrió."""
         if not self.is_closed_door(x, y):
-            return
+            return False
         door_entity = self._get_door_entity(x, y)
+        lock_color = getattr(door_entity.fighter, "lock_color", None) if door_entity and hasattr(door_entity, "fighter") else None
+        if lock_color and actor:
+            key_id = f"{lock_color}_key"
+            inv = getattr(actor, "inventory", None)
+            key_item = None
+            if inv:
+                for item in list(inv.items):
+                    if getattr(item, "id_name", "") == key_id:
+                        key_item = item
+                        break
+            if not key_item:
+                raise exceptions.Impossible(f"You need a {lock_color} key.")
+            inv.items.remove(key_item)
+            self.engine.message_log.add_message(f"You use a {lock_color} key.", color.white)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(True)
+            try:
+                door_entity.fighter.lock_color = None
+                door_entity.name = "Door"
+                setattr(door_entity, "id_name", "Door")
+            except Exception:
+                pass
         else:
             self.tiles[x, y] = tile_types.open_door
+        return True
 
-    def try_open_door(self, x: int, y: int) -> bool:
+    def try_open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:
         if self.is_closed_door(x, y):
-            self.open_door(x, y)
-            return True
+            return self.open_door(x, y, actor=actor)
         return False
 
     def close_door(self, x: int, y: int) -> None:

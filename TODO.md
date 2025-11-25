@@ -105,6 +105,7 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
+- [ ] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
 - [ ] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas. 
 
@@ -201,6 +202,8 @@ VARIOS
 
 
 BUGS
+
+BUG: El hot_path a veces no se genera correctamente. Puede ser que tenga que ver con el modo en que construye el camino la máquina. Ahora mismo no lo construye siguiendo las casillas transitables.
 
 BUG: Cuando se lanza una poción de ceguera contra una criatura y la criatura recupera la visión al de un tiempo, se recibe el mensaje: "Shapes slowly emerge again around you". Es incorrecto. Hay que relativizar el mensaje.
 
