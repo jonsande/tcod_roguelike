@@ -10,6 +10,7 @@ from components.base_component import BaseComponent
 from render_order import RenderOrder
 import tile_types
 import loot_tables
+from settings import DEBUG_MODE
 from audio import (
     update_campfire_audio,
     play_pain_sound,
@@ -206,6 +207,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             fortified: bool = False,
             woke_ai_cls = HostileEnemy,
             poisons_on_hit: bool = False,
+            poisonous: int = 0,
             is_poisoned: bool = False,
             poisoned_counter: int = 0,
             poison_dmg: int = 0,
@@ -218,9 +220,9 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.max_hp = hp
         self._hp = hp
         self.base_defense = base_defense
-        self.strength = strength
-        self.recover_rate = recover_rate
-        self.fov = fov
+        self._base_strength = strength
+        self._base_recover_rate = recover_rate
+        self._base_fov = fov
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
@@ -231,18 +233,18 @@ class Fighter(FireStatusMixin, BaseComponent):
         #self.max_to_hit = max_to_hit
         self.base_armor_value = base_armor_value
         self.temporal_effects = temporal_effects
-        self.luck = luck
+        self._base_luck = luck
         self.satiety = satiety
         self.max_satiety = max_satiety
-        self.stamina = stamina
-        self.max_stamina = max_stamina
+        self._base_max_stamina = max_stamina
+        self._stamina = max(0, min(stamina, self._base_max_stamina))
         self.is_in_melee = is_in_melee
         self.defending = defending
         self.to_hit_counter = to_hit_counter
         self.to_power_counter = to_power_counter
         self.to_defense_counter = to_defense_couter
         self.critical_chance = critical_chance + luck
-        self.super_memory = super_memory
+        self._base_super_memory = super_memory
         self.lamp_on = lamp_on
         self.natural_weapon = natural_weapon
 
@@ -258,6 +260,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.woke_ai_cls = woke_ai_cls
         
         self.poisons_on_hit = poisons_on_hit
+        self.poisonous = poisonous
         
         self.is_poisoned = is_poisoned
         self.poisoned_counter = poisoned_counter
@@ -266,7 +269,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self._init_fire_status(fire_resistance)
 
         # Resistances
-        self.poison_resistance = poison_resistance
+        self._base_poison_resistance = poison_resistance
         self.is_blind = False
         self.is_player_confused = False
         self.player_confusion_turns = 0
@@ -288,9 +291,119 @@ class Fighter(FireStatusMixin, BaseComponent):
         if self._hp == 0 and getattr(self.parent, "ai", None):
             self.die()
 
+    def _equipment_bonus(self, attribute: str, default: int = 0):
+        parent = getattr(self, "parent", None)
+        if parent:
+            equipment = getattr(parent, "equipment", None)
+            if equipment:
+                return getattr(equipment, attribute, default)
+        return default
+
+    @property
+    def strength_bonus(self) -> int:
+        return self._equipment_bonus("strength_bonus")
+
+    @property
+    def fov_bonus(self) -> int:
+        return self._equipment_bonus("fov_bonus")
+
+    @property
+    def max_stamina_bonus(self) -> int:
+        return self._equipment_bonus("max_stamina_bonus")
+
+    @property
+    def poison_resistance_bonus(self) -> int:
+        return self._equipment_bonus("poison_resistance_bonus")
+
+    @property
+    def super_memory_bonus(self) -> bool:
+        equipment = getattr(self.parent, "equipment", None)
+        if equipment:
+            return getattr(equipment, "super_memory_bonus", False)
+        return False
+
+    @property
+    def recover_rate_bonus(self) -> int:
+        return self._equipment_bonus("recover_rate_bonus")
+
+    @property
+    def base_defense_bonus(self) -> int:
+        return self._equipment_bonus("base_defense_bonus")
+
+    @property
+    def luck_bonus(self) -> int:
+        return self._equipment_bonus("luck_bonus")
+
+    @property
+    def strength(self) -> int:
+        return self._base_strength + self.strength_bonus
+
+    @strength.setter
+    def strength(self, value: int) -> None:
+        self._base_strength = value - self.strength_bonus
+
+    @property
+    def recover_rate(self) -> int:
+        return self._base_recover_rate + self.recover_rate_bonus
+
+    @recover_rate.setter
+    def recover_rate(self, value: int) -> None:
+        self._base_recover_rate = value - self.recover_rate_bonus
+
+    @property
+    def fov(self) -> int:
+        return self._base_fov + self.fov_bonus
+
+    @fov.setter
+    def fov(self, value: int) -> None:
+        self._base_fov = value - self.fov_bonus
+
+    @property
+    def max_stamina(self) -> int:
+        return self._base_max_stamina + self.max_stamina_bonus
+
+    @max_stamina.setter
+    def max_stamina(self, value: int) -> None:
+        self._base_max_stamina = max(0, value - self.max_stamina_bonus)
+        self.stamina = self.stamina
+
+    @property
+    def stamina(self) -> int:
+        return getattr(self, "_stamina", 0)
+
+    @stamina.setter
+    def stamina(self, value: int) -> None:
+        max_stamina = self.max_stamina
+        clamped = max(0, min(value, max_stamina))
+        self._stamina = clamped
+
+    @property
+    def poison_resistance(self) -> int:
+        return self._base_poison_resistance + self.poison_resistance_bonus
+
+    @poison_resistance.setter
+    def poison_resistance(self, value: int) -> None:
+        self._base_poison_resistance = value - self.poison_resistance_bonus
+
+    @property
+    def super_memory(self) -> bool:
+        return self._base_super_memory or self.super_memory_bonus
+
+    @super_memory.setter
+    def super_memory(self, value: bool) -> None:
+        self._base_super_memory = bool(value)
+
+    @property
+    def luck(self) -> int:
+        return self._base_luck + self.luck_bonus
+
+    @luck.setter
+    def luck(self, value: int) -> None:
+        self._base_luck = value - self.luck_bonus
+
     @property
     def defense(self) -> int:
-        return self.base_defense + self.defense_bonus
+        return self.base_defense + self.defense_bonus + self.base_defense_bonus
         #return self.base_defense + self.defense_bonus + self.to_defense_counter
     
     @property
@@ -443,13 +556,20 @@ class Fighter(FireStatusMixin, BaseComponent):
             return self.parent.equipment.armor_value_bonus
         else:
             return 0
+
+    def on_equipment_changed(self) -> None:
+        # Keep mutable resources within the new limits after equipping/unequipping.
+        self.stamina = self.stamina
     
     def poisoned(self):
         
         if self.is_poisoned:
         
             total_damage = (self.poisoned_counter * self.poison_dmg) - self.poison_resistance
-            print(">>>>>>>>>>>>>>> self.poison_resistance = ", self.poison_resistance)
+            if total_damage < 0:
+                total_damage = 0
+            if DEBUG_MODE:
+                print("DEBUG: >>> self.poison_resistance = ", self.poison_resistance)
             
             if self.poisoned_counter > 1:
                 #self.hp -= self.poison_dmg

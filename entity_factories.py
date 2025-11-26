@@ -248,6 +248,14 @@ identify_scroll = Item(
     consumable=consumable.IdentificationScrollConsumable(),
 )
 loot_tables.register_loot_item("identify_scroll", identify_scroll)
+remove_curse_scroll = Item(
+    char="~",
+    color=(180, 120, 255),
+    name=scroll_name_roulette(),
+    id_name="Remove curse scroll",
+    consumable=consumable.RemoveCurseConsumable(),
+)
+loot_tables.register_loot_item("remove_curse_scroll", remove_curse_scroll)
 
 # Breakable wall loot table (scrolls and similar findings hidden in walls)
 BREAKABLE_WALL_LOOT_TABLE = [
@@ -256,6 +264,7 @@ BREAKABLE_WALL_LOOT_TABLE = [
     lightning_scroll,
     fireball_scroll,
     identify_scroll,
+    remove_curse_scroll,
 ]
 
 # POTIONS:
@@ -321,6 +330,12 @@ RING_APPEARANCE_POOL = [
     "Speckled stone ring",
     "Twisted gold ring",
     "Polished steel ring",
+    "Runed crimson ring",
+    "Mossy jade ring",
+    "Star-etched bronze ring",
+    "Dark glass ring",
+    "Opaline swirl ring",
+    "Woven bone ring",
 ]
 ring_appearance_options = RING_APPEARANCE_POOL.copy()
 
@@ -358,7 +373,7 @@ poison_potion = Item(
     name=potion_name_roulette(),
     id_name = "Poison potion",
     #consumable=consumable.PoisonConsumable(amount=1, counter=random.randint(6,10)),
-    consumable=consumable.PoisonConsumable(amount=1, counter=8),
+    consumable=consumable.PoisonConsumable(amount=1, counter=15),
     throwable=True,
 )
 loot_tables.register_loot_item("poison_potion", poison_potion)
@@ -799,6 +814,146 @@ accuracy_ring = Item(
 )
 loot_tables.register_loot_item("accuracy_ring", accuracy_ring)
 
+strength_ring = Item(
+    char="=",
+    color=(178, 34, 34),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Strength",
+    equippable=equippable.StrengthRing(),
+    info="A heavy band that lends its wearer raw brawn.",
+)
+loot_tables.register_loot_item("strength_ring", strength_ring)
+
+farsight_ring = Item(
+    char="=",
+    color=(135, 206, 235),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Far Sight",
+    equippable=equippable.FarSightRing(),
+    info="A bright band that widens the horizon of your vision.",
+)
+loot_tables.register_loot_item("farsight_ring", farsight_ring)
+
+vigor_ring = Item(
+    char="=",
+    color=(50, 205, 50),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Vigor",
+    equippable=equippable.VigorRing(),
+    info="A band warm to the touch that bolsters lasting stamina.",
+)
+loot_tables.register_loot_item("vigor_ring", vigor_ring)
+
+antidote_ring = Item(
+    char="=",
+    color=(60, 179, 113),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Antivenom",
+    equippable=equippable.AntidoteRing(),
+    info="Its surface is cool and clean, warding off toxins.",
+)
+loot_tables.register_loot_item("antidote_ring", antidote_ring)
+
+memory_ring = Item(
+    char="=",
+    color=(218, 165, 32),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Memory",
+    equippable=equippable.MemoryRing(),
+    info="A slender loop etched with sigils that refuse to be forgotten.",
+)
+loot_tables.register_loot_item("memory_ring", memory_ring)
+
+recovery_ring = Item(
+    char="=",
+    color=(176, 196, 222),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Recovery",
+    equippable=equippable.RecoveryRing(),
+    info="A cool band that quickens the pace of healing.",
+)
+loot_tables.register_loot_item("recovery_ring", recovery_ring)
+
+guard_ring = Item(
+    char="=",
+    color=(169, 169, 169),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Guarding",
+    equippable=equippable.GuardRing(),
+    info="A thick ring set with a shard of mail, lending steady defense.",
+)
+loot_tables.register_loot_item("guard_ring", guard_ring)
+
+fortune_ring = Item(
+    char="=",
+    color=(255, 215, 0),
+    name=ring_appearance_roulette(),
+    id_name="Ring of Fortune",
+    equippable=equippable.FortuneRing(),
+    info="Its inner edge hums faintly, tilting fate in your favor.",
+)
+loot_tables.register_loot_item("fortune_ring", fortune_ring)
+
+cursed_weakness_ring = Item(
+    char="=",
+    color=(128, 0, 0),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Weakness",
+    equippable=equippable.CursedWeaknessRing(),
+    info="This ring saps your might and refuses to be removed.",
+)
+loot_tables.register_loot_item("cursed_weakness_ring", cursed_weakness_ring)
+
+cursed_myopia_ring = Item(
+    char="=",
+    color=(72, 61, 139),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Myopia",
+    equippable=equippable.CursedMyopiaRing(),
+    info="Wearing it narrows your world to a few paces—and it clings to you.",
+)
+loot_tables.register_loot_item("cursed_myopia_ring", cursed_myopia_ring)
+
+cursed_fatigue_ring = Item(
+    char="=",
+    color=(85, 107, 47),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Fatigue",
+    equippable=equippable.CursedFatigueRing(),
+    info="A dull band that drains your stamina and binds itself to you.",
+)
+loot_tables.register_loot_item("cursed_fatigue_ring", cursed_fatigue_ring)
+
+cursed_lethargy_ring = Item(
+    char="=",
+    color=(112, 128, 144),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Lethargy",
+    equippable=equippable.CursedLethargyRing(),
+    info="Its chill slows recovery, and it will not let go.",
+)
+loot_tables.register_loot_item("cursed_lethargy_ring", cursed_lethargy_ring)
+
+cursed_vulnerability_ring = Item(
+    char="=",
+    color=(105, 105, 105),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Vulnerability",
+    equippable=equippable.CursedVulnerabilityRing(),
+    info="You feel exposed—and trapped—as soon as you wear it.",
+)
+loot_tables.register_loot_item("cursed_vulnerability_ring", cursed_vulnerability_ring)
+
+cursed_misfortune_ring = Item(
+    char="=",
+    color=(123, 104, 238),
+    name=ring_appearance_roulette(),
+    id_name="Cursed Ring of Misfortune",
+    equippable=equippable.CursedMisfortuneRing(),
+    info="Luck withers under its touch, and it clings like a shackle.",
+)
+loot_tables.register_loot_item("cursed_misfortune_ring", cursed_misfortune_ring)
+
 # ARTIFACTS
 
 the_artifact = Item(
@@ -1129,7 +1284,7 @@ orc = Actor(
         woke_ai_cls=HostileEnemy,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Orc", 2)),
+    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Orc", 4)),
     level=Level(xp_given=5),
 )
 orc.on_spawn = _setup_creature_equipment
@@ -1154,7 +1309,7 @@ true_orc = Actor(
         woke_ai_cls=HostileEnemy,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
         ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("True Orc", 1)),
+    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("True Orc", 4)),
     level=Level(xp_given=10),
 )
 true_orc.on_spawn = _setup_creature_equipment
@@ -1248,7 +1403,8 @@ snake = Actor(
         max_stamina=5,
         woke_ai_cls=SneakeEnemy,
         poisons_on_hit=True,
-        natural_weapon=NaturalWeapon(name="Bite", min_dmg=0, max_dmg=1, dmg_bonus=0)
+        poisonous=15,
+        natural_weapon=NaturalWeapon(name="Bite", min_dmg=0, max_dmg=0, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=0),
     level=Level(xp_given=2),
@@ -1310,10 +1466,10 @@ sentinel = Actor(
     ai_cls=SentinelEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=12, 
+        hp=24, 
         base_defense=1, 
-        strength=3, 
-        recover_rate=12, 
+        strength=1, 
+        recover_rate=6, 
         fov=0,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=0, 
@@ -1321,10 +1477,11 @@ sentinel = Actor(
         max_stamina=3,
         action_time_cost=10,
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Sentinel", 1)),
+    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Sentinel", 2)),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )
+sentinel.on_spawn = _setup_creature_equipment
 
 def monster_roulette(choices=[orc, goblin, snake]):
 

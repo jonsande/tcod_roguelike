@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import entity_factories
 import fixed_maps
+import random
 import tile_types
 
 from game_map import GameMap
@@ -15,7 +16,6 @@ from procgen import (
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
     maybe_place_chest,
-    place_entities_fixdungeon,
     spawn_door_entity,
 )
 
@@ -23,12 +23,168 @@ if TYPE_CHECKING:
     from engine import Engine
 
 
+THREE_DOORS_TEMPLATE: Tuple[str, ...] = (
+    "##############################################################################",
+    "#######################################......#################...#############",
+    "###################################..............######.#####..@...#####....##",
+    "###########.....###################......@.......+....####.#........#####...##",
+    "###########.....####....###########..............####.###...........#####...##",
+    "#...#######.....##>+&...###############......########.#.........###########.##",
+    "#...+...........####....#############################.#.........#..#.........#",
+    "#...#######.....##>+&...+.......####################............##...........#",
+    "###########.....####....#######,##...###############........##..##..#.#.#.#..#",
+    "##############.###>+&...#######.##...###############........##..#............#",
+    "##############.#####....#######*##...###############........##..##..#.#.#.#..#",
+    "##############.################.........###########.........######...........#",
+    "##############.###############...........##########.........................##",
+    "##.......................#####...........###########.........#........#.##..##",
+    "##....########.#########.###...............########..........###....#####...##",
+    "##.....#################.##.................#######........#.......######..###",
+    "##.....#####......*.+..#.###...............#######.........###.....######..###",
+    "##.#...#####.#..#.###..#.#####...........#########.....###.####....#####...###",
+    "##.....#####......######.#####...........#########...#####..####....###.....##",
+    "###*########......#......######.........#########....###.......##....##....###",
+    "###.########.#..#.#......#########+++############....##........##....##...####",
+    "###.########......#......###.....#...#.....######...####.......##....###..####",
+    "###+#########.######.######......##+##......#####...###.@.....###....####.####",
+    "###..########.######+#####...................####..####.....####....####...###",
+    "###..#######..###..#.####.....................###.#############.....#####...##",
+    "###..#######.####..#...+..........................############..##...#####..##",
+    "###..#######.####.##.####.......................#############..###.....@.#...#",
+    "###..#######.####.....####......................############...###.......#...#",
+    "###..######...###.....#####.....................######........####......##...#",
+    "###..#####.....##.....######..............##...#######.......######....###..##",
+    "###..######...###.....############.......###.########......@.#######..####.###",
+    "###.@#######.####.....#############....################.......################",
+    "############################################################.#################",
+    "##############################################################################",
+)
+
+THREE_DOORS_MONSTER_TABLE: List[Tuple[object, int]] = [
+    (entity_factories.orc, 6),
+    (entity_factories.goblin, 5),
+    (entity_factories.swarm_rat, 3),
+    (entity_factories.snake, 90),
+]
+
+THREE_DOORS_ITEM_TABLE: List[Tuple[object, int]] = [
+    (entity_factories.health_potion, 5),
+    (entity_factories.strength_potion, 3),
+    (entity_factories.stamina_potion, 3),
+    (entity_factories.strength_potion, 1), 
+    (entity_factories.increase_max_stamina, 1), 
+    (entity_factories.life_potion, 1), 
+    (entity_factories.infra_vision_potion, 1), 
+    (entity_factories.antidote, 1), 
+    (entity_factories.poison_potion, 1),
+    (entity_factories.blindness_potion, 1), 
+    (entity_factories.confusion_potion, 1), 
+    (entity_factories.paralysis_potion, 1), 
+    (entity_factories.petrification_potion, 1), 
+    (entity_factories.precission_potion, 1),
+    (entity_factories.confusion_scroll, 1),
+    (entity_factories.paralisis_scroll, 1),
+    (entity_factories.identify_scroll, 3),
+    (entity_factories.lightning_scroll, 2),
+    (entity_factories.fireball_scroll, 2),
+    (entity_factories.descend_scroll, 1),
+    (entity_factories.teleport_scroll, 3),
+    (entity_factories.prodigious_memory_scroll, 1),
+    (entity_factories.long_sword, 1),
+    (entity_factories.long_sword_plus, 1),
+    (entity_factories.short_sword, 1),
+    (entity_factories.short_sword_plus, 1),
+    (entity_factories.spear, 1),
+    (entity_factories.spear_plus, 1),
+    (entity_factories.poisoned_triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+    (entity_factories.triple_ration, 1),
+
+]
+
+# Rango de entidades aleatorias por habitación en este mapa.
+THREE_DOORS_MONSTER_COUNT = (5, 6)
+THREE_DOORS_ITEM_COUNT = (3, 6)
+
+
+def _weighted_choices(pool: List[Tuple[object, int]], k: int) -> List[object]:
+    if not pool or k <= 0:
+        return []
+    entities, weights = zip(*pool)
+    return random.choices(entities, weights=weights, k=k)
+
+
+def _place_random_entities_three_doors(
+    room: RectangularRoom,
+    dungeon: GameMap,
+    *,
+    forbidden_cells: List[Tuple[int, int]],
+) -> None:
+    """Place random monsters/items using the custom three-doors tables."""
+    min_monsters, max_monsters = THREE_DOORS_MONSTER_COUNT
+    min_items, max_items = THREE_DOORS_ITEM_COUNT
+    number_of_monsters = random.randint(min_monsters, max_monsters)
+    number_of_items = random.randint(min_items, max_items)
+
+    monsters = _weighted_choices(THREE_DOORS_MONSTER_TABLE, number_of_monsters)
+    items = _weighted_choices(THREE_DOORS_ITEM_TABLE, number_of_items)
+
+    allowed_cells: List[Tuple[int, int]] = []
+    for x in range(room.x1 + 1, room.x2 - 1):
+        for y in range(room.y1 + 1, room.y2 - 1):
+            if (x, y) in forbidden_cells:
+                continue
+            if not dungeon.tiles["walkable"][x, y]:
+                continue
+            if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+                continue
+            if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
+                continue
+            if any(existing.x == x and existing.y == y for existing in dungeon.entities):
+                continue
+            allowed_cells.append((x, y))
+
+    if not allowed_cells:
+        return
+
+    random.shuffle(allowed_cells)
+    cursor = 0
+
+    for monster in monsters:
+        if cursor >= len(allowed_cells):
+            break
+        x, y = allowed_cells[cursor]
+        cursor += 1
+        monster.spawn(dungeon, x, y)
+
+    for item in items:
+        if cursor >= len(allowed_cells):
+            break
+        x, y = allowed_cells[cursor]
+        cursor += 1
+        item.spawn(dungeon, x, y)
+
+
 def generate_three_doors_map(
     map_width: int,
     map_height: int,
     engine: Engine,
     *,
-    map,
+    map: Tuple[str, ...] = THREE_DOORS_TEMPLATE,
     walls,
     walls_special,
     floor_number: int,
@@ -63,8 +219,8 @@ def generate_three_doors_map(
     walls_array = fixed_maps.generate_array_of(map, "#")
     special_walls_array = fixed_maps.generate_array_of(map, "√")
     special_floor_array = fixed_maps.generate_array_of(map, " ")
-    stairs = fixed_maps.generate_array_of(map, ">")
-    player_intro = fixed_maps.place_player(map)
+    stairs_options = fixed_maps.generate_array_of(map, ">")
+    player_starts = fixed_maps.generate_array_of(map, "@")
     doors = fixed_maps.generate_array_of(map, "+")
     fake_walls_array = fixed_maps.generate_array_of(map, "*")
 
@@ -74,12 +230,14 @@ def generate_three_doors_map(
     orc_array = fixed_maps.generate_array_of(map, "o")
     sentinel_array = fixed_maps.generate_array_of(map, "&")
     random_monsters_array = fixed_maps.generate_array_of(map, "M")
+    potion_array = fixed_maps.generate_array_of(map, "!")
 
     forbidden_cells: List[Tuple[int, int]] = []
     forbidden_cells.extend(walls_array)
     forbidden_cells.extend(special_floor_array)
-    forbidden_cells.extend(stairs)
-    forbidden_cells.append(player_intro)
+    forbidden_cells.extend(stairs_options)
+    # Decidiremos la posición final de jugador/escaleras más abajo; por ahora reservamos todas.
+    # player_intro se escogerá entre player_starts.
     forbidden_cells.extend(doors)
     forbidden_cells.extend(fake_walls_array)
 
@@ -89,13 +247,9 @@ def generate_three_doors_map(
     forbidden_cells.extend(orc_array)
     forbidden_cells.extend(sentinel_array)
     forbidden_cells.extend(random_monsters_array)
+    forbidden_cells.extend(potion_array)
 
-    place_entities_fixdungeon(
-        new_room,
-        dungeon,
-        floor_number,
-        forbidden_cells,
-    )
+    _place_random_entities_three_doors(new_room, dungeon, forbidden_cells=forbidden_cells)
 
     for x, y in walls_array:
         dungeon.tiles[(x, y)] = walls
@@ -107,16 +261,16 @@ def generate_three_doors_map(
         dungeon.tiles[(x, y)] = tile_types.floor
 
     dungeon.downstairs_location = None
-    for index, (sx, sy) in enumerate(stairs):
-        if place_downstairs and dungeon.downstairs_location is None:
-            dungeon.tiles[(sx, sy)] = tile_types.down_stairs
-            dungeon.downstairs_location = (sx, sy)
-        else:
-            dungeon.tiles[(sx, sy)] = tile_types.floor
-
-    if place_downstairs and dungeon.downstairs_location is None:
-        dungeon.tiles[center_of_last_room] = tile_types.down_stairs
-        dungeon.downstairs_location = center_of_last_room
+    chosen_downstairs: Optional[Tuple[int, int]] = None
+    if place_downstairs and stairs_options:
+        chosen_downstairs = random.choice(stairs_options)
+    for sx, sy in stairs_options:
+        dungeon.tiles[(sx, sy)] = tile_types.floor
+    if place_downstairs:
+        if not chosen_downstairs:
+            chosen_downstairs = center_of_last_room
+        dungeon.tiles[chosen_downstairs] = tile_types.down_stairs
+        dungeon.downstairs_location = chosen_downstairs
 
     for x, y in doors:
         dungeon.tiles[(x, y)] = tile_types.closed_door
@@ -124,6 +278,11 @@ def generate_three_doors_map(
 
     for x, y in fake_walls_array:
         dungeon.tiles[(x, y)] = tile_types.breakable_wall
+        # Igualamos los colores de los muros rompibles a los muros normales para que no se distingan.
+        dungeon.tiles["dark"]["fg"][x, y] = walls["dark"]["fg"]
+        dungeon.tiles["dark"]["bg"][x, y] = walls["dark"]["bg"]
+        dungeon.tiles["light"]["fg"][x, y] = walls["light"]["fg"]
+        dungeon.tiles["light"]["bg"][x, y] = walls["light"]["bg"]
         entity_factories.breakable_wall.spawn(dungeon, x, y)
 
     for x, y in snake_array:
@@ -147,6 +306,11 @@ def generate_three_doors_map(
         )
         selected_monster.spawn(dungeon, x, y)
 
+    for x, y in potion_array:
+        entity_factories.health_potion.spawn(dungeon, x, y)
+
+    # Punto de inicio: se escoge aleatoriamente entre los símbolos '@' del template si no viene fijado.
+    player_intro = random.choice(player_starts) if player_starts else (41, 4)
     if place_player:
         engine.player.place(player_intro[0], player_intro[1], dungeon)
         entry_point = (engine.player.x, engine.player.y)
@@ -171,7 +335,9 @@ def generate_three_doors_map(
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_three_doors_map")
     dungeon.center_rooms = []
+    # Evitamos spawns dinámicos de puertas/muros rompibles: no añadimos candidates ni llamamos a place_doors.
+    dungeon.door_candidates = []  # para cualquier uso posterior que espere este atributo
     return dungeon
 
 
-__all__ = ["generate_three_doors_map"]
+__all__ = ["generate_three_doors_map", "THREE_DOORS_TEMPLATE"]

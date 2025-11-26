@@ -22,7 +22,7 @@ campfire_exist = False
 
 # Asignamos nivel en que generar el artefacto
 grial_floor = random.randint(10, 16)
-goblin_amulet_floor = random.randint(4,8)
+goblin_amulet_floor = random.randint(6,14)
 the_artifact_floor = TOTAL_FLOORS
 
 
@@ -118,15 +118,16 @@ def place_uniques(floor, center_of_last_room, dungeon):
         pass
 
     ## Goblin amulet
-    if floor == goblin_amulet_floor:
-        if random.randint(1, 6) >= 5:
-            if center_of_last_room != (0, 0):
-                global goblin_amulet_exists
-                if goblin_amulet_exists == True:
-                    pass
-                else:
-                    entity_factories.goblin_tooth_amulet.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
-                    goblin_amulet_exists = True
+    # Lo vamos a generar por procedimientos normales,
+    # if floor == goblin_amulet_floor:
+    #     if random.randint(1, 6) == 6:
+    #         if center_of_last_room != (0, 0):
+    #             global goblin_amulet_exists
+    #             if goblin_amulet_exists == True:
+    #                 pass
+    #             else:
+    #                 entity_factories.goblin_tooth_amulet.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+    #                 goblin_amulet_exists = True
 
 
     # Jefes:

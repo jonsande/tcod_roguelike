@@ -151,6 +151,22 @@ class IdentifyItemAction(Action):
         self.item.consumable.activate(self)
 
 
+class RemoveCurseItemAction(Action):
+    """Remove a curse from an item in the actor inventory using a scroll."""
+
+    def __init__(self, entity: Actor, scroll: Item, target_item: Item):
+        super().__init__(entity)
+        self.item = scroll
+        self.target_item = target_item
+
+    def perform(self) -> None:
+        if not self.item.consumable:
+            raise exceptions.Impossible("This scroll has no effect.")
+        if self.target_item not in self.entity.inventory.items:
+            raise exceptions.Impossible("You must pick an item from your inventory.")
+        self.item.consumable.activate(self)
+
+
 class DropItem(ItemAction):
     def perform(self) -> None:
         if self.entity.equipment.item_is_equipped(self.item):
@@ -434,11 +450,12 @@ class ThrowItemAction(Action):
                     damage_color = color.red
                 
                 # Mecánica ataque envenenado
+                #Lanzamiento de armas envenenadas:
                 if self.entity.fighter.poisons_on_hit == True and self.is_dummy_object(target.ai) == False:
 
                     poison_roll = random.randint(1, 6)
 
-                    if poison_roll > 1:
+                    if poison_roll > target.fighter.luck:
 
                         if self.entity is self.engine.player:
                             if attacker_visible or target_visible:
@@ -448,17 +465,26 @@ class ThrowItemAction(Action):
                                     damage_color
                                     )
                             
+                        elif target is self.engine.player:
+                            print(f"You are POISONED! (The {self.entity.name} was poisonous)")
+                            self.engine.message_log.add_message(
+                                f"You are POISONED! (The {self.entity.name} was poisonous)", 
+                                damage_color
+                                )
+
                         else:
                             if attacker_visible or target_visible:
-                                print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                                print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
                                 self.engine.message_log.add_message(
-                                    "You are POISONED! (The {self.entity.name} was poisonous)", 
-                                    damage_color
+                                    f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                    color.white,
                                     )
 
                         target.fighter.is_poisoned = True
-                        # TODO: relativizar el poisoned_counter y el poison_dmg
-                        target.fighter.poisoned_counter += 5
+                        target.fighter.poisoned_counter += self.entity.fighter.poisonous
+                        if target.fighter.poisoned_counter < 0:
+                            target.fighter.is_poisoned = False
+                            target.fighter.poisoned_counter = 0
                         target.fighter.poison_dmg = 1
                         self.entity.fighter.poisons_on_hit = False
 
@@ -719,7 +745,7 @@ class ThrowItemAction(Action):
         return
 
     def _apply_poison_splash(self, target: Actor, consumable) -> bool:
-        amount = getattr(consumable, "amount", 1)
+        amount = getattr(consumable, "amount", 1) * 0.5
         target.fighter.poisons_on_hit = True
 
         if target.fighter.poison_resistance >= amount:
@@ -888,23 +914,36 @@ class MeleeAction(ActionWithDirection):
 
                     poison_roll = random.randint(1, 6)
 
-                    if poison_roll >= 1:
+                    if poison_roll > target.fighter.luck:
 
                         if self.entity is self.engine.player:
-                            if target_visible or attacker_visible:
+                            if attacker_visible or target_visible:
                                 print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
                                 self.engine.message_log.add_message(
-                                    f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", damage_color
+                                    "{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                    damage_color
+                                    )
+                            
+                        elif target is self.engine.player:
+                            print(f"You are POISONED! (The {self.entity.name} was poisonous)")
+                            self.engine.message_log.add_message(
+                                f"You are POISONED! (The {self.entity.name} was poisonous)", 
+                                damage_color
                                 )
+
                         else:
-                            if target_visible or attacker_visible:
-                                print(f"Your are POISONED! (The {self.entity.name} was poisonous)")
+                            if attacker_visible or target_visible:
+                                print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
                                 self.engine.message_log.add_message(
-                                    f"You are POISONED! (The {self.entity.name} was poisonous)", damage_color
-                                )
-                        # TODO: relativizar el poisoned_counter y el poison_dmg
+                                    f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                    color.white,
+                                    )
+
                         target.fighter.is_poisoned = True
-                        target.fighter.poisoned_counter += 5
+                        target.fighter.poisoned_counter += self.entity.fighter.poisonous
+                        if target.fighter.poisoned_counter < 0:
+                            target.fighter.is_poisoned = False
+                            target.fighter.poisoned_counter = 0
                         target.fighter.poison_dmg = 1
                         self.entity.fighter.poisons_on_hit = False
 
@@ -1140,7 +1179,6 @@ class MeleeAction(ActionWithDirection):
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
         print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} time points in MeleeAction")
         print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} time points left.")
-
 
 
 class MovementAction(ActionWithDirection):

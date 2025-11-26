@@ -429,6 +429,7 @@ class GameWorld:
             generate_cavern,
             generate_dungeon_v2,
             generate_dungeon_v3,
+            generate_three_doors_map,
         )
 
         keys_placed: Set[str] = set()
@@ -497,7 +498,15 @@ class GameWorld:
         ambient_sound.play_for_floor(self.current_floor)
 
     def _select_generator(self, floor: int):
-        from generators import generate_dungeon, generate_town, generate_fixed_dungeon, generate_cavern, generate_dungeon_v2, generate_dungeon_v3
+        from generators import (
+            THREE_DOORS_TEMPLATE,
+            generate_dungeon,
+            generate_town,
+            generate_fixed_dungeon,
+            generate_cavern,
+            generate_dungeon_v3,
+            generate_three_doors_map,
+        )
 
         # NIVEL INICIAL
         if floor == 1:
@@ -508,13 +517,19 @@ class GameWorld:
         fixed_layout = settings.FIXED_DUNGEON_LAYOUTS.get(floor)
         if fixed_layout:
             map_name = fixed_layout.get("map")
-            template = getattr(fixed_maps, map_name, None) if map_name else None
+            if map_name == "three_doors":
+                template = THREE_DOORS_TEMPLATE
+            else:
+                template = getattr(fixed_maps, map_name, None) if map_name else None
             if template:
                 walls_name = fixed_layout.get("walls")
                 walls = getattr(tile_types, walls_name, tile_types.wall) if walls_name else tile_types.wall
                 special_name = fixed_layout.get("walls_special")
                 walls_special = getattr(tile_types, special_name, walls) if special_name else walls
-                return generate_fixed_dungeon, {
+                generator = generate_fixed_dungeon
+                if map_name == "three_doors":
+                    generator = generate_three_doors_map
+                return generator, {
                     "map": template,
                     "walls": walls,
                     "walls_special": walls_special,

@@ -26,6 +26,15 @@ class Equippable(BaseComponent):
         to_hit_bonus: int = 0,
         to_hit_penalty: int = 0,
         armor_value_bonus: int = 0,
+        strength_bonus: int = 0,
+        fov_bonus: int = 0,
+        max_stamina_bonus: int = 0,
+        poison_resistance_bonus: int = 0,
+        super_memory_bonus: bool = False,
+        recover_rate_bonus: int = 0,
+        base_defense_bonus: int = 0,
+        luck_bonus: int = 0,
+        cursed: bool = False,
     ):
         self.equipment_type = equipment_type
 
@@ -39,6 +48,15 @@ class Equippable(BaseComponent):
         self.to_hit_bonus = to_hit_bonus
         self.to_hit_penalty = to_hit_penalty
         self.armor_value_bonus = armor_value_bonus
+        self.strength_bonus = strength_bonus
+        self.fov_bonus = fov_bonus
+        self.max_stamina_bonus = max_stamina_bonus
+        self.poison_resistance_bonus = poison_resistance_bonus
+        self.super_memory_bonus = super_memory_bonus
+        self.recover_rate_bonus = recover_rate_bonus
+        self.base_defense_bonus = base_defense_bonus
+        self.luck_bonus = luck_bonus
+        self.cursed = cursed
     
     @property
     def weapon_dmg_dice(self) -> int:
@@ -224,4 +242,125 @@ class AccuracyRing(Equippable):
         super().__init__(
             equipment_type=EquipmentType.RING,
             to_hit_bonus=1,
+        )
+
+# Blessed/magic rings
+
+
+class StrengthRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            strength_bonus=1,
+        )
+
+
+class FarSightRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            fov_bonus=4,
+        )
+
+
+class VigorRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            max_stamina_bonus=1,
+        )
+
+
+class AntidoteRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            poison_resistance_bonus=15,
+        )
+
+
+class MemoryRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            super_memory_bonus=True,
+        )
+
+
+class RecoveryRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            recover_rate_bonus=1,
+        )
+
+
+class GuardRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            base_defense_bonus=1,
+        )
+
+
+class FortuneRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            luck_bonus=3,
+        )
+
+
+# Cursed rings
+class CursedWeaknessRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            strength_bonus=-1,
+            cursed=True,
+        )
+
+
+class CursedMyopiaRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            fov_bonus=-4,
+            cursed=True,
+        )
+
+
+class CursedFatigueRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            max_stamina_bonus=-1,
+            cursed=True,
+        )
+
+
+class CursedLethargyRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            recover_rate_bonus=-1,
+            cursed=True,
+        )
+
+
+class CursedVulnerabilityRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            base_defense_bonus=-1,
+            cursed=True,
+        )
+
+
+class CursedMisfortuneRing(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.RING,
+            luck_bonus=-4,
+            cursed=True,
         )

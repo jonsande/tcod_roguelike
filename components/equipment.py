@@ -31,6 +31,30 @@ class Equipment(BaseComponent):
         self.ring_left = ring_left
         self.ring_right = ring_right
 
+    def _equipped_equippables(self):
+        return [
+            item.equippable
+            for item in (self.weapon, self.armor, self.artifact, self.ring_left, self.ring_right)
+            if item is not None and item.equippable is not None
+        ]
+
+    def _sum_bonus(self, attribute: str) -> int:
+        return sum(getattr(eq, attribute, 0) for eq in self._equipped_equippables())
+
+    def _is_cursed(self, item: Optional[Item]) -> bool:
+        eq = getattr(item, "equippable", None)
+        return bool(eq and getattr(eq, "cursed", False))
+
+    def _cannot_remove_cursed(self, item: Optional[Item], add_message: bool) -> bool:
+        if not self._is_cursed(item):
+            return False
+        if add_message and item:
+            self.parent.gamemap.engine.message_log.add_message(
+                f"The {item.name} is cursed! You cannot remove it.",
+                color.impossible,
+            )
+        return True
+
     @property
     def defense_bonus(self) -> int:
         bonus = 0
@@ -203,6 +227,38 @@ class Equipment(BaseComponent):
 
         return bonus
 
+    @property
+    def strength_bonus(self) -> int:
+        return self._sum_bonus("strength_bonus")
+
+    @property
+    def fov_bonus(self) -> int:
+        return self._sum_bonus("fov_bonus")
+
+    @property
+    def max_stamina_bonus(self) -> int:
+        return self._sum_bonus("max_stamina_bonus")
+
+    @property
+    def poison_resistance_bonus(self) -> int:
+        return self._sum_bonus("poison_resistance_bonus")
+
+    @property
+    def super_memory_bonus(self) -> bool:
+        return any(getattr(eq, "super_memory_bonus", False) for eq in self._equipped_equippables())
+
+    @property
+    def recover_rate_bonus(self) -> int:
+        return self._sum_bonus("recover_rate_bonus")
+
+    @property
+    def base_defense_bonus(self) -> int:
+        return self._sum_bonus("base_defense_bonus")
+
+    @property
+    def luck_bonus(self) -> int:
+        return self._sum_bonus("luck_bonus")
+
     def item_is_equipped(self, item: Item) -> bool:
         return (
             self.weapon == item
@@ -235,6 +291,9 @@ class Equipment(BaseComponent):
 
     def unequip_from_slot(self, slot: str, add_message: bool) -> None:
         current_item = getattr(self, slot)
+
+        if self._cannot_remove_cursed(current_item, add_message):
+            return
 
         if add_message:
             self.unequip_message(current_item.name)
@@ -287,4 +346,9 @@ class Equipment(BaseComponent):
         else:
             if identify_on_equip and not equippable_item.identified:
                 equippable_item.identify()
+            if self._cannot_remove_cursed(getattr(self, slot), add_message):
+                return
             self.equip_to_slot(slot, equippable_item, add_message)
+        fighter = getattr(self.parent, "fighter", None)
+        if fighter:
+            fighter.on_equipment_changed()

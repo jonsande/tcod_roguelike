@@ -15,6 +15,7 @@ from input_handlers import (
     ActionOrHandler,
     AreaRangedAttackHandler,
     InventoryIdentifyHandler,
+    InventoryRemoveCurseHandler,
     SingleRangedAttackHandler,
 )
 
@@ -125,6 +126,7 @@ SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Teleport scroll": "Las runas chispean y el aire distorsiona mientras desapareces.",
     "Prodigious memory scroll": "Tus pasos recientes quedaron grabados en tu mente como si el mapa entero se hubiera movido contigo.",
     "Identify scroll": "Las runas arden y revelan la verdadera identidad del objeto.",
+    "Remove curse scroll": "Las runas brillan y las ataduras oscuras del objeto se desvanecen.",
 }
 
 class ScrollConsumable(Consumable):
@@ -740,19 +742,42 @@ class PoisonConsumable(Consumable):
             consumer = action.entity
             consumer.fighter.is_poisoned = True
             consumer.fighter.poison_dmg = self.amount
-            consumer.fighter.poisoned_counter = self.counter
+            poison_roll = random.randint(1, 6)
+            if poison_roll <= consumer.fighter.luck:
+                counter_total = self.counter - random.randint(1, 6) - consumer.fighter.poison_resistance
+                if counter_total > 0:
+                    consumer.fighter.poisoned_counter = counter_total
+                else:
+                    consumer.fighter.poisoned_counter = 0
+                    self._effect_message(
+                        consumer,
+                        "You are poison resistant.",
+                        "{name} is poison resistant.",
+                        color.descend,
+                    )
+            else:
+                counter_total = self.counter - consumer.fighter.poison_resistance
+                if counter_total > 0:
+                    consumer.fighter.poisoned_counter = counter_total
+                else:
+                    consumer.fighter.poisoned_counter = 0
+                    self._effect_message(
+                        consumer,
+                        "You are poison resistant.",
+                        "{name} is poison resistant.",
+                        color.descend,
+                    )
             
             self.consume()
             self.parent.identify()
 
+        # Si la poción está identificada, el consumidor envenena su ataque.
         else:
-            # self.parent.identify()
-            # if self.parent.id_name == 'Poison potion' and self.parent.identified == False and self.parent.name != 'Poison potion':
-            #     self.parent.identify()
             consumer = action.entity
             consumer.fighter.poisons_on_hit = True
             self.consume()
 
+            # TODO: Relativizar mensaje, para que "weapon" sea dinámico.
             self._effect_message(
                 consumer,
                 "You smear the edge of your weapon with poison.",
@@ -1083,3 +1108,51 @@ class ProdigiousMemoryConsumable(ScrollConsumable):
             color.status_effect_applied,
         )
         return {"affected": 1}
+
+
+class RemoveCurseConsumable(ScrollConsumable):
+    """Remove the cursed status from a single item in the inventory."""
+
+    target_prompt = "Selecciona un objeto a liberar de su maldición."
+
+    def get_action(self, consumer: Actor) -> Optional[ActionOrHandler]:
+        if not consumer.inventory.items:
+            self.engine.message_log.add_message(
+                "No tienes objetos en tu inventario.",
+                color.impossible,
+            )
+            return None
+        return InventoryRemoveCurseHandler(self.engine, self.parent)
+
+    def _activate_scroll(self, action: actions.RemoveCurseItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        target_item = getattr(action, "target_item", None)
+        if not target_item:
+            raise Impossible("Debes elegir un objeto.")
+        if target_item not in consumer.inventory.items:
+            raise Impossible("Sólo puedes afectar a objetos de tu inventario.")
+        equippable = getattr(target_item, "equippable", None)
+        if not equippable:
+            self._effect_message(
+                consumer,
+                "Nada sucede; el objeto no está encantado.",
+                None,
+                color.impossible,
+            )
+            return {"affected": 0, "item": target_item.name}
+        if not getattr(equippable, "cursed", False):
+            self._effect_message(
+                consumer,
+                "Sientes que no hay maldición que romper en ese objeto.",
+                None,
+                color.orange,
+            )
+            return {"affected": 0, "item": target_item.name}
+        equippable.cursed = False
+        self._effect_message(
+            consumer,
+            f"Sientes cómo las runas liberan tu {target_item.name}.",
+            "{name} brilla un instante mientras una maldición se rompe.",
+            color.status_effect_applied,
+        )
+        return {"affected": 1, "item": target_item.name}
