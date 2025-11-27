@@ -9,6 +9,7 @@ from procgen import (
     _place_town_old_man_with_campfire,
     ensure_path_between,
     maybe_place_chest,
+    maybe_place_table,
     place_entities,
 )
 
@@ -74,6 +75,7 @@ def generate_town(
     rooms.append(new_room)
 
     maybe_place_chest(dungeon, floor_number, rooms)
+    maybe_place_table(dungeon, floor_number, rooms)
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):
             raise RuntimeError("Town generation failed to connect starting area with stairs.")

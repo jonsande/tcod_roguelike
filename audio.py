@@ -572,6 +572,16 @@ def play_chest_open_sound() -> None:
     _play_sound_effect(track, volume=volume)
 
 
+def play_table_open_sound() -> None:
+    if not getattr(audio_cfg, "TABLE_OPEN_SOUND_ENABLED", False):
+        return
+    track = _pick_random_track("TABLE_OPEN_SOUNDS", "TABLE_OPEN_SOUND")
+    if not track:
+        return
+    volume = getattr(audio_cfg, "TABLE_OPEN_VOLUME", 1.0)
+    _play_sound_effect(track, volume=volume)
+
+
 def play_stair_descend_sound() -> None:
     if not getattr(audio_cfg, "STAIR_DESCEND_SOUND_ENABLED", False):
         return

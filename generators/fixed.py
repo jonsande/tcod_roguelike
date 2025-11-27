@@ -15,6 +15,7 @@ from procgen import (
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
     maybe_place_chest,
+    maybe_place_table,
     place_entities_fixdungeon,
     spawn_door_entity,
 )
@@ -172,6 +173,7 @@ def generate_fixed_dungeon(
                     print("WARNING: Fixed dungeon template has no guaranteed path between upstairs and downstairs.")
 
     maybe_place_chest(dungeon, floor_number, rooms)
+    maybe_place_table(dungeon, floor_number, rooms)
     ensure_breakable_tiles(dungeon)
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_fixed_dungeon")

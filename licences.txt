@@ -1,0 +1,13 @@
+Archivos de audio utilizados bajo licencia CC BY-SA 4.0:
+
+- Autor: VoiceBosch
+  Enlace original: https://www.voicebosch.com
+  "male_grunt01.wav"
+  "male_grunt02.wav"
+  "male_grunt03.wav"
+  "male_grunt04.wav"
+  "male_grunt05.wav"
+  
+  Licencia: https://creativecommons.org/licenses/by-sa/4.0/
+
+  

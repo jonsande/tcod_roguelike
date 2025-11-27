@@ -19,6 +19,7 @@ from procgen import (
     ensure_path_between,
     get_floor_value,
     maybe_place_chest,
+    maybe_place_table,
 )
 
 if TYPE_CHECKING:
@@ -302,6 +303,7 @@ def generate_cavern(
 
     populate_cavern(dungeon, floor_number)
     maybe_place_chest(dungeon, floor_number)
+    maybe_place_table(dungeon, floor_number)
 
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):

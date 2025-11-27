@@ -357,3 +357,39 @@ class Chest(Entity):
         """Add an item to the chest inventory."""
         self.inventory.items.append(item)
         item.parent = self.inventory
+
+
+class TableContainer(Chest):
+    """Container that looks like a table and can hold items."""
+
+    def __init__(
+        self,
+        *,
+        x: int = 0,
+        y: int = 0,
+        char: str = "#",
+        open_char: str = "#",
+        color: Tuple[int, int, int] = (100, 100, 100),
+        name: str = "Table",
+        inventory: Optional["Inventory"] = None,
+        is_open: bool = False,
+    ):
+        super().__init__(
+            x=x,
+            y=y,
+            char=char,
+            open_char=open_char,
+            color=color,
+            name=name,
+            inventory=inventory,
+            is_open=is_open,
+        )
+        self.id_name = "table"
+
+    def open(self) -> bool:
+        if self.is_open:
+            return False
+        self.is_open = True
+        self.char = self.open_char
+        # El nombre permanece como "Table" para los mensajes.
+        return True

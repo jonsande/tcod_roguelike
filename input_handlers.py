@@ -23,8 +23,8 @@ from actions import (
 )
 import color
 import exceptions
-from entity import Chest, Book
-from audio import play_chest_open_sound
+from entity import Chest, Book, TableContainer
+from audio import play_chest_open_sound, play_table_open_sound
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -735,17 +735,9 @@ class InventoryEventHandler(AskUserEventHandler):
         they are.
         """
         super().on_render(console)
-        number_of_items_in_inventory = len(self.engine.player.inventory.items)
+        entries = self._inventory_entries()
 
-        # Group items by name for stacking
-        item_groups = defaultdict(list)
-        for item in self.engine.player.inventory.items:
-            item_groups[item.name].append(item)
-
-        # Sort groups alphabetically by item name
-        sorted_groups = sorted(item_groups.items(), key=lambda x: x[0])
-
-        height = len(sorted_groups) + 2
+        height = len(entries) + 2
 
         if height <= 3:
             height = 3
@@ -772,16 +764,14 @@ class InventoryEventHandler(AskUserEventHandler):
             bg=(0, 0, 0),
         )
 
-        if number_of_items_in_inventory > 0:
+        if entries:
 
-            for i, (item_name, items) in enumerate(sorted_groups):
+            for i, (item_name, items, is_equipped) in enumerate(entries):
                 count = len(items)
                 item = items[0]  # Use the first item for properties
 
                 # Esto asigna una tecla a cada entrada
                 item_key = chr(ord("a") + i)
-
-                is_equipped = self.engine.player.equipment.item_is_equipped(item)
 
                 item_string = f"({item_key}) {item_name}"
 
@@ -791,7 +781,8 @@ class InventoryEventHandler(AskUserEventHandler):
                 if is_equipped:
                     item_string = f"{item_string} (E)"
 
-                console.print(x + 1, y + i + 1, item_string)
+                text_color = color.orange if is_equipped else color.white
+                console.print(x + 1, y + i + 1, item_string, fg=text_color)
 
         else:
             console.print(x + 1, y + 1, "(Empty)")
@@ -802,16 +793,9 @@ class InventoryEventHandler(AskUserEventHandler):
         index = key - tcod.event.KeySym.a
 
         if 0 <= index <= 26:
-            # Group items by name for stacking
-            item_groups = defaultdict(list)
-            for item in player.inventory.items:
-                item_groups[item.name].append(item)
-
-            # Sort groups alphabetically by item name
-            sorted_groups = sorted(item_groups.items(), key=lambda x: x[0])
-
+            entries = self._inventory_entries()
             try:
-                item_name, items = sorted_groups[index]
+                item_name, items, _ = entries[index]
                 selected_item = items[0]  # Select the first item of the group
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid)
@@ -822,6 +806,39 @@ class InventoryEventHandler(AskUserEventHandler):
     def on_item_selected(self, item: Item) -> Optional[Action]:
         """Called when the user selects a valid item."""
         raise NotImplementedError()
+
+    def _inventory_entries(
+        self,
+        filter_fn: Optional[Callable[[Item], bool]] = None,
+        skip: Optional[Item] = None,
+    ):
+        """Return sorted entries for inventory listing, splitting equipped items."""
+        if filter_fn is None:
+            filter_fn = lambda item: True
+
+        player = self.engine.player
+        equipment = player.equipment
+        equipped_entries = []
+        grouped_items = defaultdict(list)
+
+        for item in player.inventory.items:
+            if skip and item is skip:
+                continue
+            if not filter_fn(item):
+                continue
+            if equipment.item_is_equipped(item):
+                equipped_entries.append((item.name, [item], True))
+            else:
+                grouped_items[item.name].append(item)
+
+        entries = []
+        for name, items in grouped_items.items():
+            entries.append((name, items, False))
+
+        entries.extend(equipped_entries)
+        # Equipados primero, luego alfabéticamente
+        entries.sort(key=lambda entry: (0 if entry[2] else 1, entry[0]))
+        return entries
 
 
 class InventoryActivateHandler(InventoryEventHandler):
@@ -850,20 +867,16 @@ class InventoryIdentifyHandler(InventoryEventHandler):
         super().__init__(engine)
         self.scroll = scroll
 
-    def _unidentified_groups(self):
-        item_groups = defaultdict(list)
-        for item in self.engine.player.inventory.items:
-            if getattr(item, "identified", False):
-                continue
-            if item is self.scroll:
-                continue
-            item_groups[item.name].append(item)
-        return sorted(item_groups.items(), key=lambda x: x[0])
+    def _unidentified_entries(self):
+        return self._inventory_entries(
+            filter_fn=lambda item: not getattr(item, "identified", False)
+            and item is not self.scroll,
+        )
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
-        sorted_groups = self._unidentified_groups()
-        height = max(3, len(sorted_groups) + 2)
+        entries = self._unidentified_entries()
+        height = max(3, len(entries) + 2)
         x = 1
         y = 1
         width = 78
@@ -879,29 +892,27 @@ class InventoryIdentifyHandler(InventoryEventHandler):
             bg=(0, 0, 0),
         )
 
-        if sorted_groups:
-            for i, (item_name, items) in enumerate(sorted_groups):
-                count = len(items)
-                item = items[0]
+        if entries:
+            for i, (item_name, items, is_equipped) in enumerate(entries):
                 item_key = chr(ord("a") + i)
-                is_equipped = self.engine.player.equipment.item_is_equipped(item)
                 item_string = f"({item_key}) {item_name}"
-                if count > 1:
-                    item_string = f"{item_string} ({count})"
+                if len(items) > 1:
+                    item_string = f"{item_string} ({len(items)})"
                 if is_equipped:
                     item_string = f"{item_string} (E)"
-                console.print(x + 1, y + i + 1, item_string)
+                text_color = color.orange if is_equipped else color.white
+                console.print(x + 1, y + i + 1, item_string, fg=text_color)
         else:
             console.print(x + 1, y + 1, "(Sin objetos sin identificar)")
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
         index = key - tcod.event.KeySym.a
-        sorted_groups = self._unidentified_groups()
+        entries = self._unidentified_entries()
 
-        if 0 <= index < len(sorted_groups):
+        if 0 <= index < len(entries):
             try:
-                _, items = sorted_groups[index]
+                _, items, _ = entries[index]
                 selected_item = items[0]
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid)
@@ -922,18 +933,13 @@ class InventoryRemoveCurseHandler(InventoryEventHandler):
         super().__init__(engine)
         self.scroll = scroll
 
-    def _item_groups(self):
-        item_groups = defaultdict(list)
-        for item in self.engine.player.inventory.items:
-            if item is self.scroll:
-                continue
-            item_groups[item.name].append(item)
-        return sorted(item_groups.items(), key=lambda x: x[0])
+    def _item_entries(self):
+        return self._inventory_entries(filter_fn=lambda item: item is not self.scroll)
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
-        sorted_groups = self._item_groups()
-        height = max(3, len(sorted_groups) + 2)
+        entries = self._item_entries()
+        height = max(3, len(entries) + 2)
         x = 1
         y = 1
         width = 78
@@ -949,29 +955,27 @@ class InventoryRemoveCurseHandler(InventoryEventHandler):
             bg=(0, 0, 0),
         )
 
-        if sorted_groups:
-            for i, (item_name, items) in enumerate(sorted_groups):
-                count = len(items)
-                item = items[0]
+        if entries:
+            for i, (item_name, items, is_equipped) in enumerate(entries):
                 item_key = chr(ord("a") + i)
-                is_equipped = self.engine.player.equipment.item_is_equipped(item)
                 item_string = f"({item_key}) {item_name}"
-                if count > 1:
-                    item_string = f"{item_string} ({count})"
+                if len(items) > 1:
+                    item_string = f"{item_string} ({len(items)})"
                 if is_equipped:
                     item_string = f"{item_string} (E)"
-                console.print(x + 1, y + i + 1, item_string)
+                text_color = color.orange if is_equipped else color.white
+                console.print(x + 1, y + i + 1, item_string, fg=text_color)
         else:
             console.print(x + 1, y + 1, "(Inventario vacío)")
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
         index = key - tcod.event.KeySym.a
-        sorted_groups = self._item_groups()
+        entries = self._item_entries()
 
-        if 0 <= index < len(sorted_groups):
+        if 0 <= index < len(entries):
             try:
-                _, items = sorted_groups[index]
+                _, items, _ = entries[index]
                 selected_item = items[0]
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid)
@@ -1069,16 +1073,26 @@ class GroundItemPickupHandler(AskUserEventHandler):
 
 
 class ChestLootHandler(AskUserEventHandler):
-    """Handler to inspect and loot an opened chest."""
+    """Handler to inspect and loot an opened chest or table."""
 
-    TITLE = "Contenido del cofre"
+    TITLE = "Contenido"
 
     def __init__(self, engine: Engine, chest: Chest):
         super().__init__(engine)
         self.chest = chest
         if self.chest.open():
-            play_chest_open_sound()
-            self.engine.message_log.add_message("You open the chest.", color.white)
+            is_table = isinstance(self.chest, TableContainer)
+            if is_table:
+                play_table_open_sound()
+            else:
+                play_chest_open_sound()
+            msg = "You search the table." if is_table else "You open the chest."
+            self.engine.message_log.add_message(msg, color.white)
+        # Ajusta el título según el contenedor.
+        if isinstance(self.chest, TableContainer):
+            self.TITLE = "Contenido de la mesa"
+        else:
+            self.TITLE = "Contenido del cofre"
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
@@ -1373,7 +1387,7 @@ class MainGameEventHandler(EventHandler):
         dest_x = player.x + dx
         dest_y = player.y + dy
         blocker = self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y)
-        if isinstance(blocker, Chest):
+        if isinstance(blocker, (Chest, TableContainer)):
             return ChestLootHandler(self.engine, blocker)
         return None
 

@@ -24,6 +24,7 @@ from procgen import (
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
     maybe_place_chest,
+    maybe_place_table,
     place_entities,
     spawn_door_entity,
 )
@@ -191,6 +192,7 @@ def generate_dungeon(
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_dungeon")
     maybe_place_chest(dungeon, floor_number, rooms)
+    maybe_place_table(dungeon, floor_number, rooms)
     dungeon.center_rooms = list(rooms_array)
     return dungeon
 

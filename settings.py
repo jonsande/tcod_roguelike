@@ -130,6 +130,7 @@ PLAYER_STARTING_INVENTORY = [
     {"item": "triple_ration", "quantity": 2},
     # {"item": "accuracy_ring", "equip": True},
     # {"item": "leather_armor", "equip": True},
+    {"item": "dagger", "quantity": 1, "equip": True},
     # {"item": "spear", "quantity": 1, "equip": True},
     # {"item": "descend_scroll", "quantity": 16},
     # {"item": "black_key", "quantity": 1},
@@ -140,7 +141,7 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "cursed_weakness_ring", "quantity": 1},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    {"item": "power_potion", "quantity": 6},
+    # {"item": "power_potion", "quantity": 6},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -177,10 +178,10 @@ DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
 DUNGEON_V3_EXTRA_CONNECTIONS = 3
 DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
 DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR = {
-    "black": 4, # Tiene que ser 4 o más, de lo contrario se generarán llaves en el nivel 1 (en la superficie)
+    "white": 4, # Tiene que ser 4 o más, de lo contrario se generarán llaves en el nivel 1 (en la superficie)
     "red": 8,
-    "white": 7,
     "gray": 12,
+    "black": 14,
 }
 DUNGEON_V3_FIXED_ROOMS_ENABLED = True
 DUNGEON_V3_ENTRY_FEATURE_PROBS = {
@@ -230,11 +231,18 @@ DEBRIS_CHANCES = {
 # Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_SPAWN_CHANCES = [
-    (2, 0.20),
-    (3, 0.30),
+    (2, 0.40),
+    (3, 0.40),
     (4, 0.40),
     (5, 0.50),
     (8, 0.60),
+]
+
+# Probabilidad independiente para generar mesas con botín.
+TABLE_SPAWN_CHANCES = [
+    (2, 0.30),
+    (4, 0.30),
+    (6, 0.35),
 ]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 # El rango min-max extablecido para un nivel se aplica a los subsiguientes niveles, a no 
@@ -405,6 +413,33 @@ CHEST_LOOT_TABLES = {
     ],
 }
 
+# Botín de mesas: cantidades y tablas por nivel.
+TABLE_ITEM_COUNT_BY_FLOOR = [
+    (1, (0, 1)),
+    (3, (0, 1)),
+    (6, (0, 1)),
+]
+
+# Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
+TABLE_LOOT_TABLES = {
+    2: [
+        ("triple_ration", 3),
+        ("banana", 2),
+        ("sand_bag", 1),
+        ("note_wizard_1", 1),
+    ],
+    3: [
+        ("note_wizard_1", 1),
+        ("antidote", 2),
+        ("stamina_potion", 2),
+    ],
+    6: [
+        ("short_sword", 1),
+        ("remove_curse_scroll", 1),
+        ("strength_potion", 1),
+    ],
+}
+
 # -- Fixed room templates -----------------------------------------------------
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
@@ -491,7 +526,7 @@ CAVERN_MONSTER_SPAWN_RULES = {
     "goblin": {"min_floor": 1, "weight_progression": [(2, 10), (3, 20), (5, 15)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 12), (6, 25), (9, 10)]},
     "cave_bat": {"min_floor": 1, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
-    "skeleton": {"min_floor": 4, "weight_progression": [(4, 5), (7, 10)]},
+    "skeleton": {"min_floor": 5, "weight_progression": [(5, 5), (7, 10)]},
 }
 
 # -- Cavern item population ---------------------------------------------------
@@ -533,6 +568,8 @@ MAX_DEBRIS_BY_FLOOR = [
 # generar un máximo de 1 item. No quiere decir que se vaya a generar. Lo que hará la fun-
 # ción place_entities() de procgen.py es una randint(0,1) para determinar si ese 1 máximo
 # se traduce o no en un ítem.
+# TODO: hacer la probabilidad de generación del place_entities dinámico, configurable desde
+# el settings.
 MAX_ITEMS_BY_FLOOR = [
     #(0, 0),
     (1, 0),
@@ -580,7 +617,7 @@ ADVENTURER_CORPSE_CHAR = "%"
 ADVENTURER_CORPSE_COLOR = (100, 100, 100)
 ADVENTURER_CORPSE_NAME = "Remains of an adventurer"
 # Base probability (0-1) added per floor after they descend to find their corpse.
-ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.04
+ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.15
 
 # -- Loot generation -----------------------------------------------------------
 # Configuración de botín/objetos. Cada entrada permite controlar:
@@ -651,7 +688,6 @@ ITEM_SPAWN_RULES = {
     "cursed_misfortune_ring": {"min_floor": 3, "max_instances": 1, "weight_progression": [(2, 1), (5, 2), (8, 2)]},
     # OTHER
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
-    "table": {"min_floor": 2, "weight_progression": [(2, 15)]},
     "note_wizard_1": {"min_floor": 2, "max_instances": 1, "weight_progression": [(2, 7)]},
     # ARTIFACTS
     # La generación de ALGUNOS artefactos únicos los está gestionando uniques.py
@@ -665,14 +701,14 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
     "adventurer": {
-        "min_floor": 1, 
+        "min_floor": 2, 
         "weight_progression": [
             (1, 0),
-            (2, 6),
-            (3, 6),
+            (2, 2),
+            (3, 4),
             (4, 6),
             (8, 4),
-            (16, 0),
+            (15, 0),
             ],
     },
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
@@ -686,15 +722,15 @@ ENEMY_SPAWN_RULES = {
             (16, 0),
         ],
     },
-    "snake": {"min_floor": 1, "weight_progression": [(2, 4), (4, 10), (8, 0)]},
-    "rat": {"min_floor": 1, "weight_progression": [(1, 50), (3, 0)]},
-    "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10), (8, 0)]},
-    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
-    "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 40), (4, 50), (6, 20), (10, 15)]},
-    "monkey": {"min_floor": 1, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
+    "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
+    "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
+    "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
+    "cave_bat": {"min_floor": 2, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
+    "goblin": {"min_floor": 2, "weight_progression": [(1, 10), (2, 40), (4, 50), (6, 20), (10, 15)]},
+    "monkey": {"min_floor": 2, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
-    "skeleton": {"min_floor": 4, "weight_progression": [(4, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
+    "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
     "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},

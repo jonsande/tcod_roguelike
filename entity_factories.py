@@ -20,7 +20,7 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapon
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest
+from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest, TableContainer
 import random
 import numpy as np
 import tile_types
@@ -103,6 +103,13 @@ def fill_chest_with_items(chest_entity: Chest, items: List[Item]) -> None:
     chest_entity.inventory.items = []
     for item in items:
         chest_entity.add_item(item)
+
+
+def fill_table_with_items(table_entity: TableContainer, items: List[Item]) -> None:
+    """Replace the contents of a table with the provided items."""
+    table_entity.inventory.items = []
+    for item in items:
+        table_entity.add_item(item)
 
 
 def color_roulette():
@@ -533,16 +540,13 @@ rock = Decoration(
     name="Rock",
 )
 
-table = Actor(
+# Container version used in procedural generation (non-attackable).
+table = TableContainer(
     char="#",
-    color=(100,100,100),
+    open_char="#",
+    color=(100, 100, 100),
     name="Table",
-    ai_cls=Dummy,
-    equipment=Equipment(),
-    #fighter=Fighter(hp=10, base_defense=1, strength=0, recover_rate=0, fov=0),
-    fighter=Door(hp=15, base_defense=0, strength=0, recover_rate=0, fov=0, base_armor_value=1, fire_resistance=-4),
-    inventory=Inventory(capacity=1),
-    level=Level(xp_given=0),
+    inventory=Inventory(capacity=6, items=[]),
 )
 
 
@@ -1074,7 +1078,7 @@ player = Actor(
         lamp_on=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=20),
+    inventory=Inventory(capacity=25),
     level=Level(level_up_base=20), # Default: 200
 )
 

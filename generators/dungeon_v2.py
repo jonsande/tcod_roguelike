@@ -14,6 +14,7 @@ from procgen import (
     ensure_path_between,
     guarantee_downstairs_access,
     maybe_place_chest,
+    maybe_place_table,
 )
 
 if TYPE_CHECKING:
@@ -114,6 +115,7 @@ def generate_dungeon_v2(
                     continue
 
         maybe_place_chest(dungeon, floor_number, [node.rect for node in rooms])
+        maybe_place_table(dungeon, floor_number, [node.rect for node in rooms])
         dungeon.center_rooms = [center for center in rooms_array]
         dungeon.engine.update_center_rooms_array(list(rooms_array))
         return dungeon

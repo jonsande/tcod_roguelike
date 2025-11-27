@@ -582,6 +582,7 @@ class Fighter(FireStatusMixin, BaseComponent):
                         color.red,
                         )
                 else:
+                    # TODO: esto hay que relativilarlo a si es o no visible la criatura.
                     self.engine.message_log.add_message(
                         f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points.",
                         color.red,

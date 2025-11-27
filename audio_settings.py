@@ -95,6 +95,14 @@ CHEST_OPEN_SOUNDS = ["data/audio/sfx/chests/Chest_Open_1.ogg",
 CHEST_OPEN_SOUND = None # No entiendo por qué esta opción
 CHEST_OPEN_VOLUME = 0.4
 
+# Table interactions --------------------------------------------------------
+TABLE_OPEN_SOUND_ENABLED = True
+TABLE_OPEN_SOUNDS = [
+    "data/audio/sfx/chests/Chest_Open_1.ogg",
+]
+TABLE_OPEN_SOUND = None
+TABLE_OPEN_VOLUME = 0.35
+
 # Campfire ambience ---------------------------------------------------------
 CAMPFIRE_SOUND_ENABLED = True
 CAMPFIRE_SOUNDS = ["data/audio/sfx/campfire/campfire_1.mp3",]
@@ -199,8 +207,18 @@ MELEE_DUMMY_SOUNDS = {
 PAIN_SOUND_ENABLED = True
 PAIN_SOUND_DEFAULT_VOLUME = 0.4
 PAIN_SOUNDS = {
-    "player": {"tracks": ["data/audio/sfx/combat/hurt/player/hurt_6.ogg",
-                          "data/audio/sfx/combat/hurt/player/male_hurt7.mp3"], "track": None, "volume": None},
+    "player": {"tracks": [
+        "data/audio/sfx/combat/hurt/player/hurt_6.ogg",
+        "data/audio/sfx/combat/hurt/player/male_hurt7.mp3",
+        "data/audio/sfx/combat/hurt/player/male_grunt01.wav",
+        "data/audio/sfx/combat/hurt/player/male_grunt02.wav",
+        "data/audio/sfx/combat/hurt/player/male_grunt03.wav",
+        "data/audio/sfx/combat/hurt/player/male_grunt04.wav",
+        "data/audio/sfx/combat/hurt/player/male_grunt05.wav",
+    ], 
+    "track": None, 
+    "volume": 0.5
+    },
     "default": {"tracks": [], "track": None, "volume": None},
 }
 

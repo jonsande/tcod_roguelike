@@ -356,21 +356,6 @@ class ThrowItemAction(Action):
         self._animate_throw(path)
 
         target = self.target_actor
-        if self._is_potion(self.item):
-            self._handle_potion_throw(target, dest_x, dest_y)
-            self._spend_throw_cost()
-            return
-
-        # Comprobar si atacante y/o objetivo son visibles para el jugador
-        # Útil para impresión de mensajes y más.
-        if self.engine.game_map.visible[target.x, target.y] == False:
-            target_visible = False
-        else:
-            target_visible = True
-        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-            attacker_visible = False
-        else:
-            attacker_visible = True
 
         # Stamina check
         if self.entity.fighter.stamina <= 0:
@@ -380,6 +365,11 @@ class ThrowItemAction(Action):
             else:
                 self.engine.message_log.add_message(f"{self.entity.name} is exhausted!", color.red)
             raise exceptions.Impossible("")
+
+        if self._is_potion(self.item):
+            self._handle_potion_throw(target, dest_x, dest_y)
+            self._spend_throw_cost()
+            return
 
         # Desequipar objeto (si está equipado)
         if self.entity.equipment.item_is_equipped(self.item):
@@ -394,6 +384,11 @@ class ThrowItemAction(Action):
         if not target:
             self._spend_throw_cost()
             return
+
+        # Comprobar si atacante y/o objetivo son visibles para el jugador
+        # Útil para impresión de mensajes y más.
+        target_visible = bool(self.engine.game_map.visible[target.x, target.y])
+        attacker_visible = bool(self.engine.game_map.visible[self.entity.x, self.entity.y])
 
         target_ai = getattr(target, "ai", None)
         target_is_dummy = self.is_dummy_object(target_ai)
