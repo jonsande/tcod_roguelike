@@ -773,7 +773,7 @@ class Fighter(FireStatusMixin, BaseComponent):
                 self.is_blind = True
 
         self.temporal_effects = True
-        self.engine.manage_temporal_effects(turns, amount, attribute, message_down)
+        self.engine.manage_temporal_effects(self.parent, turns, amount, attribute, message_down)
     
     def decrease_power(self, amount: int):
         self.strength -= amount

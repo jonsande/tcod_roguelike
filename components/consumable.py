@@ -114,8 +114,9 @@ class Consumable(BaseComponent):
         config = self.TEMPORAL_EFFECT_TEXTS.get(key or "", {})
         player_hi = default_player_hi or config.get("player_hi") or "You feel different."
         creature_hi = default_creature_hi or config.get("creature_hi") or "{name} looks affected."
-        end = default_end or config.get("player_end") or "The effect wears off."
-        return player_hi, creature_hi, end
+        player_end = default_end or config.get("player_end") or "The effect wears off."
+        creature_end = config.get("creature_end") or player_end
+        return player_hi, creature_hi, player_end, creature_end
 
 SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Confusion scroll": "{target} titubea bajo las runas chispeantes.",
@@ -470,7 +471,7 @@ class TemporalEffectConsumable(Consumable):
 
     def activate(self, action: actions.ItemAction) -> None:
         consumer = action.entity
-        player_hi, creature_hi, end_message = self._resolve_temporal_texts(
+        player_hi, creature_hi, player_end, creature_end = self._resolve_temporal_texts(
             self.message_hi,
             self.creature_message_hi,
             self.message_down,
@@ -481,6 +482,7 @@ class TemporalEffectConsumable(Consumable):
             creature_hi,
             color.status_effect_applied,
         )
+        end_message = player_end if consumer is self.engine.player else creature_end
         consumer.fighter.gain_temporal_bonus(
             self.number_of_turns,
             self.amount,

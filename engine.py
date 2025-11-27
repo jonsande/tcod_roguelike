@@ -561,10 +561,18 @@ class Engine:
                             self.player.fighter.fortified = True
 
 
-    def manage_temporal_effects(self, turns, amount, attribute, message_down):
-        self.temporal_effects.append([turns, amount, attribute, message_down])
+    def manage_temporal_effects(self, actor: Actor, turns, amount, attribute, message_down):
+        effect = {
+            "actor": actor,
+            "turns": turns,
+            "amount": amount,
+            "attribute": attribute,
+            "message_down": message_down,
+        }
+        self.temporal_effects.append(effect)
 
-        print(f"Active effects: {self.temporal_effects}")
+        if settings.DEBUG_MODE:
+            print(f"Active effects: {self.temporal_effects}")
         
 
     def update_temporal_effects(self):
@@ -572,38 +580,71 @@ class Engine:
         if self.temporal_effects:
 
             for i in range(len(self.temporal_effects)):
-                turns, amount, attribute, message_down = self.temporal_effects[i]
+                effect = self.temporal_effects[i]
+                turns = effect.get("turns", 0)
+                amount = effect.get("amount", 0)
+                attribute = effect.get("attribute")
+                message_down = effect.get("message_down")
                 if settings.DEBUG_MODE:
-                    print("[DEBUG]: ", self.temporal_effects[i])
+                    print("[DEBUG]: ", effect)
                     print("[DEBUG]: ", turns)
                     print("[DEBUG]: ", amount)
                     print("[DEBUG]: ", attribute)
                     print("[DEBUG]: ", message_down)
                 if turns <= 0:
-                    end_color = color.red if amount >= 0 else color.status_effect_applied
-                    self.message_log.add_message(f"{message_down}", end_color)
-                    if attribute == 'strength':
-                        self.player.fighter.strength -= amount
-                    if attribute == 'base_to_hit':
-                        self.player.fighter.base_to_hit -= amount
-                    if attribute == 'base_stealth':
-                        self.player.fighter.base_stealth -= amount
-                    if attribute == 'fov':
-                        self.player.fighter.fov -= amount
-                        if amount < 0:
-                            self.player.fighter.is_blind = False
-
-                    #temporal_effects.pop(i)
-                    effects_to_remove.append(self.temporal_effects[i])
-                    #print(f"Active effects: {self.temporal_effects}")
+                    self._clear_temporal_effect(effect)
+                    effects_to_remove.append(effect)
 
                 else: 
-                    self.temporal_effects[i][0] -= 1
-                    #print(f"Active effects: {self.temporal_effects}")
+                    effect["turns"] = turns - 1
 
             # Eliminar los efectos marcados para remover
             for effect in effects_to_remove:
-                self.temporal_effects.remove(effect)
+                if effect in self.temporal_effects:
+                    self.temporal_effects.remove(effect)
+
+    def _clear_temporal_effect(self, effect: dict) -> None:
+        actor = effect.get("actor")
+        amount = effect.get("amount", 0)
+        attribute = effect.get("attribute")
+        message_down = effect.get("message_down")
+        fighter = getattr(actor, "fighter", None) if actor else None
+
+        if fighter:
+            if attribute == 'strength':
+                fighter.strength -= amount
+            if attribute == 'base_to_hit':
+                fighter.base_to_hit -= amount
+            if attribute == 'base_stealth':
+                fighter.base_stealth -= amount
+            if attribute == 'fov':
+                fighter.fov -= amount
+                if amount < 0:
+                    fighter.is_blind = False
+
+        self._log_temporal_effect_end(actor, amount, message_down)
+
+    def _log_temporal_effect_end(self, actor: Optional[Actor], amount: int, message_down: Optional[str]) -> None:
+        if not actor or not message_down:
+            return
+
+        if actor is self.player:
+            visible = True
+        else:
+            try:
+                visible = (
+                    self.game_map.in_bounds(actor.x, actor.y)
+                    and self.game_map.visible[actor.x, actor.y]
+                )
+            except Exception:
+                visible = False
+
+        if not visible:
+            return
+
+        end_color = color.red if amount >= 0 else color.status_effect_applied
+        formatted_message = message_down.format(name=getattr(actor, "name", "The creature"))
+        self.message_log.add_message(formatted_message, end_color)
 
 
     #def simple_spawn():

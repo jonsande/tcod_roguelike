@@ -80,36 +80,44 @@ class Action:
 class PickupAction(Action):
     """Pickup an item and add it to the inventory, if there is room for it."""
 
-    def __init__(self, entity: Actor):
+    def __init__(self, entity: Actor, item: Optional[Item] = None):
         super().__init__(entity)
+        self.item = item
 
     def perform(self) -> None:
         actor_location_x = self.entity.x
         actor_location_y = self.entity.y
         inventory = self.entity.inventory
 
-        for item in self.engine.game_map.items:
-            if actor_location_x == item.x and actor_location_y == item.y:
-                if len(inventory.items) >= inventory.capacity:
-                    raise exceptions.Impossible("Your inventory is full.")
+        items_here = [
+            item
+            for item in self.engine.game_map.items
+            if actor_location_x == item.x and actor_location_y == item.y
+        ]
 
-                self.engine.game_map.entities.remove(item)
-                item.parent = self.entity.inventory
-                inventory.items.append(item)
+        if not items_here:
+            raise exceptions.Impossible("There is nothing here to pick up.")
 
-                self.engine.message_log.add_message(f"You picked up the {item.name}!")
-                play_item_pickup_sound(item)
+        item_to_pick = self.item if self.item else items_here[0]
+        if item_to_pick not in items_here:
+            raise exceptions.Impossible("That item is not here.")
 
-                # TIME SYSTEM
-                #self.entity.fighter.current_energy_points -= 10
-                self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
-                if DEBUG_MODE:
-                    print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in PickupAction")
-                    print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+        if len(inventory.items) >= inventory.capacity:
+            raise exceptions.Impossible("Your inventory is full.")
 
-                return
+        self.engine.game_map.entities.remove(item_to_pick)
+        item_to_pick.parent = self.entity.inventory
+        inventory.items.append(item_to_pick)
 
-        raise exceptions.Impossible("There is nothing here to pick up.")
+        self.engine.message_log.add_message(f"You picked up the {item_to_pick.name}!")
+        play_item_pickup_sound(item_to_pick)
+
+        # TIME SYSTEM
+        #self.entity.fighter.current_energy_points -= 10
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+        if DEBUG_MODE:
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in PickupAction")
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
 
 class ItemAction(Action):

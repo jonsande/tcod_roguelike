@@ -57,50 +57,50 @@ FULLSCREEN_MODE = "desktop"  # "desktop" o "exclusive"
 INTRO_ENABLED = True
 INTRO_FADE_DURATION = 2.7  # segundos para fundir a negro o desde él
 INTRO_SLIDE_DURATION = 3.5  # tiempo en pantalla antes de iniciar el fundido
-# INTRO_SLIDES = [
-#     {
-#         "text": "Los ancianos han elegido.",
-#         "hold": 4.2,
-#     },
-#     {
-#         "text": "El ancestral artefacto se perdió generaciones atrás.\n"
-#         "Los videntes de la tribu lo ven en sueños. Dicen verlo encerrado en\n"
-#         "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
-#         "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
-#         "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
-#         "muy anterior al Tercer Nacimiento.\n",
-#         "hold": 17.3,
-#     },
-#     {
-#         "text": "Los ancianos han elegido a un nuevo buscador. El elegido deberá viajar\n"
-#         "a través de las montañas del Duule hasta el desierto pálido, encontrar\n"
-#         "la entrada al laberinto y adentrarse en él.\n"
-#         "Muchos otros han emprendido la Gran Búsqueda antes. Nadie ha vuelto.",
-#         "hold": 13.0,
-#     },
-# ]
-
 INTRO_SLIDES = [
     {
-        "text": "The elders have chosen.",
-        "hold": 2.2,
+        "text": "Los ancianos han elegido.",
+        "hold": 4.2,
     },
     {
-        "text": "The ancient artifact was lost generations ago.\n"
-        "The seers of the tribe glimpse it in their dreams. They claim to see\n"
-        "it sealed within a stone urn, deep in an ancient underground labyrinth.\n"
-        "No one knows who built the labyrinth, nor for what purpose. Some say \n"
-        "it is a temple, bearing signs of an age long before the Third Birth.\n",
+        "text": "El ancestral artefacto se perdió generaciones atrás.\n"
+        "Los videntes de la tribu lo ven en sueños. Dicen verlo encerrado en\n"
+        "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
+        "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
+        "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
+        "muy anterior al Tercer Nacimiento.\n",
         "hold": 17.3,
     },
     {
-        "text": "The elders have chosen a new seeker. The chosen one must travel\n"
-        "across the Duule Mountains to the Pale Desert, find the entrance to the\n"
-        "labyrinth, and venture into its depths.\n"
-        "Many before have embarked on the Great Quest. None have ever returned.",
+        "text": "Los ancianos han elegido a un nuevo buscador. El elegido deberá viajar\n"
+        "a través de las montañas del Duule hasta el desierto pálido, encontrar\n"
+        "la entrada al laberinto y adentrarse en él.\n"
+        "Muchos otros han emprendido la Gran Búsqueda antes. Nadie ha vuelto.",
         "hold": 13.0,
     },
 ]
+
+# INTRO_SLIDES = [
+#     {
+#         "text": "The elders have chosen.",
+#         "hold": 2.2,
+#     },
+#     {
+#         "text": "The ancient artifact was lost generations ago.\n"
+#         "The seers of the tribe glimpse it in their dreams. They claim to see\n"
+#         "it sealed within a stone urn, deep in an ancient underground labyrinth.\n"
+#         "No one knows who built the labyrinth, nor for what purpose. Some say \n"
+#         "it is a temple, bearing signs of an age long before the Third Birth.\n",
+#         "hold": 17.3,
+#     },
+#     {
+#         "text": "The elders have chosen a new seeker. The chosen one must travel\n"
+#         "across the Duule Mountains to the Pale Desert, find the entrance to the\n"
+#         "labyrinth, and venture into its depths.\n"
+#         "Many before have embarked on the Great Quest. None have ever returned.",
+#         "hold": 13.0,
+#     },
+# ]
 
 # -- Audio settings ------------------------------------------------------
 # Configuración de audio movida a audio_settings.py
@@ -138,6 +138,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "gray_key", "quantity": 1},
     # {"item": "identify_scroll", "quantity": 6},
     # {"item": "antidote_ring", "quantity": 1},
+    # {"item": "cursed_weakness_ring", "quantity": 1},
+    # {"item": "remove_curse_scroll", "quantity": 3},
+    {"item": "power_potion", "quantity": 6},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -687,7 +690,7 @@ ENEMY_SPAWN_RULES = {
     "rat": {"min_floor": 1, "weight_progression": [(1, 50), (3, 0)]},
     "swarm_rat": {"min_floor": 3, "weight_progression": [(3, 20), (6, 10), (8, 0)]},
     "cave_bat": {"min_floor": 1, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
-    "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 50), (4, 30), (6, 20), (10, 15)]},
+    "goblin": {"min_floor": 1, "weight_progression": [(1, 10), (2, 40), (4, 50), (6, 20), (10, 15)]},
     "monkey": {"min_floor": 1, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},

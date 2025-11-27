@@ -1012,6 +1012,62 @@ class InventoryDropHandler(InventoryEventHandler):
         return actions.DropItem(self.engine.player, item)
 
 
+class GroundItemPickupHandler(AskUserEventHandler):
+    """Handler to pick a specific item from the ground when multiple are present."""
+
+    TITLE = "Objetos en el suelo"
+
+    def _items_here(self) -> list[Item]:
+        px, py = self.engine.player.x, self.engine.player.y
+        items_here = [
+            item for item in self.engine.game_map.items if item.x == px and item.y == py
+        ]
+        return sorted(items_here, key=lambda item: item.name)
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        items = self._items_here()
+        height = max(3, len(items) + 2)
+        width = 40
+        x = 1
+        y = 1
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        if not items:
+            console.print(x + 1, y + 1, "(Vacío)")
+            return
+
+        for index, item in enumerate(items):
+            key = chr(ord("a") + index)
+            console.print(x + 1, y + index + 1, f"({key}) {item.name}")
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+
+        if key in {
+            tcod.event.KeySym.ESCAPE,
+            tcod.event.KeySym.RETURN,
+            tcod.event.KeySym.KP_ENTER,
+        }:
+            return self.on_exit()
+
+        items = self._items_here()
+        index = key - tcod.event.KeySym.a
+        if 0 <= index < len(items):
+            return actions.PickupAction(self.engine.player, items[index])
+        return None
+
+
 class ChestLootHandler(AskUserEventHandler):
     """Handler to inspect and loot an opened chest."""
 
@@ -1255,7 +1311,17 @@ class MainGameEventHandler(EventHandler):
             return HistoryViewer(self.engine)
         # Coger objeto
         elif key == tcod.event.KeySym.g:
-            action = PickupAction(player)
+            items_here = sorted(
+                [
+                    item
+                    for item in self.engine.game_map.items
+                    if item.x == player.x and item.y == player.y
+                ],
+                key=lambda item: item.name,
+            )
+            if len(items_here) > 1:
+                return GroundItemPickupHandler(self.engine)
+            action = PickupAction(player, items_here[0]) if items_here else PickupAction(player)
         # Activar item del inventario
         elif key == tcod.event.KeySym.a:
             return InventoryActivateHandler(self.engine)
