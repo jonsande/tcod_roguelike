@@ -312,10 +312,16 @@ def potion_name_roulette():
         pass
 
 note_name_options = [
-    "Note #1",
+    "Blue Note",
     "Singed paper",
     "Damaged parchment",
     "Scorched scroll",
+    "Crumpled paper",
+    "Wet paper",
+    "Battered book",
+    "Smelly paper",
+    "Strange note",
+    "Manuscript",
 ]
 
 def note_name_generator():
@@ -984,12 +990,58 @@ goblin_tooth_amulet = Item(
 )
 
 # NOTES, BOOKS, NON MAGIC SCROLLS
+# Notas inútiles o pistas falsas
 note_wizard_1 = Book(
     char="~",
     color=(230,230,230),
     name=note_name_generator(), 
     id_name="Note Wizard #1",
-    info="Hq ho ervtfh hqfdqwdgr, ho qhqñ rhugrlgr, Wlppb, kxíd gh orv jerolqv ulvxhqrv txh or dfhfkedq frq vxv wudpsdv. Gh uhshqwh, xq pdjr dqfldqr dsduhflr hq xqd qxeh gh kxpr sxusxud. '¡Ghwhqhgv, fuhdwxudv gh od vrpeud!', uxlr, odqfdqgr xq khfklyr txh wudqvirupr odv wudpsdv hq ioruhv. Orv jerolqv kxbhurq fkilldqgr, b hq pdjr wrpr od pdqr gh Wlppb: 'Yhq, shtxhqñ, ho krjdu wh hvshud'.")
+    info="Hq ho ervtfh hqfdqwdgr, ho qhqñ rhugrlgr, Wlppb, kxíd gh orv jerolqv ulvxhqrv txh or dfhfkedq frq vxv wudpsdv. Gh uhshqwh, xq pdjr dqfldqr dsduhflr hq xqd qxeh gh kxpr sxusxud. '¡Ghwhqhgv, fuhdwxudv gh od vrpeud!', uxlr, odqfdqgr xq khfklyr txh wudqvirupr odv wudpsdv hq ioruhv. Orv jerolqv kxbhurq fkilldqgr, b hq pdjr wrpr od pdqr gh Wlppb: 'Yhq, shtxhqñ, ho krjdu wh hvshud'."
+    )
+# Notas útiles
+# TODO: el número identificativo del id_name hay que relativizarlo. Que sea aleatorio en cada partida.
+library_clue_1 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #1",
+    info="Busco el pasillo y el lugar correcto desde hace semanas. Estoy desesperando. Todas las pistas acaban llevándome a un mismo lugar, pero allí no hay nada. Algo se me escapa."
+    )
+library_clue_2 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #2",
+    info="...abandono este libro de notas en el escritorio de la entrada. Espero que los apuntes que he ido haciendo en él puedan servirle a alguien algún día."
+    )
+library_clue_3 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #3",
+    info="He perdido toda esperanza. No puedo continuar, y tampoco escapar. Estoy condenado."
+    )
+library_clue_4 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #4",
+    info="Sé que aparece en cierto momento del día. He descubierto que ese duende o demonio o lo que sea aparece por los pasillos del 8a de forma regular. Debería encontrar un modo de medir el tiempo."
+    )
+library_clue_5 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #5",
+    info="Ese ser despreciable se siente atraído por algo que hay en las estanterías de ese pasillo. No sé lo que es."
+    )
+library_clue_6 = Book(
+    char="~",
+    color=(230,230,230),
+    name=note_name_generator(), 
+    id_name="Note about a library #6",
+    info="He revisado todos los libros del pasillo 8a. Nada."
+    )
 
 class BreakableWallFactory:
     """Factory that generates individualized breakable walls when spawning."""

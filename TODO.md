@@ -11,13 +11,13 @@ VARIOS
 - [ ] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
 
 RENDIMIENTO
-- [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo.
+- [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo. P.D.: es el cálculo de pathfinding, parece.
 
 ARMAS
 - [!] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
 - [-] Añadir en una casilla la distancia a la que se puede lanzar una daga. [Esto depende de la fuerza y pericia del jugador]
 - [ ] Bajarles el color a los sprites de armas.
-- [ ] Los objetos equipados en el inventario deben ir de otro color.
+- [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
 - [ ] Las criaturas deben huir con hp bajos.
@@ -41,17 +41,17 @@ AVENTURERS
 
 PERSONAJES
 - [ ] Personajes únicos o especiales:
-- [ ] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje).
+- [!] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje).
 - [-] Anciano del fuego eterno. Normalmente en el nivel de superficie. Junto a un campfire que nunca se apaga. Le da consejos cripticos al PJ. En ocasiones le puede obsequiar con un objeto mágico. En otras partidas el viejo no está, y sólo están los restos de la fogata.
 - [ ] Robot estropeado pero aún operativo.
 
 EFECTOS SONOROS / SONIDO
 - [ ] Sonido de viento en el nivel de superficie.
-- [ ] Sonido de queja/lamento al recibir daño (específico de cada criatura).
+- [-] Sonido de queja/lamento al recibir daño (específico de cada criatura).
 - [-] Sonido de ataques con armas y desarmado. [Sistema implementado, pero sin configurar]
 - [x] Sonidos de recoger objetos.
 - [x] Sonido de fuergo jungo a las fogatas (al recuperar vida, disparar el función correspondiente).
-- [ ] Que la transición de música ambiente sea con fade in/out.
+- [x] Que la transición de música ambiente sea con fade in/out.
 - [x] Sonido ambiente!
 - [x] Sistema para sonidos sfx
 - [ ] Más sonidos (algunos personalizados, que marquen alguna diferencia) de pisadas, risas, armas, fuego.
@@ -63,7 +63,7 @@ EFECTOS VISUALES
 - [x] Efectos luz adventurers.
 - [x] Efectos lightnin bolt.
 - [x] Efectos lanzamiento de objetos.
-- [ ] Efecto de transición al/del negro al cambiar de niveles (fading).
+- [x] Efecto de transición al/del negro al cambiar de niveles (fading).
 - [ ] Ahora mismo la luz (el fov) de los adventurers sólo se ve si el adventurer es visible. Esto lo ideal es cambiarlo. Aunque el adventurer no sea visible, si alguna de las casillas que sí es visible para el adventurer es visible por el personaje jugador, esa casilla debe verse iluminada.
 
 PERGAMINOS
@@ -74,21 +74,21 @@ PERGAMINOS
 - [ ] Pergamino summon monsters
 - [ ] Pergamino de generar humo (impide la visión en un área determinada)
 - [x] Pergamino de teletransporte
-- [ ] Pergamino que haga el player.fighter.super_memory True, para que se active el sistema de memoria típico
+- [x] Pergamino que haga el player.fighter.super_memory True, para que se active el sistema de memoria típico
 - [ ] Pergamino que identifica si el efecto del objeto es bueno, malo, o neutral.
 
 POCIONES
-- [ ] BUG: Creo que la potion of True Sight se está identificando al lanzarla contra criatura. No debería.
+- [x] BUG: Creo que la potion of True Sight se está identificando al lanzarla contra criatura. No debería.
 - [x] Crear animación para lanzamiento de pociones.
 - [ ] ¿Animación para la rotura de pociones?
 - [x] Crear animación genérica para lanzamiento de cualquier objeto.
 
 ANILLOS
-- [ ] Anillos malditos.
-- [ ] Anillo de fuerza +1
+- [x] Anillos malditos.
+- [x] Anillo de fuerza +1
 - [ ] Anillo de invisibilidad
-- [ ] Anillo de estamina.
-- [ ] Anillo de infravisión.
+- [x] Anillo de estamina.
+- [x] Anillo de infravisión.
 - [ ] Anilos mixtos, con propiedades mágicas buenas y también malas.
 
 COLGANTES Y AMULETOS
@@ -102,13 +102,13 @@ ARMADURAS MÁGICAS
 
 COFRES
 - [x] Dibujar un sprite para los cofres para el psuedo-ascii.
-- [ ] Sonido al abrir (y cerrar) cofres.
+- [x] Sonido al abrir (y cerrar) cofres.
 - [DESCARTADO] Una vez abiertos no se pueden cerrar (arreglar esto).
 - [ ] Tenemos que implementar la mecánica para introducir objetos dentro de un cofre. Es decir, para transferir objetos del inventario al cofre abierto.
 
 MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [ ] Rediseñar de un modo coherente las mesas. Ahora mismo son un fighter de la clase Door. Esto es muy raro. Unificar criterios y buscar una forma más elegante e intuitiva de gestionar el ser de las tablas.
-- [ ] Librerías Con libros y/o pergaminos.
+- [ ] Librerías con libros y/o pergaminos.
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
@@ -117,6 +117,7 @@ OBJETOS VARIOS
 - [x] Libros, notas. 
 
 ARTEFACTOS
+- [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.
 - [ ] Crear artefacto revolver. Es un objeto único. Se tiene en el inventario, y al activarlo, permite disparar. El revolver tiene 6 balas (y no se puede recargar, pues no existirán más balas en toda la mazmorra). Cuando se dispara el revolver, el jugador escoge el objetivo. Son objetivos válidos las criaturas que sean visibles y que se encuentren en un radio de 25 casillas o menos. La probabilidad de impactar será como sigue: 100% a la distancia de una casilla.... El daño será variable.
 
 HUD
@@ -150,6 +151,8 @@ EVENTOS ESPECIALES
 
 HISTORIA
 - [ ] En el nivel 4 debe lanzarse un evento especial.
+- [ ] Está previsto que en el juego haya una serie de puzles menores y una serie de puzles mayores. Para resolver algunos de los puzles mayores hará falta algunos objetos únicos, como el reloj de arena y la pala y la cuerda para el nivel de la biblioteca.
+- [ ] Eventos especiales:
 
 CUEVAS
 - [x] Revisar el loot de las cuevas. Parece que se trata todo como una habitación. Hay que hacerlo de otra forma.
@@ -191,8 +194,9 @@ COMBATE
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- [ ] Revisar las mecánicas de sigilo y la ia al respecto.
 - Sistema de puestas con llave:
-    - [ ] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.
+    - [x] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.
 - [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
 - [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
 - [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.

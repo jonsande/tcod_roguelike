@@ -319,16 +319,6 @@ ALL_ITEMS = [
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_LOOT_TABLES = {
-    1: [
-        ("accuracy_ring", 1), 
-        ("plain_ring", 1),
-        ("strength_ring", 1),
-        ("farsight_ring", 1),
-        ("vigor_ring", 1),
-        ("antidote_ring", 1),
-        ("cursed_weakness_ring", 1),
-        ("cursed_myopia_ring", 1),
-    ],
     2: [
         # ("dagger", 1),
         # ("leather_armor", 1),
@@ -423,20 +413,21 @@ TABLE_ITEM_COUNT_BY_FLOOR = [
 # Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
 TABLE_LOOT_TABLES = {
     2: [
-        ("triple_ration", 3),
-        ("banana", 2),
+        ("library_clue_1", 1),
+        ("library_clue_2", 1),
+        ("library_clue_3", 1),
+        ("library_clue_4", 1),
+        ("library_clue_5", 1),
+        ("library_clue_6", 1),
+        ("triple_ration", 1),
+        ("banana", 1),
         ("sand_bag", 1),
         ("note_wizard_1", 1),
-    ],
-    3: [
-        ("note_wizard_1", 1),
-        ("antidote", 2),
-        ("stamina_potion", 2),
-    ],
-    6: [
-        ("short_sword", 1),
+        ("antidote", 1),
+        ("stamina_potion", 1),
         ("remove_curse_scroll", 1),
         ("strength_potion", 1),
+        ("poison_potion", 1)
     ],
 }
 
