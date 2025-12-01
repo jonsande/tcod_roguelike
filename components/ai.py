@@ -7,6 +7,7 @@ import numpy as np  # type: ignore
 import tcod
 from tcod import constants
 from tcod.map import compute_fov
+from i18n import _
 
 from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction
 import color

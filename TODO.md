@@ -150,6 +150,7 @@ EVENTOS ESPECIALES
 - [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
 
 HISTORIA
+- [ ] La conversación del anciano y otros personajes importantes tiene que salir en una ventana dedicada.
 - [ ] En el nivel 4 debe lanzarse un evento especial.
 - [ ] Está previsto que en el juego haya una serie de puzles menores y una serie de puzles mayores. Para resolver algunos de los puzles mayores hará falta algunos objetos únicos, como el reloj de arena y la pala y la cuerda para el nivel de la biblioteca.
 - [ ] Eventos especiales:
@@ -160,7 +161,7 @@ CUEVAS
 - [x] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
 
 WORLD GENERATION
-- [ ] Ramas. En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa.
+- [ ] Ramas (branches). En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa. Algunas branches deberías ser obligatorias: en ellas habrá una llave sin la cual no se puede avanzar en la rama principal.
 
 DUNGEON GENERATION
 - [x] Hot path.
@@ -195,8 +196,9 @@ COMBATE
 
 MECÁNICAS
 - [ ] Revisar las mecánicas de sigilo y la ia al respecto.
-- Sistema de puestas con llave:
+- Sistema de puertas con llave:
     - [x] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.
+    - [ ] Las llaves deben poder generarse en el inventario de mosntruos. Esto hay que programarlo en _ensure_keys_for_locked_doors() de game_map.py.
 - [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
 - [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
 - [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.
@@ -219,6 +221,12 @@ VARIOS
 
 
 BUGS
+
+GUB: A los adventurers, cuando se les lanza una poción de ceguera se comportan como si nada. Si estás combatiendo con ellos esto es bastante frustrante.
+
+BUG: Se están generando fogatas sobre las escaleras de bajada!!!!
+
+BUG: Al lanzar la restore stamina potion el cursor no vuelve a 0,0. Lo mismo al lanzar un pergamino de fireball, Lo mismo al lanzar una poción de veneno poison.
 
 BUG: Parece que si queda un meat donde hay una puerta, y la puerta se cierra, el sprite de meat se queda por encima del de la puerta. Lo mismo pasa con los cadáveres. No sé cón otros objetos.
 

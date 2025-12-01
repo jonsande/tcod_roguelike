@@ -25,6 +25,7 @@ from procgen import (
     log_breakable_tile_mismatches,
     maybe_place_chest,
     maybe_place_table,
+    maybe_place_bookshelf,
     place_entities,
     spawn_door_entity,
 )
@@ -193,6 +194,7 @@ def generate_dungeon(
         log_breakable_tile_mismatches(dungeon, "generate_dungeon")
     maybe_place_chest(dungeon, floor_number, rooms)
     maybe_place_table(dungeon, floor_number, rooms)
+    maybe_place_bookshelf(dungeon, floor_number, rooms)
     dungeon.center_rooms = list(rooms_array)
     return dungeon
 

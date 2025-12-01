@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Optional, Union
 import tcod
 import threading
 import time
+from i18n import _
 
 import color
 from engine import Engine
@@ -206,7 +207,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height // 2 - 4,
-            "ADVENTURERS!",
+            _("THE SEEKER"),
             fg=color.menu_title,
             #alignment=tcod.CENTER,   # DEPRECATED
             alignment=libtcodpy.CENTER,
@@ -222,7 +223,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         menu_width = 24
         for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[Q] Quit"]
+            [_("[N] Play a new game"), _("[C] Continue last game"), _("[Q] Quit")]
         ):
             console.print(
                 console.width // 2,
@@ -367,9 +368,9 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
                 )
         else:
             console.print(
-                center_x,
+                center_x - 1,
                 center_y + 5,
-                "LOADING",
+                _("LOADING"),
                 fg=color.menu_text,
                 alignment=libtcodpy.CENTER,
             )

@@ -1,6 +1,9 @@
 import tcod
 from random import randint
 
+LANGUAGE = "es"  # Idioma activo de la interfaz.
+FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
+
 # -- GRAPHICS ------------------------------------------------
 # NOTA: cargas data/graphics/bob20x20.png con tcod.tileset.CHARMAP_CP437, así que cada casilla del PNG se asigna a un código CP437 y no a una tecla física del teclado.
 # Como la hoja tiene 16 columnas, el índice del tile se calcula index = x + y * 16 (tomando x y y desde 0, con x=0 en la primera columna y y=0 en la primera fila). Ese índice se usa para buscar el código Unicode real: codepoint = tcod.tileset.CHARMAP_CP437[index] y glyph = chr(codepoint).
@@ -51,56 +54,59 @@ STAIR_TRANSITION_FRAME_TIME = 0.03  # segundos entre fotogramas
 # exclusivo de SDL2.
 FULLSCREEN = True
 FULLSCREEN_MODE = "desktop"  # "desktop" o "exclusive"
+# Oculta el cursor del ratón tras unos segundos de inactividad dentro de la ventana.
+MOUSE_IDLE_HIDE_SECONDS = 3.0
 
 # -- Intro cinematic ----------------------------------------------------
 # Controla si se muestra una breve introducción al iniciar una nueva partida.
 INTRO_ENABLED = True
 INTRO_FADE_DURATION = 2.7  # segundos para fundir a negro o desde él
 INTRO_SLIDE_DURATION = 3.5  # tiempo en pantalla antes de iniciar el fundido
-INTRO_SLIDES = [
-    {
-        "text": "Los ancianos han elegido.",
-        "hold": 4.2,
-    },
-    {
-        "text": "El ancestral artefacto se perdió generaciones atrás.\n"
-        "Los videntes de la tribu lo ven en sueños. Dicen verlo encerrado en\n"
-        "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
-        "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
-        "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
-        "muy anterior al Tercer Nacimiento.\n",
-        "hold": 17.3,
-    },
-    {
-        "text": "Los ancianos han elegido a un nuevo buscador. El elegido deberá viajar\n"
-        "a través de las montañas del Duule hasta el desierto pálido, encontrar\n"
-        "la entrada al laberinto y adentrarse en él.\n"
-        "Muchos otros han emprendido la Gran Búsqueda antes. Nadie ha vuelto.",
-        "hold": 13.0,
-    },
-]
-
-# INTRO_SLIDES = [
-#     {
-#         "text": "The elders have chosen.",
-#         "hold": 2.2,
-#     },
-#     {
-#         "text": "The ancient artifact was lost generations ago.\n"
-#         "The seers of the tribe glimpse it in their dreams. They claim to see\n"
-#         "it sealed within a stone urn, deep in an ancient underground labyrinth.\n"
-#         "No one knows who built the labyrinth, nor for what purpose. Some say \n"
-#         "it is a temple, bearing signs of an age long before the Third Birth.\n",
-#         "hold": 17.3,
-#     },
-#     {
-#         "text": "The elders have chosen a new seeker. The chosen one must travel\n"
-#         "across the Duule Mountains to the Pale Desert, find the entrance to the\n"
-#         "labyrinth, and venture into its depths.\n"
-#         "Many before have embarked on the Great Quest. None have ever returned.",
-#         "hold": 13.0,
-#     },
-# ]
+if LANGUAGE == "es":
+    INTRO_SLIDES = [
+        {
+            "text": "Los ancianos han elegido.",
+            "hold": 4.2,
+        },
+        {
+            "text": "El ancestral artefacto se perdió generaciones atrás.\n"
+            "Los videntes de la tribu lo ven en sueños. Dicen verlo encerrado en\n"
+            "una urna de piedra, en el fondo de un antiguo laberinto subterráneo.\n"
+            "Nadie sabe quién construyó el laberinto. Ni con qué propósito.\n"
+            "Algunos aseguran que es un templo, y que hay en él signos de ser\n"
+            "muy anterior al Tercer Nacimiento.\n",
+            "hold": 17.3,
+        },
+        {
+            "text": "Los ancianos han elegido a un nuevo buscador. El elegido deberá viajar\n"
+            "a través de las montañas del Duule hasta el desierto pálido, encontrar\n"
+            "la entrada al laberinto y adentrarse en él.\n"
+            "Muchos otros han emprendido la Gran Búsqueda antes. Nadie ha vuelto.",
+            "hold": 13.0,
+        },
+    ]
+else:
+    INTRO_SLIDES = [
+        {
+            "text": "The elders have chosen.",
+            "hold": 2.2,
+        },
+        {
+            "text": "The ancient artifact was lost generations ago.\n"
+            "The seers of the tribe glimpse it in their dreams. They claim to see\n"
+            "it sealed within a stone urn, deep in an ancient underground labyrinth.\n"
+            "No one knows who built the labyrinth, nor for what purpose. Some say \n"
+            "it is a temple, bearing signs of an age long before the Third Birth.\n",
+            "hold": 17.3,
+        },
+        {
+            "text": "The elders have chosen a new seeker. The chosen one must travel\n"
+            "across the Duule Mountains to the Pale Desert, find the entrance to the\n"
+            "labyrinth, and venture into its depths.\n"
+            "Many before have embarked on the Great Quest. None have ever returned.",
+            "hold": 13.0,
+        },
+    ]
 
 # -- Audio settings ------------------------------------------------------
 # Configuración de audio movida a audio_settings.py
@@ -177,6 +183,7 @@ DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
 DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
 DUNGEON_V3_EXTRA_CONNECTIONS = 3
 DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+# Las llaves las genera y coloca _ensure_keys_for_locked_doors(), de game_map.py
 DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR = {
     "white": 4, # Tiene que ser 4 o más, de lo contrario se generarán llaves en el nivel 1 (en la superficie)
     "red": 8,
@@ -196,12 +203,18 @@ MAX_DOORS_BY_LEVEL = 8
 MAX_BREAKABLE_WALLS = 6
 
 # -- Fixed dungeon floors ----------------------------------------------------
-# Cada entrada permite asignar una planta a una plantilla fija definida en fixed_maps.py.
+# Cada entrada permite asignar una planta a una plantilla fija definida en fixed_maps.py
+# o en alguno de los generadores dedicados (por ejemplo, three_doors.py o the_library.py).
 # `map` debe corresponder con el nombre de la plantilla y `walls`/`walls_special`
 # con los identificadores de baldosas de tile_types.py.
 FIXED_DUNGEON_LAYOUTS = {
     # 6: {
     #     "map": "temple",
+    #     "walls": "wall_v1",
+    #     "walls_special": "wall_v2",
+    # },
+    # 2: {
+    #     "map": "the_library",
     #     "walls": "wall_v1",
     #     "walls_special": "wall_v2",
     # },
@@ -244,14 +257,21 @@ TABLE_SPAWN_CHANCES = [
     (4, 0.30),
     (6, 0.35),
 ]
+
+# Probabilidad independiente para generar estanterías con botín.
+BOOKSHELF_SPAWN_CHANCES = [
+    (2, 0.25),
+    (4, 0.25),
+    (6, 0.30),
+]
 # Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
 # El rango min-max extablecido para un nivel se aplica a los subsiguientes niveles, a no 
 # ser que se sobre escriba.
 CHEST_ITEM_COUNT_BY_FLOOR = [
     # (1, (1, 1)), # En el primer nivel se genera siempre un cofre junto al viejo.
-    (2, (2, 3)),
-    (4, (2, 4)),
-    (6, (3, 4)),
+    (2, (1, 3)),
+    (4, (1, 4)),
+    (6, (2, 4)),
     (8, (3, 4)),
     (10, (3, 4)),
     (12, (3, 5)),
@@ -375,7 +395,6 @@ CHEST_LOOT_TABLES = {
         ("cursed_lethargy_ring", 2),
         ("cursed_vulnerability_ring", 2),
         ("cursed_misfortune_ring", 2),
-        ("remove_curse_scroll", 1),
         ("strength_potion", 2), 
         ("increase_max_stamina", 2), 
         ("life_potion", 2), 
@@ -400,6 +419,7 @@ CHEST_LOOT_TABLES = {
         ("descend_scroll", 1),
         ("teleport_scroll", 1),
         ("prodigious_memory_scroll", 1),
+        ("remove_curse_scroll", 1),
     ],
 }
 
@@ -408,6 +428,13 @@ TABLE_ITEM_COUNT_BY_FLOOR = [
     (1, (0, 1)),
     (3, (0, 1)),
     (6, (0, 1)),
+]
+
+# Botín de estanterías: cantidades y tablas por nivel.
+BOOKSHELF_ITEM_COUNT_BY_FLOOR = [
+    (1, (0, 1)),
+    (3, (0, 2)),
+    (6, (1, 2)),
 ]
 
 # Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
@@ -428,6 +455,35 @@ TABLE_LOOT_TABLES = {
         ("remove_curse_scroll", 1),
         ("strength_potion", 1),
         ("poison_potion", 1)
+    ],
+}
+
+# Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
+BOOKSHELF_LOOT_TABLES = {
+    2: [
+        ("library_clue_1", 1),
+        ("library_clue_2", 1),
+        ("library_clue_3", 1),
+        ("library_clue_4", 1),
+        ("library_clue_5", 1),
+        ("library_clue_6", 1),
+        ("note_wizard_1", 1),
+        ("triple_ration", 1),
+        ("banana", 1),
+        ("antidote", 1),
+        ("stamina_potion", 1),
+        ("remove_curse_scroll", 1),
+        ("strength_potion", 1),
+        ("confusion_scroll", 1),
+        ("paralisis_scroll", 1),
+        ("identify_scroll", 1),
+        ("remove_curse_scroll", 1),
+        ("lightning_scroll", 1),
+        ("fireball_scroll", 1),
+        ("descend_scroll", 1),
+        ("teleport_scroll", 1),
+        ("prodigious_memory_scroll", 1),
+        ("remove_curse_scroll", 1),
     ],
 }
 
@@ -513,11 +569,11 @@ CAVERN_SMOOTHING_STEPS = 5
 CAVERN_MONSTER_COUNT_BY_FLOOR = [(1, (5, 9))]
 # Cavern-specific spawn rules follow the same schema as ENEMY_SPAWN_RULES.
 CAVERN_MONSTER_SPAWN_RULES = {
-    "snake": {"min_floor": 1, "weight_progression": [(2, 15), (7, 2)]},
-    "goblin": {"min_floor": 1, "weight_progression": [(2, 10), (3, 20), (5, 15)]},
-    "orc": {"min_floor": 3, "weight_progression": [(3, 12), (6, 25), (9, 10)]},
-    "cave_bat": {"min_floor": 1, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
-    "skeleton": {"min_floor": 5, "weight_progression": [(5, 5), (7, 10)]},
+    "snake": {"min_floor": 2, "weight_progression": [(2, 15), (7, 2)]},
+    "goblin": {"min_floor": 2, "weight_progression": [(2, 10), (3, 20), (5, 15)]},
+    "orc": {"min_floor": 4, "weight_progression": [(4, 12), (6, 25), (9, 10)]},
+    "cave_bat": {"min_floor": 2, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
+    "skeleton": {"min_floor": 6, "weight_progression": [(5, 5), (7, 10)]},
 }
 
 # -- Cavern item population ---------------------------------------------------

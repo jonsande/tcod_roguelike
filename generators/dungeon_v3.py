@@ -31,6 +31,7 @@ from procgen import (
     guarantee_downstairs_access,
     maybe_place_chest,
     maybe_place_table,
+    maybe_place_bookshelf,
     place_entities,
     tunnel_between,
 )
@@ -220,6 +221,7 @@ def generate_dungeon_v3(
 
     maybe_place_chest(dungeon, floor_number, [room for room, _ in rooms])
     maybe_place_table(dungeon, floor_number, [room for room, _ in rooms])
+    maybe_place_bookshelf(dungeon, floor_number, [room for room, _ in rooms])
     dungeon.center_rooms = [room.center for room, _ in rooms]
     dungeon.engine.update_center_rooms_array(list(dungeon.center_rooms))
     return dungeon

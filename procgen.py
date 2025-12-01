@@ -13,7 +13,7 @@ import fixed_rooms
 from entity_factories import *
 import uniques
 import settings
-from entity import TableContainer
+from entity import TableContainer, BookShelfContainer
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -55,6 +55,9 @@ chest_loot_tables = settings.CHEST_LOOT_TABLES
 table_spawn_chances = settings.TABLE_SPAWN_CHANCES
 table_item_count_by_floor = settings.TABLE_ITEM_COUNT_BY_FLOOR
 table_loot_tables = settings.TABLE_LOOT_TABLES
+bookshelf_spawn_chances = settings.BOOKSHELF_SPAWN_CHANCES
+bookshelf_item_count_by_floor = settings.BOOKSHELF_ITEM_COUNT_BY_FLOOR
+bookshelf_loot_tables = settings.BOOKSHELF_LOOT_TABLES
 
 
 def _resolve_entity_table(table_config):
@@ -1448,7 +1451,7 @@ def _spawn_entity_template(
             continue
         entity.spawn_coord = (x, y)
         spawned = entity.spawn(dungeon, x, y)
-        _maybe_fill_table_loot(spawned, floor_number)
+        _maybe_fill_container_loot(spawned, floor_number)
         if settings.DEBUG_MODE:
             if __debug__:
                 print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
@@ -1520,73 +1523,81 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
         )
 
 
-def _select_chest_loot_table(floor: int) -> List[Tuple[str, float]]:
-    if not chest_loot_tables:
+def _select_loot_table_for_floor(
+    loot_tables_by_floor: Dict[int, List[Tuple[str, float]]], floor: int
+) -> List[Tuple[str, float]]:
+    if not loot_tables_by_floor:
         return []
     selected: List[Tuple[str, float]] = []
-    for min_floor in sorted(chest_loot_tables.keys()):
+    for min_floor in sorted(loot_tables_by_floor.keys()):
         if min_floor > floor:
             break
-        selected = chest_loot_tables[min_floor]
+        selected = loot_tables_by_floor[min_floor]
     return selected
+
+
+def _build_loot_for_floor(
+    loot_tables_by_floor: Dict[int, List[Tuple[str, float]]],
+    item_count_by_floor: List[Tuple[int, Tuple[int, int]]],
+    floor: int,
+) -> List[Entity]:
+    loot_entries = _select_loot_table_for_floor(loot_tables_by_floor, floor)
+    if not loot_entries:
+        return []
+    min_items, max_items = get_floor_value(item_count_by_floor, floor, (0, 0))
+    if max_items <= 0 or min_items > max_items:
+        return []
+    count = random.randint(min_items, max_items)
+    if count <= 0:
+        return []
+    keys = [entry[0] for entry in loot_entries]
+    weights = [float(entry[1]) for entry in loot_entries]
+    chosen_keys = random.choices(keys, weights=weights, k=count)
+    loot: List[Entity] = []
+    for key in chosen_keys:
+        prototype = getattr(entity_factories, key, None)
+        if not prototype:
+            continue
+        loot.append(copy.deepcopy(prototype))
+    return loot
+
+
+def _select_chest_loot_table(floor: int) -> List[Tuple[str, float]]:
+    return _select_loot_table_for_floor(chest_loot_tables, floor)
 
 
 def _build_chest_loot(floor: int) -> List[Entity]:
-    loot_entries = _select_chest_loot_table(floor)
-    if not loot_entries:
-        return []
-    min_items, max_items = get_floor_value(chest_item_count_by_floor, floor, (0, 0))
-    if max_items <= 0 or min_items > max_items:
-        return []
-    count = random.randint(min_items, max_items)
-    keys = [entry[0] for entry in loot_entries]
-    weights = [float(entry[1]) for entry in loot_entries]
-    chosen_keys = random.choices(keys, weights=weights, k=count)
-    loot: List[Entity] = []
-    for key in chosen_keys:
-        prototype = getattr(entity_factories, key, None)
-        if not prototype:
-            continue
-        loot.append(copy.deepcopy(prototype))
-    return loot
+    return _build_loot_for_floor(chest_loot_tables, chest_item_count_by_floor, floor)
 
 
 def _select_table_loot_table(floor: int) -> List[Tuple[str, float]]:
-    if not table_loot_tables:
-        return []
-    selected: List[Tuple[str, float]] = []
-    for min_floor in sorted(table_loot_tables.keys()):
-        if min_floor > floor:
-            break
-        selected = table_loot_tables[min_floor]
-    return selected
+    return _select_loot_table_for_floor(table_loot_tables, floor)
 
 
 def _build_table_loot(floor: int) -> List[Entity]:
-    loot_entries = _select_table_loot_table(floor)
-    if not loot_entries:
-        return []
-    min_items, max_items = get_floor_value(table_item_count_by_floor, floor, (0, 0))
-    if max_items <= 0 or min_items > max_items:
-        return []
-    count = random.randint(min_items, max_items)
-    keys = [entry[0] for entry in loot_entries]
-    weights = [float(entry[1]) for entry in loot_entries]
-    chosen_keys = random.choices(keys, weights=weights, k=count)
+    return _build_loot_for_floor(table_loot_tables, table_item_count_by_floor, floor)
+
+
+def _select_bookshelf_loot_table(floor: int) -> List[Tuple[str, float]]:
+    return _select_loot_table_for_floor(bookshelf_loot_tables, floor)
+
+
+def _build_bookshelf_loot(floor: int) -> List[Entity]:
+    return _build_loot_for_floor(
+        bookshelf_loot_tables, bookshelf_item_count_by_floor, floor
+    )
+
+
+def _maybe_fill_container_loot(entity: Entity, floor_number: int) -> None:
+    """Populate table-like containers with loot when they spawn."""
     loot: List[Entity] = []
-    for key in chosen_keys:
-        prototype = getattr(entity_factories, key, None)
-        if not prototype:
-            continue
-        loot.append(copy.deepcopy(prototype))
-    return loot
-
-
-def _maybe_fill_table_loot(entity: Entity, floor_number: int) -> None:
-    """Populate table containers with loot when they spawn."""
     if isinstance(entity, TableContainer):
         loot = _build_table_loot(floor_number)
-        entity_factories.fill_table_with_items(entity, loot)
+    elif isinstance(entity, BookShelfContainer):
+        loot = _build_bookshelf_loot(floor_number)
+    else:
+        return
+    entity_factories.fill_container_with_items(entity, loot)
 
 
 def maybe_place_table(
@@ -1619,7 +1630,7 @@ def maybe_place_table(
             continue
         loot = _build_table_loot(floor_number)
         table_entity = entity_factories.table.spawn(dungeon, x, y)
-        entity_factories.fill_table_with_items(table_entity, loot)
+        entity_factories.fill_container_with_items(table_entity, loot)
         if settings.DEBUG_MODE:
             if __debug__:
                 print(f"DEBUG: Generando... Table en x={x} y={y}")
@@ -1627,6 +1638,46 @@ def maybe_place_table(
     if settings.DEBUG_MODE:
         if __debug__:
             print(f"DEBUG: Failed to place table en floor {floor_number}")
+
+
+def maybe_place_bookshelf(
+    dungeon: GameMap,
+    floor_number: int,
+    rooms: Optional[List] = None,
+) -> None:
+    """Place a lootable bookshelf with its own spawn chance."""
+    chance = get_floor_value(bookshelf_spawn_chances, floor_number, 0.0)
+    if chance <= 0 or random.random() > chance:
+        return
+
+    def pick_location() -> Optional[Tuple[int, int]]:
+        if rooms:
+            room = random.choice(rooms)
+            return room.random_location()
+        for _ in range(20):
+            x = random.randint(1, dungeon.width - 2)
+            y = random.randint(1, dungeon.height - 2)
+            if dungeon.tiles["walkable"][x, y]:
+                return (x, y)
+        return None
+
+    for _ in range(50):
+        coords = pick_location()
+        if not coords:
+            continue
+        x, y = coords
+        if not _can_place_entity(dungeon, x, y):
+            continue
+        loot = _build_bookshelf_loot(floor_number)
+        bookshelf_entity = entity_factories.bookshelf.spawn(dungeon, x, y)
+        entity_factories.fill_container_with_items(bookshelf_entity, loot)
+        if settings.DEBUG_MODE:
+            if __debug__:
+                print(f"DEBUG: Generando... Bookshelf en x={x} y={y}")
+        return
+    if settings.DEBUG_MODE:
+        if __debug__:
+            print(f"DEBUG: Failed to place bookshelf en floor {floor_number}")
 
 
 def maybe_place_chest(

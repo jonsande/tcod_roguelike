@@ -1,6 +1,7 @@
 # Aquí generamos los modelos de entidades que existen en el juego
 
 from typing import List
+from i18n import _
 
 from components.ai import (
     HostileEnemy,
@@ -20,7 +21,7 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapon
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest, TableContainer
+from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest, TableContainer, BookShelfContainer
 import random
 import numpy as np
 import tile_types
@@ -105,11 +106,16 @@ def fill_chest_with_items(chest_entity: Chest, items: List[Item]) -> None:
         chest_entity.add_item(item)
 
 
-def fill_table_with_items(table_entity: TableContainer, items: List[Item]) -> None:
-    """Replace the contents of a table with the provided items."""
-    table_entity.inventory.items = []
+def fill_container_with_items(container: Chest, items: List[Item]) -> None:
+    """Replace the contents of a chest-like container with the provided items."""
+    container.inventory.items = []
     for item in items:
-        table_entity.add_item(item)
+        container.add_item(item)
+
+
+def fill_table_with_items(table_entity: TableContainer, items: List[Item]) -> None:
+    """Backward-compatible wrapper to fill tables with items."""
+    fill_container_with_items(table_entity, items)
 
 
 def color_roulette():
@@ -552,6 +558,15 @@ table = TableContainer(
     open_char="#",
     color=(100, 100, 100),
     name="Table",
+    inventory=Inventory(capacity=6, items=[]),
+)
+
+# Bookshelf container with its own loot configuration.
+bookshelf = BookShelfContainer(
+    char="π",
+    open_char="π",
+    color=(120, 90, 60),
+    name="Bookshelf",
     inventory=Inventory(capacity=6, items=[]),
 )
 

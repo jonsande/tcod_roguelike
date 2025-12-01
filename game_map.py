@@ -5,6 +5,7 @@ from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set
 import numpy as np  # type: ignore
 from tcod.console import Console
 from entity import Actor, Item, Obstacle
+from render_order import RenderOrder
 import tile_types
 import entity_factories
 import settings
@@ -163,6 +164,13 @@ class GameMapTown:
                 return entity
         return None
 
+    def _is_stairs_tile(self, x: int, y: int) -> bool:
+        if self.downstairs_location and (x, y) == self.downstairs_location:
+            return True
+        if self.upstairs_location and (x, y) == self.upstairs_location:
+            return True
+        return False
+
     def render(self, console: Console) -> None:
         """
         Renders the map.
@@ -190,9 +198,23 @@ class GameMapTown:
             if self.visible[entity.x, entity.y]:
                 if player_blind and entity is not player_entity:
                     continue
+                if self._is_stairs_tile(entity.x, entity.y) and entity.render_order in (
+                    RenderOrder.DECORATION,
+                    RenderOrder.CORPSE,
+                ):
+                    # Keep stairs visible; skip low-priority sprites on top of them.
+                    continue
                 console.print(
                     x=entity.x, y=entity.y, string=entity.char, fg=entity.color
                 )
+
+    def get_transparency_map(self) -> np.ndarray:
+        """Return transparency map adjusted for vision-blocking entities."""
+        transparent = self.tiles["transparent"].copy()
+        for entity in self.entities:
+            if getattr(entity, "id_name", "").lower() == "bookshelf":
+                transparent[entity.x, entity.y] = False
+        return transparent
 
 
 class GameMap:
@@ -345,6 +367,13 @@ class GameMap:
                 return entity
         return None
 
+    def _is_stairs_tile(self, x: int, y: int) -> bool:
+        if self.downstairs_location and (x, y) == self.downstairs_location:
+            return True
+        if self.upstairs_location and (x, y) == self.upstairs_location:
+            return True
+        return False
+
     def render(self, console: Console) -> None:
         """
         Renders the map.
@@ -371,9 +400,22 @@ class GameMap:
             if self.visible[entity.x, entity.y]:
                 if player_blind and entity is not player_entity:
                     continue
+                if self._is_stairs_tile(entity.x, entity.y) and entity.render_order in (
+                    RenderOrder.DECORATION,
+                    RenderOrder.CORPSE,
+                ):
+                    continue
                 console.print(
                     x=entity.x, y=entity.y, string=entity.char, fg=entity.color
                 )
+
+    def get_transparency_map(self) -> np.ndarray:
+        """Return transparency map adjusted for vision-blocking entities."""
+        transparent = self.tiles["transparent"].copy()
+        for entity in self.entities:
+            if getattr(entity, "id_name", "").lower() == "bookshelf":
+                transparent[entity.x, entity.y] = False
+        return transparent
 
 
 
@@ -429,6 +471,7 @@ class GameWorld:
             generate_cavern,
             generate_dungeon_v2,
             generate_dungeon_v3,
+            generate_the_library_map,
             generate_three_doors_map,
         )
 
@@ -499,12 +542,14 @@ class GameWorld:
 
     def _select_generator(self, floor: int):
         from generators import (
+            THE_LIBRARY_TEMPLATE,
             THREE_DOORS_TEMPLATE,
             generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,
             generate_dungeon_v3,
+            generate_the_library_map,
             generate_three_doors_map,
         )
 
@@ -519,6 +564,8 @@ class GameWorld:
             map_name = fixed_layout.get("map")
             if map_name == "three_doors":
                 template = THREE_DOORS_TEMPLATE
+            elif map_name in ("THE_LIBRARY_TEMPLATE", "the_library"):
+                template = THE_LIBRARY_TEMPLATE
             else:
                 template = getattr(fixed_maps, map_name, None) if map_name else None
             if template:
@@ -529,6 +576,8 @@ class GameWorld:
                 generator = generate_fixed_dungeon
                 if map_name == "three_doors":
                     generator = generate_three_doors_map
+                elif map_name in ("THE_LIBRARY_TEMPLATE", "the_library"):
+                    generator = generate_the_library_map
                 return generator, {
                     "map": template,
                     "walls": walls,

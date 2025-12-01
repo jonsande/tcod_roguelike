@@ -1,7 +1,6 @@
 # Paint your 78x34 maps in https://notimetoplay.itch.io/ascii-mapper
 
 import entity_factories as ef
-import random
 
 template = (
     "##############################################################################",
@@ -117,110 +116,4 @@ temple_monsters = [ef.snake]
 ##############################################################################
 
 
-def generate_array_of(map, character):
-    
-    array = []
-    x_counter = 0
-    y_counter = 0
-    for i in map:
-        x_counter = 0
-        y_counter += 1
-        for e in i:
-            x_counter += 1
-            if e == character:
-                array.append((x_counter, y_counter))
-            else:
-                pass
-            
-    return array
 
-def place_player(map):
-    
-    location = []
-    x_counter = 0
-    y_counter = 0
-    for i in map:
-        x_counter = 0
-        y_counter += 1
-        for e in i:
-            x_counter += 1
-            if e == "@":
-                location.append((x_counter, y_counter))
-            else:
-                pass
-            
-    max_choices = len(location) - 1
-    winner = random.randint(0, max_choices)
-            
-    return location[winner]
-
-
-# Esta función es para la generación de monstruos aleatorios
-# en las posiciones donde haya una 'M'.
-# Actualmente no se está usando.
-def place_monsters(map):
-    """
-    Returns the location to spawn the monster
-    """
-    
-    location = []
-    x_counter = 0
-    y_counter = 0
-    for i in map:
-        x_counter = 0
-        y_counter += 1
-        for e in i:
-            x_counter += 1
-            if e == "M":
-                location.append((x_counter, y_counter))
-            else:
-                pass
-            
-    return location
-
-#def place_fixed_monsters(map):
-#    pass
-
-"""
-def generate_fixed_monsters_array(map):
-
-    monsters_chars = ["s", "r", "g", "o", "T", "M"]
-    location = []
-    x_counter = 0
-    y_counter = 0
-    for i in map:
-        x_counter = 0
-        y_counter += 1
-        for e in i:
-            x_counter += 1
-            if e in monsters_chars:
-                location.append((x_counter, y_counter))
-            else:
-                pass
-    # DEBUGG
-    print(f"FIXED MONSTERS ARRAY: {location}")
-
-    return location
-"""
-
-# No está funcionando bien
-# Razón: esta función se ejecuta una sola vez desde
-# procgen; de modo que solo devuelve un monstruo cuando
-# se le llama generate_fixed_dungeon(); y entonces lo que
-# pasa es que generate_fixed_dungeon() llena el fixed_monsters_array
-# con el monstruo retornado.   
-def get_monster(map):
-
-    x_counter = 0
-    y_counter = 0
-    for i in map:
-        x_counter = 0
-        y_counter += 1
-        for e in i:
-            x_counter += 1
-            if e == "s":
-                monster = ef.snake
-            #if e == "g":
-            #    monster = ef.goblin
-
-    return monster

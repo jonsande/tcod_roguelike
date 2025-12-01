@@ -98,7 +98,7 @@ CHEST_OPEN_VOLUME = 0.4
 # Table interactions --------------------------------------------------------
 TABLE_OPEN_SOUND_ENABLED = True
 TABLE_OPEN_SOUNDS = [
-    "data/audio/sfx/chests/Chest_Open_1.ogg",
+    "data/audio/sfx/tables/metal-tackel-box-opening-01.mp3",
 ]
 TABLE_OPEN_SOUND = None
 TABLE_OPEN_VOLUME = 0.35

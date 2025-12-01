@@ -6,6 +6,7 @@
 + Reacting to the player’s input."""
 
 #!/usr/bin/env python3
+import time
 import traceback
 import tcod
 import color
@@ -13,13 +14,14 @@ import exceptions
 import input_handlers
 import setup_game
 import settings
+from i18n import _
 
 
 def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
     """If the current event handler has an active Engine then save it."""
     if isinstance(handler, input_handlers.EventHandler):
         handler.engine.save_as(filename)
-        print("Game saved.")
+        print(_("Game saved."))
 
 
 def main() -> None:
@@ -42,12 +44,55 @@ def main() -> None:
         if fullscreen_mode != "exclusive":
             flag_attr = "SDL_WINDOW_FULLSCREEN_DESKTOP"
         window_flags = getattr(tcod.context, flag_attr, 0)
+    mouse_idle_hide_seconds = float(getattr(settings, "MOUSE_IDLE_HIDE_SECONDS", 0) or 0)
+    cursor_hidden = False
+    mouse_inside_window = False
+    mouse_state_supported = hasattr(tcod.event, "get_mouse_state")
+    mouse_visibility_supported = hasattr(tcod, "mouse_show_cursor") or hasattr(tcod, "lib")
+    mouse_last_move = time.monotonic()
+
+    def _set_cursor_visible(visible: bool) -> None:
+        nonlocal cursor_hidden, mouse_visibility_supported
+        if not mouse_visibility_supported:
+            return
+        if cursor_hidden == (not visible):
+            return
+        try:
+            if hasattr(tcod, "mouse_show_cursor"):
+                tcod.mouse_show_cursor(visible)
+            else:
+                tcod.lib.SDL_ShowCursor(1 if visible else 0)
+            cursor_hidden = not visible
+        except Exception:
+            mouse_visibility_supported = False
+
+    def _tile_inside_window(tile: object) -> bool:
+        if tile is None:
+            return False
+        try:
+            x, y = tile.x, tile.y  # type: ignore[attr-defined]
+        except Exception:
+            try:
+                x, y = tile  # type: ignore[misc]
+            except Exception:
+                return False
+        return 0 <= x < screen_width and 0 <= y < screen_heigth
+
+    def _refresh_mouse_inside_from_state() -> None:
+        nonlocal mouse_inside_window
+        if not mouse_state_supported:
+            return
+        try:
+            state = tcod.event.get_mouse_state()
+        except Exception:
+            return
+        mouse_inside_window = _tile_inside_window(getattr(state, "tile", None))
 
     with tcod.context.new_terminal(
         screen_width,
         screen_heigth,
         tileset=tileset,
-        title="Adventurers!",
+        title=_("The Seeker"),
         vsync=True,
         sdl_window_flags=window_flags,
     ) as context:
@@ -57,6 +102,7 @@ def main() -> None:
             while True:
                 root_console.clear()
                 engine = getattr(handler, "engine", None)
+                _refresh_mouse_inside_from_state()
                 if engine:
                     engine.bind_display(context, root_console)
                     engine.play_intro_if_ready()
@@ -69,10 +115,33 @@ def main() -> None:
                 try:
                     events = list(tcod.event.get())
                     if not events:
-                        tcod.sys_sleep_milli(16)
+                        time.sleep(0.016)
                     for event in events:
                         context.convert_event(event)
+                        if isinstance(
+                            event,
+                            (
+                                tcod.event.MouseMotion,
+                                tcod.event.MouseButtonDown,
+                                tcod.event.MouseButtonUp,
+                                tcod.event.MouseWheel,
+                            ),
+                        ):
+                            mouse_inside_window = _tile_inside_window(getattr(event, "tile", None))
+                            if cursor_hidden:
+                                _set_cursor_visible(True)
+                            mouse_last_move = time.monotonic()
                         handler = handler.handle_events(event)
+                    if (
+                        mouse_idle_hide_seconds > 0
+                        and mouse_visibility_supported
+                        and mouse_inside_window
+                        and not cursor_hidden
+                        and time.monotonic() - mouse_last_move >= mouse_idle_hide_seconds
+                    ):
+                        _set_cursor_visible(False)
+                    elif cursor_hidden and not mouse_inside_window:
+                        _set_cursor_visible(True)
                 except Exception:  # Handle exceptions in game.
                     traceback.print_exc()  # Print error to stderr.
                     # Then print the error to the message log.

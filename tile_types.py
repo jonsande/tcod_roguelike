@@ -65,6 +65,12 @@ if GRAPHIC_MODE == "pseudo_ascii":
         dark=(ord("~"), (133,116,66), (0,0,0)),
         light=(ord("~"), (133,116,66), (0,0,0)),
     )
+    library_floor = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("½"), (15,15,15), (0,0,0)),
+        light=(ord("½"), (50,50,40), (5,5,5)),
+    )
 
     wall_v1 = new_tile(
             walkable=False,

@@ -23,8 +23,9 @@ from actions import (
 )
 import color
 import exceptions
-from entity import Chest, Book, TableContainer
+from entity import Chest, Book, TableContainer, BookShelfContainer
 from audio import play_chest_open_sound, play_table_open_sound
+from i18n import _
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -160,7 +161,7 @@ class ConfirmQuitHandler(PopupMessage):
     def __init__(self, parent_handler: BaseEventHandler):
         super().__init__(
             parent_handler,
-            "¿SAVE GAME AND EXIT? Press 'y' to confirm or ESC to continue game.",
+            _("Save game and exit? Press 'y' to confirm or ESC to keep playing."),
         )
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
@@ -1082,14 +1083,22 @@ class ChestLootHandler(AskUserEventHandler):
         self.chest = chest
         if self.chest.open():
             is_table = isinstance(self.chest, TableContainer)
-            if is_table:
+            is_bookshelf = isinstance(self.chest, BookShelfContainer)
+            if is_table or is_bookshelf:
                 play_table_open_sound()
             else:
                 play_chest_open_sound()
-            msg = "You search the table." if is_table else "You open the chest."
+            if is_bookshelf:
+                msg = "You search the bookshelf."
+            elif is_table:
+                msg = "You search the table."
+            else:
+                msg = "You open the chest."
             self.engine.message_log.add_message(msg, color.white)
         # Ajusta el título según el contenedor.
-        if isinstance(self.chest, TableContainer):
+        if isinstance(self.chest, BookShelfContainer):
+            self.TITLE = "Contenido de la estantería"
+        elif isinstance(self.chest, TableContainer):
             self.TITLE = "Contenido de la mesa"
         else:
             self.TITLE = "Contenido del cofre"
@@ -1387,7 +1396,7 @@ class MainGameEventHandler(EventHandler):
         dest_x = player.x + dx
         dest_y = player.y + dy
         blocker = self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y)
-        if isinstance(blocker, (Chest, TableContainer)):
+        if isinstance(blocker, (Chest, TableContainer, BookShelfContainer)):
             return ChestLootHandler(self.engine, blocker)
         return None
 

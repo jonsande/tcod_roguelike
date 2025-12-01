@@ -2,23 +2,24 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
-import entity_factories
-#import fixed_maps
 import random
+
+import entity_factories
 import tile_types
 from generators.fixed import generate_array_of
-
 from game_map import GameMap
 from procgen import (
     RectangularRoom,
+    _build_bookshelf_loot,
     _resolve_upstairs_location,
     ensure_breakable_tiles,
     ensure_path_between,
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
+    maybe_place_bookshelf,
     maybe_place_chest,
     maybe_place_table,
-    maybe_place_bookshelf,
+    place_entities_fixdungeon,
     spawn_door_entity,
 )
 
@@ -26,44 +27,40 @@ if TYPE_CHECKING:
     from engine import Engine
 
 
-THREE_DOORS_TEMPLATE: Tuple[str, ...] = (
+# Bookshelf character: π
+THE_LIBRARY_TEMPLATE: Tuple[str, ...] = (
     "##############################################################################",
-    "#######################################......#################...#############",
-    "###################################..............######.#####..@...#####....##",
-    "###########.....###################......@.......+....####.#........#####...##",
-    "###########.....####....###########..............####.###...........#####...##",
-    "#...#######.....##>+&...###############......########.#.........###########.##",
-    "#...+...........####....#############################.#.........#..#.........#",
-    "#...#######.....##>+&...+.......####################............##...........#",
-    "###########.....####....#######,##...###############........##..##..#.#.#.#..#",
-    "##############.###>+&...#######.##...###############........##..#............#",
-    "##############.#####....#######*##...###############........##..##..#.#.#.#..#",
-    "##############.################.........###########.........######...........#",
-    "##############.###############...........##########.........................##",
-    "##.......................#####...........###########.........#........#.##..##",
-    "##....########.#########.###...............########..........###....#####...##",
-    "##.....#################.##.................#######........#.......######..###",
-    "##.....#####......*.+..#.###...............#######.........###.....######..###",
-    "##.#...#####.#..#.###..#.#####...........#########.....###.####....#####...###",
-    "##.....#####......######.#####...........#########...#####..####....###.....##",
-    "###*########......#......######.........#########....###.......##....##....###",
-    "###.########.#..#.#......#########+++############....##........##....##...####",
-    "###.########......#......###.....#...#.....######...####.......##....###..####",
-    "###+#########.######.######......##+##......#####...###.@.....###....####.####",
-    "###..########.######+#####...................####..####.....####....####...###",
-    "###..#######..###..#.####.....................###.#############.....#####...##",
-    "###..#######.####..#...+..........................############..##...#####..##",
-    "###..#######.####.##.####.......................#############..###.....@.#...#",
-    "###..#######.####.....####......................############...###.......#...#",
-    "###..######...###.....#####.....................######........####......##...#",
-    "###..#####.....##.....######..............##...#######.......######....###..##",
-    "###..######...###.....############.......###.########......@.#######..####.###",
-    "###.@#######.####.....#############....################.......################",
-    "############################################################.#################",
+    "##############################################################################",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#####",
+    "#####....................................................................#####",
+    "#####....................................................................#####",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#...#",
+    "#####..ππππππ..ππππππ..ππππππ..ππππππ....ππππππ..ππππππ..ππππππ..ππππππ..#..>#",
+    "#####....................................................................+..@#",
+    "#####....................................................................#####",
     "##############################################################################",
 )
 
-THREE_DOORS_MONSTER_TABLE: List[Tuple[object, int]] = [
+THE_LIBRARY_MONSTER_TABLE: List[Tuple[object, int]] = [
     (entity_factories.orc, 6),
     (entity_factories.goblin, 5),
     (entity_factories.swarm_rat, 3),
@@ -73,7 +70,7 @@ THREE_DOORS_MONSTER_TABLE: List[Tuple[object, int]] = [
 # Tabla de posibles monstruos a generarse en las posiciones con "M"
 RANDOM_MONSTERS_IN_STATIC_POSITIONS = [entity_factories.orc, entity_factories.goblin, entity_factories.snake]
 
-THREE_DOORS_ITEM_TABLE: List[Tuple[object, int]] = [
+THE_LIBRARY_ITEM_TABLE: List[Tuple[object, int]] = [
     (entity_factories.health_potion, 5),
     (entity_factories.strength_potion, 3),
     (entity_factories.stamina_potion, 3),
@@ -123,8 +120,8 @@ THREE_DOORS_ITEM_TABLE: List[Tuple[object, int]] = [
 ]
 
 # Rango de entidades aleatorias por habitación en este mapa.
-THREE_DOORS_MONSTER_COUNT = (5, 6)
-THREE_DOORS_ITEM_COUNT = (3, 6)
+THE_LIBRARY_MONSTER_COUNT = (5, 6)
+THE_LIBRARY_ITEM_COUNT = (3, 6)
 
 
 def _weighted_choices(pool: List[Tuple[object, int]], k: int) -> List[object]:
@@ -134,20 +131,20 @@ def _weighted_choices(pool: List[Tuple[object, int]], k: int) -> List[object]:
     return random.choices(entities, weights=weights, k=k)
 
 
-def _place_random_entities_three_doors(
+def _place_random_entities_the_library(
     room: RectangularRoom,
     dungeon: GameMap,
     *,
     forbidden_cells: List[Tuple[int, int]],
 ) -> None:
     """Place random monsters/items using the custom three-doors tables."""
-    min_monsters, max_monsters = THREE_DOORS_MONSTER_COUNT
-    min_items, max_items = THREE_DOORS_ITEM_COUNT
+    min_monsters, max_monsters = THE_LIBRARY_MONSTER_COUNT
+    min_items, max_items = THE_LIBRARY_ITEM_COUNT
     number_of_monsters = random.randint(min_monsters, max_monsters)
     number_of_items = random.randint(min_items, max_items)
 
-    monsters = _weighted_choices(THREE_DOORS_MONSTER_TABLE, number_of_monsters)
-    items = _weighted_choices(THREE_DOORS_ITEM_TABLE, number_of_items)
+    monsters = _weighted_choices(THE_LIBRARY_MONSTER_TABLE, number_of_monsters)
+    items = _weighted_choices(THE_LIBRARY_ITEM_TABLE, number_of_items)
 
     allowed_cells: List[Tuple[int, int]] = []
     for x in range(room.x1 + 1, room.x2 - 1):
@@ -184,13 +181,12 @@ def _place_random_entities_three_doors(
         cursor += 1
         item.spawn(dungeon, x, y)
 
-
-def generate_three_doors_map(
+def generate_the_library_map(
     map_width: int,
     map_height: int,
     engine: Engine,
     *,
-    map: Tuple[str, ...] = THREE_DOORS_TEMPLATE,
+    map: Tuple[str, ...] = THE_LIBRARY_TEMPLATE,
     walls,
     walls_special,
     floor_number: int,
@@ -198,23 +194,16 @@ def generate_three_doors_map(
     place_downstairs: bool,
     upstairs_location: Optional[Tuple[int, int]] = None,
 ) -> GameMap:
-    """Generate the fixed three_doors layout (copy of generate_fixed_dungeon)."""
+    """Generate the fixed library layout (initially mirrors the the_library flow)."""
     entities = [engine.player] if place_player else []
     dungeon = GameMap(engine, map_width, map_height, entities=entities)
 
     rooms: List[RectangularRoom] = []
-
     center_of_last_room = (30, 30)
-
     room_width = 79
     room_height = 35
-
-    x = 0
-    y = 0
-
-    new_room = RectangularRoom(x, y, room_width, room_height)
-
-    dungeon.tiles[new_room.inner] = tile_types.floor
+    new_room = RectangularRoom(0, 0, room_width, room_height)
+    dungeon.tiles[new_room.inner] = tile_types.library_floor
 
     entry_point: Optional[Tuple[int, int]] = None
     resolved_upstairs = _resolve_upstairs_location(dungeon, upstairs_location)
@@ -229,6 +218,7 @@ def generate_three_doors_map(
     player_starts = generate_array_of(map, "@")
     doors = generate_array_of(map, "+")
     fake_walls_array = generate_array_of(map, "*")
+    bookshelf_array = generate_array_of(map, "π")
 
     snake_array = generate_array_of(map, "s")
     swarm_rat_array = generate_array_of(map, "r")
@@ -242,20 +232,13 @@ def generate_three_doors_map(
     forbidden_cells.extend(walls_array)
     forbidden_cells.extend(special_floor_array)
     forbidden_cells.extend(stairs_options)
-    # Decidiremos la posición final de jugador/escaleras más abajo; por ahora reservamos todas.
-    # player_intro se escogerá entre player_starts.
+    forbidden_cells.extend(player_starts)
     forbidden_cells.extend(doors)
     forbidden_cells.extend(fake_walls_array)
+    forbidden_cells.extend(bookshelf_array)
 
-    forbidden_cells.extend(snake_array)
-    forbidden_cells.extend(swarm_rat_array)
-    forbidden_cells.extend(goblin_array)
-    forbidden_cells.extend(orc_array)
-    forbidden_cells.extend(sentinel_array)
-    forbidden_cells.extend(random_monsters_array)
-    forbidden_cells.extend(potion_array)
-
-    _place_random_entities_three_doors(new_room, dungeon, forbidden_cells=forbidden_cells)
+    #place_entities_fixdungeon(new_room, dungeon, floor_number, forbidden_cells)
+    _place_random_entities_the_library(new_room, dungeon, forbidden_cells=forbidden_cells)
 
     for x, y in walls_array:
         dungeon.tiles[(x, y)] = walls
@@ -284,12 +267,19 @@ def generate_three_doors_map(
 
     for x, y in fake_walls_array:
         dungeon.tiles[(x, y)] = tile_types.breakable_wall
-        # Igualamos los colores de los muros rompibles a los muros normales para que no se distingan.
         dungeon.tiles["dark"]["fg"][x, y] = walls["dark"]["fg"]
         dungeon.tiles["dark"]["bg"][x, y] = walls["dark"]["bg"]
         dungeon.tiles["light"]["fg"][x, y] = walls["light"]["fg"]
         dungeon.tiles["light"]["bg"][x, y] = walls["light"]["bg"]
         entity_factories.breakable_wall.spawn(dungeon, x, y)
+
+    for x, y in bookshelf_array:
+        shelf = entity_factories.bookshelf.spawn(dungeon, x, y)
+        # TODO: el contenido de los bookshelf de the_library no debe generarse de la forma
+        # habitual. Dentro sólo debe haber libros. Hay que crear también, por tanto, libros
+        # genéricos en entity_factories
+        loot = _build_bookshelf_loot(floor_number)
+        entity_factories.fill_container_with_items(shelf, loot)
 
     for x, y in snake_array:
         entity_factories.snake.spawn(dungeon, x, y)
@@ -317,8 +307,7 @@ def generate_three_doors_map(
     for x, y in potion_array:
         entity_factories.health_potion.spawn(dungeon, x, y)
 
-    # Punto de inicio: se escoge aleatoriamente entre los símbolos '@' del template si no viene fijado.
-    player_intro = random.choice(player_starts) if player_starts else (41, 4)
+    player_intro = random.choice(player_starts) if player_starts else center_of_last_room
     if place_player:
         engine.player.place(player_intro[0], player_intro[1], dungeon)
         entry_point = (engine.player.x, engine.player.y)
@@ -336,18 +325,17 @@ def generate_three_doors_map(
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):
             if not guarantee_downstairs_access(dungeon, entry_point, dungeon.downstairs_location):
                 if __debug__:
-                    print("WARNING: Fixed dungeon template has no guaranteed path between upstairs and downstairs.")
+                    print("WARNING: Library template has no guaranteed path between upstairs and downstairs.")
 
-    maybe_place_chest(dungeon, floor_number, rooms)
-    maybe_place_table(dungeon, floor_number, rooms)
-    maybe_place_bookshelf(dungeon, floor_number, rooms)
+    #maybe_place_chest(dungeon, floor_number, rooms)
+    #maybe_place_table(dungeon, floor_number, rooms)
+    #maybe_place_bookshelf(dungeon, floor_number, rooms)
     ensure_breakable_tiles(dungeon)
     if engine.debug:
-        log_breakable_tile_mismatches(dungeon, "generate_three_doors_map")
+        log_breakable_tile_mismatches(dungeon, "generate_the_library_map")
     dungeon.center_rooms = []
-    # Evitamos spawns dinámicos de puertas/muros rompibles: no añadimos candidates ni llamamos a place_doors.
-    dungeon.door_candidates = []  # para cualquier uso posterior que espere este atributo
+    dungeon.door_candidates = []
     return dungeon
 
 
-__all__ = ["generate_three_doors_map", "THREE_DOORS_TEMPLATE"]
+__all__ = ["generate_the_library_map", "THE_LIBRARY_TEMPLATE"]

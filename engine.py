@@ -236,8 +236,9 @@ class Engine:
                 #radius = random.randint(0, 1) + self.player.fighter.fov
 
         """Recompute the visible area based on the players point of view."""
+        transparent = self.game_map.get_transparency_map()
         self.game_map.visible[:] = compute_fov(
-            self.game_map.tiles['transparent'],
+            transparent,
             (self.player.x, self.player.y),
             #radius = random.randint(3,5)
             radius,
@@ -259,7 +260,7 @@ class Engine:
             if self.player.fighter.is_blind:
                 memory_radius = radius
             self.game_map.explored[:] = compute_fov(
-                self.game_map.tiles['transparent'],
+                transparent,
                 (self.player.x, self.player.y),
                 #radius = random.randint(5,6)
                 memory_radius
@@ -277,8 +278,9 @@ class Engine:
         radius = 90
 
         """Recompute the visible area based on the players point of view."""
+        transparent = self.game_map.get_transparency_map()
         self.game_map.visible[:] = compute_fov(
-            self.game_map.tiles['transparent'],
+            transparent,
             (self.player.x, self.player.y),
             #radius = random.randint(3,5)
             radius
@@ -317,7 +319,7 @@ class Engine:
         if not campfires and not adventurers:
             return
 
-        transparent = gamemap.tiles["transparent"]
+        transparent = gamemap.get_transparency_map()
         los_radius = max(gamemap.width, gamemap.height)
         player_los = compute_fov(
             transparent,
@@ -459,7 +461,7 @@ class Engine:
             print("DEBUG: Spawn monsters dice (1d20) = ", dice)
             print("DEBUG: Total = ", total)
 
-        if total >= 130:
+        if total >= 230:
 
             spawn_chance = random.randint(1,6)
 
@@ -750,7 +752,7 @@ class Engine:
             strength = progress if fade_out else 1.0 - progress
             self._draw_fade_frame(console, context, strength)
             if delay > 0:
-                tcod.sys_sleep_milli(int(delay * 1000))
+                time.sleep(delay)
 
     def _draw_fade_frame(self, console: Console, context: Context, strength: float) -> None:
         console.clear()
@@ -847,7 +849,7 @@ class Engine:
                 else:
                     return True
 
-            tcod.sys_sleep_milli(16)
+            time.sleep(0.016)
 
     def _render_intro_slide(self, console: Console, text: str, brightness: float) -> None:
         console.clear(bg=color.black)
@@ -892,7 +894,7 @@ class Engine:
                 self._draw_animation_glyphs(console, glyphs)
                 context.present(console)
                 delay_ms = max(1, int(max(duration, 0.01) * 1000))
-                tcod.sys_sleep_milli(delay_ms)
+                time.sleep(delay_ms / 1000)
 
     def _draw_animation_glyphs(self, console: Console, glyphs: Sequence[AnimationGlyph]) -> None:
         game_map = self.game_map

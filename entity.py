@@ -393,3 +393,38 @@ class TableContainer(Chest):
         self.char = self.open_char
         # El nombre permanece como "Table" para los mensajes.
         return True
+
+
+class BookShelfContainer(Chest):
+    """Container that represents a bookshelf and can hold items."""
+
+    def __init__(
+        self,
+        *,
+        x: int = 0,
+        y: int = 0,
+        char: str = "π",
+        open_char: str = "π",
+        color: Tuple[int, int, int] = (120, 90, 60),
+        name: str = "Bookshelf",
+        inventory: Optional["Inventory"] = None,
+        is_open: bool = False,
+    ):
+        super().__init__(
+            x=x,
+            y=y,
+            char=char,
+            open_char=open_char,
+            color=color,
+            name=name,
+            inventory=inventory,
+            is_open=is_open,
+        )
+        self.id_name = "bookshelf"
+
+    def open(self) -> bool:
+        if self.is_open:
+            return False
+        self.is_open = True
+        self.char = self.open_char
+        return True

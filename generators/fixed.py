@@ -3,19 +3,22 @@ from __future__ import annotations
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import entity_factories
-import fixed_maps
+#import fixed_maps
 import tile_types
+import random
 
 from game_map import GameMap
 from procgen import (
     RectangularRoom,
     _resolve_upstairs_location,
+    _build_bookshelf_loot,
     ensure_breakable_tiles,
     ensure_path_between,
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
     maybe_place_chest,
     maybe_place_table,
+    maybe_place_bookshelf,
     place_entities_fixdungeon,
     spawn_door_entity,
 )
@@ -23,6 +26,88 @@ from procgen import (
 if TYPE_CHECKING:
     from engine import Engine
 
+def generate_array_of(map, character):
+    
+    array = []
+    x_counter = 0
+    y_counter = 0
+    for i in map:
+        x_counter = 0
+        y_counter += 1
+        for e in i:
+            x_counter += 1
+            if e == character:
+                array.append((x_counter, y_counter))
+            else:
+                pass
+            
+    return array
+
+def place_player_on_fixed_map(map):
+    
+    location = []
+    x_counter = 0
+    y_counter = 0
+    for i in map:
+        x_counter = 0
+        y_counter += 1
+        for e in i:
+            x_counter += 1
+            if e == "@":
+                location.append((x_counter, y_counter))
+            else:
+                pass
+            
+    max_choices = len(location) - 1
+    winner = random.randint(0, max_choices)
+            
+    return location[winner]
+
+
+# Esta función es para la generación de monstruos aleatorios
+# en las posiciones donde haya una 'M'.
+# Actualmente no se está usando.
+def place_monsters(map):
+    """
+    Returns the location to spawn the monster
+    """
+    
+    location = []
+    x_counter = 0
+    y_counter = 0
+    for i in map:
+        x_counter = 0
+        y_counter += 1
+        for e in i:
+            x_counter += 1
+            if e == "M":
+                location.append((x_counter, y_counter))
+            else:
+                pass
+            
+    return location
+
+# No está funcionando bien
+# Razón: esta función se ejecuta una sola vez desde
+# procgen; de modo que solo devuelve un monstruo cuando
+# se le llama generate_fixed_dungeon(); y entonces lo que
+# pasa es que generate_fixed_dungeon() llena el fixed_monsters_array
+# con el monstruo retornado.   
+def get_monster(map):
+
+    x_counter = 0
+    y_counter = 0
+    for i in map:
+        x_counter = 0
+        y_counter += 1
+        for e in i:
+            x_counter += 1
+            if e == "s":
+                monster = entity_factories.snake
+            #if e == "g":
+            #    monster = ef.goblin
+
+    return monster
 
 def generate_fixed_dungeon(
     map_width: int,
@@ -62,20 +147,21 @@ def generate_fixed_dungeon(
         dungeon.upstairs_location = resolved_upstairs
         entry_point = resolved_upstairs
 
-    walls_array = fixed_maps.generate_array_of(map, "#")
-    special_walls_array = fixed_maps.generate_array_of(map, "√")
-    special_floor_array = fixed_maps.generate_array_of(map, " ")
-    stairs = fixed_maps.generate_array_of(map, ">")
-    player_intro = fixed_maps.place_player(map)
-    doors = fixed_maps.generate_array_of(map, "+")
-    fake_walls_array = fixed_maps.generate_array_of(map, "*")
+    walls_array = generate_array_of(map, "#")
+    special_walls_array = generate_array_of(map, "√")
+    special_floor_array = generate_array_of(map, " ")
+    stairs = generate_array_of(map, ">")
+    player_intro = place_player_on_fixed_map(map)
+    doors = generate_array_of(map, "+")
+    fake_walls_array = generate_array_of(map, "*")
+    bookshelf_array = generate_array_of(map, "π")
 
-    snake_array = fixed_maps.generate_array_of(map, "s")
-    swarm_rat_array = fixed_maps.generate_array_of(map, "r")
-    goblin_array = fixed_maps.generate_array_of(map, "g")
-    orc_array = fixed_maps.generate_array_of(map, "o")
-    sentinel_array = fixed_maps.generate_array_of(map, "&")
-    random_monsters_array = fixed_maps.generate_array_of(map, "M")
+    snake_array = generate_array_of(map, "s")
+    swarm_rat_array = generate_array_of(map, "r")
+    goblin_array = generate_array_of(map, "g")
+    orc_array = generate_array_of(map, "o")
+    sentinel_array = generate_array_of(map, "&")
+    random_monsters_array = generate_array_of(map, "M")
 
     forbidden_cells: List[Tuple[int, int]] = []
     forbidden_cells.extend(walls_array)
@@ -84,6 +170,7 @@ def generate_fixed_dungeon(
     forbidden_cells.append(player_intro)
     forbidden_cells.extend(doors)
     forbidden_cells.extend(fake_walls_array)
+    forbidden_cells.extend(bookshelf_array)
 
     # Celdas ocupadas por monstruos generados estáticamente
     forbidden_cells.extend(snake_array)
@@ -130,6 +217,11 @@ def generate_fixed_dungeon(
         dungeon.tiles[(x, y)] = tile_types.breakable_wall
         entity_factories.breakable_wall.spawn(dungeon, x, y)
 
+    for x, y in bookshelf_array:
+        shelf = entity_factories.bookshelf.spawn(dungeon, x, y)
+        loot = _build_bookshelf_loot(floor_number)
+        entity_factories.fill_container_with_items(shelf, loot)
+
     # Colocamos monstruos estáticos
     for x, y in snake_array:
         entity_factories.snake.spawn(dungeon, x, y)
@@ -174,6 +266,7 @@ def generate_fixed_dungeon(
 
     maybe_place_chest(dungeon, floor_number, rooms)
     maybe_place_table(dungeon, floor_number, rooms)
+    maybe_place_bookshelf(dungeon, floor_number, rooms)
     ensure_breakable_tiles(dungeon)
     if engine.debug:
         log_breakable_tile_mismatches(dungeon, "generate_fixed_dungeon")
