@@ -1401,6 +1401,7 @@ def _place_town_old_man_chest(
 
     # Ítems aleatorios en el cofre del viejo
     loot = _build_chest_loot(floor_number)
+    loot.extend(_build_old_man_bonus_loot())
 
     # Ítems garantizados en el cofre del viejo
     for key in settings.OLD_MAN_CHEST:
@@ -1432,6 +1433,73 @@ def _place_town_old_man_chest(
         chest_entity = entity_factories.chest.spawn(dungeon, chest_x, chest_y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
         return
+
+
+def _build_old_man_bonus_loot() -> List[Entity]:
+    """Return additional random loot for the Old Man chest."""
+    pool = getattr(settings, "OLD_MAN_RANDOM_ITEM_POOL", None)
+    count_config = getattr(settings, "OLD_MAN_RANDOM_ITEM_COUNT", 0)
+
+    if not pool:
+        return []
+
+    weighted_pool: List[Tuple[str, float]] = []
+    for entry in pool:
+        if isinstance(entry, str):
+            key = entry
+            weight = 1.0
+        elif isinstance(entry, (tuple, list)) and entry:
+            key = entry[0]
+            weight = entry[1] if len(entry) > 1 else 1.0
+        else:
+            continue
+
+        try:
+            weight_value = float(weight)
+        except (TypeError, ValueError):
+            continue
+
+        if not key or weight_value <= 0:
+            continue
+        weighted_pool.append((key, weight_value))
+
+    if not weighted_pool:
+        return []
+
+    def _normalize_count_range(value: Any) -> Tuple[int, int]:
+        if isinstance(value, (tuple, list)) and len(value) == 2:
+            minimum = max(0, int(value[0]))
+            maximum = max(0, int(value[1]))
+        else:
+            minimum = maximum = max(0, int(value))
+        if maximum < minimum:
+            minimum, maximum = maximum, minimum
+        return minimum, maximum
+
+    try:
+        min_count, max_count = _normalize_count_range(count_config)
+    except (TypeError, ValueError):
+        return []
+
+    if max_count <= 0:
+        return []
+
+    picks = random.randint(min_count, max_count)
+    if picks <= 0:
+        return []
+
+    keys = [entry[0] for entry in weighted_pool]
+    weights = [entry[1] for entry in weighted_pool]
+    chosen_keys = random.choices(keys, weights=weights, k=picks)
+
+    bonus_loot: List[Entity] = []
+    for item_key in chosen_keys:
+        prototype = getattr(entity_factories, item_key, None)
+        if prototype is None:
+            continue
+        bonus_loot.append(copy.deepcopy(prototype))
+
+    return bonus_loot
 
 
 def _spawn_entity_template(
@@ -1893,7 +1961,7 @@ def add_room_decorations(dungeon: GameMap, room: RectangularRoom) -> None:
 
 def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[str, ...]) -> bool:
     room_height = len(template)
-    room_width = len(template[0]) if room_height else 0
+    room_width = max((len(row) for row in template), default=0)
 
     if room_width > (room.x2 - room.x1) or room_height > (room.y2 - room.y1):
         return False

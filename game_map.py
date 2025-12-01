@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set, Callable
+from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set, Callable, Union
 
 import numpy as np  # type: ignore
 from tcod.console import Console
-from entity import Actor, Item, Obstacle
+from entity import Actor, Item, Obstacle, Chest
 from render_order import RenderOrder
 import tile_types
 import entity_factories
@@ -12,6 +12,7 @@ import settings
 from audio import ambient_sound
 import exceptions
 import color
+import copy
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -22,6 +23,9 @@ import fixed_maps
 
 CLOSED_DOOR_CHAR = tile_types.closed_door["dark"]["ch"]
 OPEN_DOOR_CHAR = tile_types.open_door["dark"]["ch"]
+
+
+KeyLocation = Union[Tuple[int, int], str]
 
 
 class GameMapTown:
@@ -459,7 +463,7 @@ class GameWorld:
 
         self.current_floor = 1
         self.levels: List[GameMap] = []
-        self._debug_key_positions: List[Tuple[str, int, Tuple[int, int]]] = []
+        self._debug_key_positions: List[Tuple[str, int, KeyLocation]] = []
         self._generate_world()
         self._sync_ambient_sound()
 
@@ -476,7 +480,7 @@ class GameWorld:
         )
 
         keys_placed: Set[str] = set()
-        key_positions: List[Tuple[str, int, Tuple[int, int]]] = []
+        key_positions: List[Tuple[str, int, KeyLocation]] = []
         for floor in range(1, settings.TOTAL_FLOORS + 1):
             place_player = floor == 1
             place_downstairs = floor < settings.TOTAL_FLOORS
@@ -532,7 +536,11 @@ class GameWorld:
 
         print("DEBUG: Llaves generadas:")
         for color, floor, pos in positions:
-            print(f"  {color} key -> piso {floor} en {pos}")
+            if isinstance(pos, tuple):
+                location_desc = f"en {pos}"
+            else:
+                location_desc = pos
+            print(f"  {color} key -> piso {floor} {location_desc}")
 
         # Actualizamos el registro interno para futuras llamadas.
         self._debug_key_positions = positions
@@ -672,7 +680,7 @@ class GameWorld:
         current_floor: int,
         locked_colors: Set[str],
         keys_placed: Set[str],
-        key_positions: List[Tuple[str, int, Tuple[int, int]]],
+        key_positions: List[Tuple[str, int, KeyLocation]],
     ) -> None:
         """Si hay puertas con cerradura en este nivel, asegura que exista al menos una llave previa."""
         if current_floor <= 1:
@@ -694,13 +702,22 @@ class GameWorld:
                 key_positions.append((color, target_idx + 1, pos))
             keys_placed.add(color)
 
-    def _place_key_on_floor(self, idx: int, color: str) -> Optional[Tuple[int, int]]:
+    def _place_key_on_floor(self, idx: int, color: str) -> Optional[KeyLocation]:
         if idx < 0 or idx >= len(self.levels):
             return None
         game_map = self.levels[idx]
         prototype = getattr(entity_factories, f"{color}_key", None)
         if not prototype:
             return None
+
+        carrier_location = self._maybe_assign_key_to_monster(game_map, prototype)
+        if carrier_location:
+            return carrier_location
+
+        chest_location = self._maybe_place_key_in_chest(game_map, prototype)
+        if chest_location:
+            return chest_location
+
         max_attempts = 200
         for _ in range(max_attempts):
             x = random.randint(1, game_map.width - 2)
@@ -718,6 +735,68 @@ class GameWorld:
             prototype.spawn(game_map, x, y)
             return (x, y)
         return None
+
+    def _maybe_assign_key_to_monster(
+        self,
+        game_map: "GameMap",
+        key_prototype: Item,
+    ) -> Optional[str]:
+        chance = getattr(settings, "KEY_CARRIER_SPAWN_CHANCE", 0.0)
+        if chance <= 0 or random.random() > chance:
+            return None
+
+        allowed = getattr(settings, "KEY_CARRIER_ALLOWED_MONSTERS", None)
+        if not allowed:
+            return None
+        allowed_names = {str(name).strip().lower() for name in allowed if str(name).strip()}
+        if not allowed_names:
+            return None
+
+        player = getattr(self.engine, "player", None)
+        candidates: List[Actor] = []
+        for actor in game_map.actors:
+            if player is not None and actor is player:
+                continue
+            actor_name = getattr(actor, "name", "")
+            if actor_name and actor_name.lower() in allowed_names:
+                candidates.append(actor)
+
+        if not candidates:
+            return None
+
+        carrier = random.choice(candidates)
+        inventory = getattr(carrier, "inventory", None)
+        if inventory is None:
+            return None
+
+        key_item = copy.deepcopy(key_prototype)
+        key_item.parent = inventory
+        if len(inventory.items) >= inventory.capacity:
+            inventory.capacity += 1
+        inventory.items.append(key_item)
+
+        carrier_name = getattr(carrier, "name", "criatura desconocida")
+        return f"en el inventario de {carrier_name}"
+
+    def _maybe_place_key_in_chest(
+        self,
+        game_map: "GameMap",
+        key_prototype: Item,
+    ) -> Optional[str]:
+        chance = getattr(settings, "KEY_CHEST_SPAWN_CHANCE", 0.0)
+        if chance <= 0 or random.random() > chance:
+            return None
+
+        chests: List[Chest] = [
+            entity for entity in game_map.entities if isinstance(entity, Chest)
+        ]
+        if not chests:
+            return None
+
+        target_chest = random.choice(chests)
+        key_item = copy.deepcopy(key_prototype)
+        target_chest.add_item(key_item)
+        return f"dentro de un cofre en ({target_chest.x}, {target_chest.y})"
 
     def register_adventurer_descent(self, loot: List[Item]) -> None:
         """Schedule an adventurer corpse with its loot deeper in the dungeon."""

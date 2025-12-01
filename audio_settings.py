@@ -15,7 +15,11 @@ AMBIENT_SOUND_TRACKS = {
         "data/audio/ambient/CO.AG_DarkRooms.ogg",
         "data/audio/ambient/CO.AG_12_LetsRead.ogg",
     ],
-    4: ["data/audio/ambient/CO.AG_09_ForTerror.ogg"],
+    4: ["data/audio/ambient/CO.AG_09_ForTerror.ogg",
+        "data/audio/ambient/CO.AG_22_Magnetic.ogg",
+        "data/audio/ambient/CO.AG_InTheHeartOfThisAncientCity.ogg",
+        "data/audio/ambient/underground_1.ogg",   
+    ],
 }
 # Se acepta string único o lista/tupla para escoger aleatoriamente.
 AMBIENT_SOUND_DEFAULT_TRACK = [
@@ -102,6 +106,14 @@ TABLE_OPEN_SOUNDS = [
 ]
 TABLE_OPEN_SOUND = None
 TABLE_OPEN_VOLUME = 0.35
+
+# Bookshelf interactions --------------------------------------------------------
+BOOKSHELF_OPEN_SOUND_ENABLED = True
+BOOKSHELF_OPEN_SOUNDS = [
+    "data/audio/sfx/bookshelf/turning-page.mp3",
+]
+BOOKSHELF_OPEN_SOUND = None
+BOOKSHELF_OPEN_VOLUME = 0.45
 
 # Campfire ambience ---------------------------------------------------------
 CAMPFIRE_SOUND_ENABLED = True

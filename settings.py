@@ -13,7 +13,7 @@ FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
 # https://en.wikipedia.org/wiki/Code_page_437
 # https://es.wikipedia.org/wiki/P%C3%A1gina_de_c%C3%B3digos_437
 
-GRAPHIC_MODE = "pseudo_ascii"
+GRAPHIC_MODE = "ascii"
 
 if GRAPHIC_MODE == "pseudo_ascii":
     tileset_cod = "pseudo_ascii"
@@ -190,6 +190,23 @@ DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR = {
     "gray": 12,
     "black": 14,
 }
+
+# Probabilidad de que la llave se asigne al inventario de un monstruo en su planta.
+KEY_CARRIER_SPAWN_CHANCE = 0.35
+
+# Nombres (case insensitive) de criaturas que pueden recibir llaves en su inventario.
+KEY_CARRIER_ALLOWED_MONSTERS = [
+    "Goblin",
+    "Orc",
+    "True Orc",
+    "Bandit",
+    "Cultist",
+    "Sentinel",
+]
+
+# Probabilidad de que la llave aparezca dentro de un cofre existente en la planta.
+KEY_CHEST_SPAWN_CHANCE = 0.25
+
 DUNGEON_V3_FIXED_ROOMS_ENABLED = True
 DUNGEON_V3_ENTRY_FEATURE_PROBS = {
     "none": 0.5,
@@ -240,48 +257,7 @@ DEBRIS_CHANCES = {
     6: [("debris_a", 10)],
 }
 
-# -- Chest generation -------------------------------------------------
-# Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
-# TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
-CHEST_SPAWN_CHANCES = [
-    (2, 0.40),
-    (3, 0.40),
-    (4, 0.40),
-    (5, 0.50),
-    (8, 0.60),
-]
-
-# Probabilidad independiente para generar mesas con botín.
-TABLE_SPAWN_CHANCES = [
-    (2, 0.30),
-    (4, 0.30),
-    (6, 0.35),
-]
-
-# Probabilidad independiente para generar estanterías con botín.
-BOOKSHELF_SPAWN_CHANCES = [
-    (2, 0.25),
-    (4, 0.25),
-    (6, 0.30),
-]
-# Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
-# El rango min-max extablecido para un nivel se aplica a los subsiguientes niveles, a no 
-# ser que se sobre escriba.
-CHEST_ITEM_COUNT_BY_FLOOR = [
-    # (1, (1, 1)), # En el primer nivel se genera siempre un cofre junto al viejo.
-    (2, (1, 3)),
-    (4, (1, 4)),
-    (6, (2, 4)),
-    (8, (3, 4)),
-    (10, (3, 4)),
-    (12, (3, 5)),
-    (14, (3, 5)),
-    (16, (3, 5)),
-]
-
-OLD_MAN_CHEST = ["dagger", "leather_armor"]
-
-# Listado de todos los objetos. Útil para las CHEST_LOOT_TABLES
+# Listado de todos los objetos. Útil para las CHEST_LOOT_TABLES y más
 ALL_ITEMS = [
     ("strength_potion", 1), 
     ("increase_max_stamina", 1), 
@@ -336,6 +312,63 @@ ALL_ITEMS = [
     ("cursed_vulnerability_ring", 1),
     ("cursed_misfortune_ring", 1),
     ]
+
+# -- Chest generation -------------------------------------------------
+# Probabilidad de que aparezca un cofre en cada nivel (0-1, por nivel mínimo).
+# TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
+CHEST_SPAWN_CHANCES = [
+    (2, 0.40),
+    (3, 0.40),
+    (4, 0.40),
+    (5, 0.50),
+    (8, 0.60),
+]
+
+# Probabilidad independiente para generar mesas con botín.
+TABLE_SPAWN_CHANCES = [
+    (2, 0.30),
+    (4, 0.30),
+    (6, 0.35),
+]
+
+# Probabilidad independiente para generar estanterías con botín.
+BOOKSHELF_SPAWN_CHANCES = [
+    (2, 0.25),
+    (4, 0.25),
+    (6, 0.30),
+]
+# Rango (mínimo, máximo) de objetos generados en cofres por nivel mínimo.
+# El rango min-max extablecido para un nivel se aplica a los subsiguientes niveles, a no 
+# ser que se sobre escriba.
+CHEST_ITEM_COUNT_BY_FLOOR = [
+    (1, (2, 2)), # En el nivel 1 (Town) se genera siempre un cofre junto a El Viejo.
+    (2, (1, 3)),
+    (4, (1, 4)),
+    (6, (2, 4)),
+    (8, (3, 4)),
+    (10, (3, 4)),
+    (12, (3, 5)),
+    (14, (3, 5)),
+    (16, (3, 5)),
+]
+
+OLD_MAN_CHEST = [
+    "leather_armor",
+]
+
+# Cantidad (min, max) de ítems aleatorios que se añaden al cofre del Viejo.
+OLD_MAN_RANDOM_ITEM_COUNT = (1, 2)
+
+# Objetos candidatos para el botín adicional del cofre del Viejo.
+# Cada entrada sigue el formato ("id_del_objeto", peso_relativo).
+OLD_MAN_RANDOM_ITEM_POOL = [
+    ("banana", 4),
+    ("triple_ration", 3),
+    ("strength_potion", 1),
+    ("life_potion", 1),
+    ("identify_scroll", 1),
+]
+
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
 CHEST_LOOT_TABLES = {
@@ -491,7 +524,10 @@ BOOKSHELF_LOOT_TABLES = {
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
-    "room_01": [(2, 0.08), (6, 0.00)],
+    "room_01": [(2, 0.08), (8, 0.00), (9, 0.08)],
+    "room_02": [(2, 0.08), (8, 0.00), (9, 0.08)],
+    "room_03": [(2, 0.08), (8, 0.00), (9, 0.08)],
+    "room_04": [(2, 0.08), (8, 0.00), (9, 0.08)],
     # "room_secret": [(2, 0.10), (8, 0.10)], # BUGGED
     # "room_door": [(2, 0.08), (5, 0.00)], # BUGGED
     "room_secret_B": [(2, 0.08), (8, 0.00)],

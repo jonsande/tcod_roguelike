@@ -5,6 +5,7 @@
 ADVENTURER_GREETING_MESSAGES = [
     "Adventurer says: Creo que la mejor forma de saber qué hace una poción es lanzársela a la cara a un goblin.",
     "Adventurer says: Aunque tengas sed, cuídate de beber sustancias que no sabes lo que son. Podrían matarte.",
+    "Adventurer says: Algunos muros ocultan pasadizos o puertas secretas.",
     "Adventurer says: ¿Lo has oído? Esa risa me pone los pelos de punta.",
     "Adventurer says: Greetings, fellow explorer!",
     "Adventurer says: Get out of my way!",
@@ -22,6 +23,8 @@ ADVENTURER_GREETING_MESSAGES = [
 
 ADVENTURER_IRRELEVANT_GREETING_MESSAGES = [
     "Adventurer says: Sígueme, conozco el camino.",
+    "Adventurer says: ¡Mira qué anillo me he encontrado! ¿Te gusta?",
+    "Adventurer says: Quita tu mirada de mi anillo.",
     "Adventurer says: Did I leave the stove on… wherever that was?",
     "Adventurer says: These boots squeak louder than the bats.",
     "Adventurer says: I swear this place smells like soup today.",

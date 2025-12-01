@@ -68,7 +68,7 @@ def generate_dungeon(
         if fixed_choice:
             _, template = fixed_choice
             room_height = len(template)
-            room_width = len(template[0]) if room_height else 0
+            room_width = max((len(row) for row in template), default=0)
         else:
             room_width = random.randint(room_min_size, room_max_size)
             room_height = random.randint(room_min_size, room_max_size)

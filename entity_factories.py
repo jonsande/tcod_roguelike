@@ -372,7 +372,7 @@ health_potion = Item(
     #name="Suspicious purple brew",
     name=potion_name_roulette(),
     id_name = "Health potion",
-    consumable=consumable.HealingConsumable(amount=random.randint(1, 6) + 4),
+    consumable=consumable.HealingConsumable(amount=random.randint(6, 12) + 4),
     throwable=True,
 )
 loot_tables.register_loot_item("health_potion", health_potion)
@@ -638,6 +638,7 @@ dagger = Item(
     name="Dagger", 
     equippable=equippable.Dagger(),
     throwable=True,
+    id_name="Dagger",
     info="A sharp, double-edged blade forged for swift. Ideal for close-quarters combat and silent strikes. Can be thrown at enemies for a quick attack.\nDamage bonus: 3.\nStealth bonus: 1.\nTo-hit bonus: 1.\nWeight: 1 lb.\nRarity: Common."
 )
 loot_tables.register_loot_item("dagger", dagger)
@@ -1145,7 +1146,7 @@ player = Actor(
         lamp_on=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=25),
+    inventory=Inventory(capacity=35),
     level=Level(level_up_base=20), # Default: 200
 )
 
@@ -1474,7 +1475,7 @@ snake = Actor(
         max_stamina=5,
         woke_ai_cls=SneakeEnemy,
         poisons_on_hit=True,
-        poisonous=15,
+        poisonous=6,
         natural_weapon=NaturalWeapon(name="Bite", min_dmg=0, max_dmg=0, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=0),

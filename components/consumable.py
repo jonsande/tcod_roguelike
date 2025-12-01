@@ -537,8 +537,11 @@ class IncreaseMaxHPConsumable(Consumable):
     def activate(self, action: actions.ItemAction) -> None:
         consumer = action.entity
         self._clear_confusion(consumer)
+        if consumer.fighter.is_poisoned == True:
+            consumer.fighter.is_poisoned = False
+            consumer.fighter.poisoned_counter = 0
         consumer.fighter.max_hp += self.amount
-        consumer.fighter.hp += self.amount
+        consumer.fighter.hp = consumer.fighter.max_hp
         self._effect_message(
             consumer,
             "Your life essence deepens permanently.",

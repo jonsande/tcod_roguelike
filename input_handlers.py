@@ -24,7 +24,7 @@ from actions import (
 import color
 import exceptions
 from entity import Chest, Book, TableContainer, BookShelfContainer
-from audio import play_chest_open_sound, play_table_open_sound
+from audio import play_chest_open_sound, play_table_open_sound, play_bookshelf_open_sound
 from i18n import _
 
 if TYPE_CHECKING:
@@ -1084,8 +1084,10 @@ class ChestLootHandler(AskUserEventHandler):
         if self.chest.open():
             is_table = isinstance(self.chest, TableContainer)
             is_bookshelf = isinstance(self.chest, BookShelfContainer)
-            if is_table or is_bookshelf:
+            if is_table:
                 play_table_open_sound()
+            elif is_bookshelf:
+                play_bookshelf_open_sound()
             else:
                 play_chest_open_sound()
             if is_bookshelf:
@@ -1210,7 +1212,7 @@ class SelectIndexHandler(AskUserEventHandler):
             self.engine.mouse_location = x, y
             return None
         elif key in CONFIRM_KEYS:
-            return self.on_index_selected(*self.engine.mouse_location)
+            return self._select_index(*self.engine.mouse_location)
         return super().ev_keydown(event)
 
     def ev_mousebuttondown(
@@ -1219,12 +1221,23 @@ class SelectIndexHandler(AskUserEventHandler):
         """Left click confirms a selection."""
         if self.engine.game_map.in_bounds(*event.tile):
             if event.button == 1:
-                return self.on_index_selected(*event.tile)
+                return self._select_index(*event.tile)
         return super().ev_mousebuttondown(event)
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
         """Called when an index is selected."""
         raise NotImplementedError()
+
+    def _select_index(self, x: int, y: int) -> Optional[ActionOrHandler]:
+        """Invoke index selection and ensure the cursor resets afterwards."""
+        try:
+            return self.on_index_selected(x, y)
+        finally:
+            self._reset_mouse_location()
+
+    def on_exit(self) -> Optional[ActionOrHandler]:
+        self._reset_mouse_location()
+        return super().on_exit()
 
 
 class LookHandler(SelectIndexHandler):

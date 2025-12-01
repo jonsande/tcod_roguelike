@@ -71,7 +71,7 @@ def generate_dungeon_v3(
 
         if template:
             height = len(template)
-            width = len(template[0]) if height else 0
+            width = max((len(row) for row in template), default=0)
         else:
             width = random.randint(settings.DUNGEON_V3_ROOM_MIN_SIZE, settings.DUNGEON_V3_ROOM_MAX_SIZE)
             height = random.randint(settings.DUNGEON_V3_ROOM_MIN_SIZE, settings.DUNGEON_V3_ROOM_MAX_SIZE)

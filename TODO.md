@@ -173,7 +173,7 @@ DUNGEON GENERATION
 - [ ] Las fixed rooms deberían poder crearse con objetos estas salas. Donde aparezca el carácter '~' debe generarse un scroll (aleatorio), donde aparezca el caracter '!' debe generarse una poción aleatoria, y donde aparezca el caracter '/' debe aparecer un arma aleatoria. La probabilidad de que aparezca una cosa u otra debe ser configurable, así como la probabilidad de que aparezca un tipo u otro de pócima (si lo que se genera es una pócima), un tipo u otro de pergamino (si lo que se genera es un pergamino), un tipo u otro de arma (si lo que se genera es un arma).
 
 FIXED DUNGEONS
-- [ ] El generate_fixed_dungeon() es algo primitivo. Por ejemplo, sólo genera las criaturas que tiene hardcodeadas dentro de la función. Revisarlo.
+- [x] El generate_fixed_dungeon() es algo primitivo. Por ejemplo, sólo genera las criaturas que tiene hardcodeadas dentro de la función. Revisarlo.
 - [ ] En cada dungeon total sólo debe haber dos fixed dungeons: una a mitad del descenso, la otra en el nivel final. 
 - [ ] La fixed dungeon del nivel final ha de ser siempre igual. Diseñarla.
 La fixed dungeon de mitad de descenso se escogerá entre una batería de posibles:
@@ -211,7 +211,8 @@ MECÁNICAS
 - [ ] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
 - [!] Trampas!
 - [ ] Portales mágicos!
-- [ ] Objeto malditos!: debe ser simplificado (tipo unexplored, no nethack: o sea, que no haya con un mismo nombre una versión maldita y otra no, pues complica mucho el código). Unos objetos se considerarán "bueno", otros "malos", y otros "netrales".
+- [x] Objeto malditos!: debe ser simplificado (tipo unexplored, no nethack: o sea, que no haya con un mismo nombre una versión maldita y otra no, pues complica mucho el código). 
+- [ ] Unos objetos se considerarán "bueno", otros "malos", y otros "netrales". Crearles ese atributo, a fin de poder crear un pergamino de tipo "detectar magia".
 - [ ] Profundizar en el sistema de críticos (creo que hay algo en el stealth mode, pero nada más)
 - [ ] Profundizar en el sistema de suerte.
 - [ ] Sí que va a haber un sistema de experiencia. Estará oculto. El jugador no sabrá nada. Servirá para subir la weapon proficiency. Hay que rediseñarlo. Dará puntos por los túrnos que se pase en melee junto a una criatura hostil (hay que arreglar eso de que junto a neutrales se entre en melee también).
