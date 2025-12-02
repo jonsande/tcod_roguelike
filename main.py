@@ -48,7 +48,9 @@ def main() -> None:
     cursor_hidden = False
     mouse_inside_window = False
     mouse_state_supported = hasattr(tcod.event, "get_mouse_state")
-    mouse_visibility_supported = hasattr(tcod, "mouse_show_cursor") or hasattr(tcod, "lib")
+    mouse_visibility_supported = (
+        hasattr(tcod, "sdl") and hasattr(tcod.sdl, "mouse") and hasattr(tcod.sdl.mouse, "show")
+    ) or hasattr(tcod, "lib")
     mouse_last_move = time.monotonic()
 
     def _set_cursor_visible(visible: bool) -> None:
@@ -58,22 +60,22 @@ def main() -> None:
         if cursor_hidden == (not visible):
             return
         try:
-            if hasattr(tcod, "mouse_show_cursor"):
-                tcod.mouse_show_cursor(visible)
-            else:
+            if hasattr(tcod, "sdl") and hasattr(tcod.sdl, "mouse") and hasattr(tcod.sdl.mouse, "show"):
+                tcod.sdl.mouse.show(visible)
+            elif hasattr(tcod, "lib") and hasattr(tcod.lib, "SDL_ShowCursor"):
                 tcod.lib.SDL_ShowCursor(1 if visible else 0)
             cursor_hidden = not visible
         except Exception:
             mouse_visibility_supported = False
 
-    def _tile_inside_window(tile: object) -> bool:
-        if tile is None:
+    def _position_inside_window(position: object) -> bool:
+        if position is None:
             return False
         try:
-            x, y = tile.x, tile.y  # type: ignore[attr-defined]
+            x, y = position  # type: ignore[misc]
         except Exception:
             try:
-                x, y = tile  # type: ignore[misc]
+                x, y = position.x, position.y  # type: ignore[attr-defined]
             except Exception:
                 return False
         return 0 <= x < screen_width and 0 <= y < screen_heigth
@@ -86,7 +88,8 @@ def main() -> None:
             state = tcod.event.get_mouse_state()
         except Exception:
             return
-        mouse_inside_window = _tile_inside_window(getattr(state, "tile", None))
+        state = context.convert_event(state)
+        mouse_inside_window = _position_inside_window(getattr(state, "position", None))
 
     with tcod.context.new_terminal(
         screen_width,
@@ -117,7 +120,9 @@ def main() -> None:
                     if not events:
                         time.sleep(0.016)
                     for event in events:
-                        context.convert_event(event)
+                        event = context.convert_event(event)
+                        if event is None:
+                            continue
                         if isinstance(
                             event,
                             (
@@ -127,7 +132,7 @@ def main() -> None:
                                 tcod.event.MouseWheel,
                             ),
                         ):
-                            mouse_inside_window = _tile_inside_window(getattr(event, "tile", None))
+                            mouse_inside_window = _position_inside_window(getattr(event, "position", None))
                             if cursor_hidden:
                                 _set_cursor_visible(True)
                             mouse_last_move = time.monotonic()

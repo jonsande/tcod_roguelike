@@ -26,6 +26,7 @@ from settings import (
     PLAYER_STARTING_EQUIP_LIMITS,
     PLAYER_STARTING_INVENTORY,
 )
+import procgen
 
 from typing import TYPE_CHECKING
 
@@ -155,6 +156,10 @@ def new_game() -> Engine:
 
     engine = Engine(player=player, debug=True)
 
+    # Al iniciar una run nueva vaciamos los contadores de generación para que los límites globales
+    # de max_instances y los informes de depuración empiecen limpios.
+    procgen.reset_generation_stats()
+
     engine.game_world = GameWorld(
         engine=engine,
         max_rooms=max_rooms,
@@ -163,6 +168,9 @@ def new_game() -> Engine:
         map_width=map_width,
         map_height=map_height,
     )
+
+    # Tras generar todos los mapas, garantizar mínimos configurados por min_instances.
+    procgen.enforce_minimum_spawns(engine.game_world.levels)
 
     # El primer piso ya se ha generado y el jugador ha sido colocado.
     engine.update_fov()

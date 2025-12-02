@@ -21,6 +21,8 @@ from procgen import (
     maybe_place_bookshelf,
     place_entities_fixdungeon,
     spawn_door_entity,
+    record_entity_spawned,
+    record_loot_items,
 )
 
 if TYPE_CHECKING:
@@ -221,29 +223,48 @@ def generate_fixed_dungeon(
         shelf = entity_factories.bookshelf.spawn(dungeon, x, y)
         loot = _build_bookshelf_loot(floor_number)
         entity_factories.fill_container_with_items(shelf, loot)
+        record_loot_items(loot, floor_number, procedural=True, source="fixed_bookshelf")
 
     # Colocamos monstruos estáticos
     for x, y in snake_array:
-        entity_factories.snake.spawn(dungeon, x, y)
+        spawned = entity_factories.snake.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="fixed_map"
+        )
 
     for x, y in swarm_rat_array:
-        entity_factories.swarm_rat.spawn(dungeon, x, y)
+        spawned = entity_factories.swarm_rat.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="fixed_map"
+        )
 
     for x, y in goblin_array:
-        entity_factories.goblin.spawn(dungeon, x, y)
+        spawned = entity_factories.goblin.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="fixed_map"
+        )
 
     for x, y in orc_array:
-        entity_factories.orc.spawn(dungeon, x, y)
+        spawned = entity_factories.orc.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="fixed_map"
+        )
 
     for x, y in sentinel_array:
-        entity_factories.sentinel.spawn(dungeon, x, y)
+        spawned = entity_factories.sentinel.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="fixed_map"
+        )
 
     # Colocamos monstruos aleatorios:
     for x, y in random_monsters_array:
         selected_monster = entity_factories.monster_roulette(
             choices=[entity_factories.orc, entity_factories.goblin, entity_factories.snake]
         )
-        selected_monster.spawn(dungeon, x, y)
+        spawned = selected_monster.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=True, source="fixed_map_random"
+        )
 
     if place_player:
         engine.player.place(player_intro[0], player_intro[1], dungeon)

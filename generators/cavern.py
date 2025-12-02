@@ -12,6 +12,7 @@ from game_map import GameMap
 from procgen import (
     _can_place_entity,
     _select_weighted_spawn_entries,
+    generation_tracker,
     cavern_item_count_by_floor,
     cavern_item_spawn_rules,
     cavern_monster_count_by_floor,
@@ -195,7 +196,7 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
     number_of_monsters = random.randint(min_monsters, max_monsters)
 
     for monster_entry in _select_weighted_spawn_entries(
-        cavern_monster_spawn_rules, number_of_monsters, floor_number
+        cavern_monster_spawn_rules, number_of_monsters, floor_number, "monsters"
     ):
         for _ in range(40):
             x = random.randint(1, dungeon.width - 2)
@@ -203,6 +204,13 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
             if not _can_place_entity(dungeon, x, y):
                 continue
             monster_entry["entity"].spawn(dungeon, x, y)
+            generation_tracker.record(
+                "monsters",
+                floor_number,
+                monster_entry["name"],
+                procedural=True,
+                source="cavern",
+            )
             break
 
     min_items, max_items = get_floor_value(
@@ -213,7 +221,7 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
     number_of_items = random.randint(min_items, max_items) if max_items > 0 else 0
 
     for item_entry in _select_weighted_spawn_entries(
-        cavern_item_spawn_rules, number_of_items, floor_number
+        cavern_item_spawn_rules, number_of_items, floor_number, "items"
     ):
         for _ in range(40):
             x = random.randint(1, dungeon.width - 2)
@@ -221,6 +229,13 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
             if not _can_place_entity(dungeon, x, y):
                 continue
             item_entry["entity"].spawn(dungeon, x, y)
+            generation_tracker.record(
+                "items",
+                floor_number,
+                item_entry["name"],
+                procedural=True,
+                source="cavern",
+            )
             break
 
 

@@ -81,7 +81,13 @@ class GenerationTracker:
     def __init__(self) -> None:
         self._categories = ("items", "monsters")
         self._totals: Dict[str, Counter] = {cat: Counter() for cat in self._categories}
+        self._procedural_totals: Dict[str, Counter] = {
+            cat: Counter() for cat in self._categories
+        }
         self._per_floor: Dict[str, Dict[int, Counter]] = {
+            cat: defaultdict(Counter) for cat in self._categories
+        }
+        self._procedural_per_floor: Dict[str, Dict[int, Counter]] = {
             cat: defaultdict(Counter) for cat in self._categories
         }
         self._labels: Dict[str, Dict[str, str]] = {cat: {} for cat in self._categories}
@@ -90,15 +96,28 @@ class GenerationTracker:
         if category in self._labels:
             self._labels[category][key] = label
 
-    def record(self, category: Optional[str], floor: int, key: str) -> None:
+    def record(
+        self,
+        category: Optional[str],
+        floor: int,
+        key: str,
+        *,
+        procedural: bool,
+        source: str = "",
+    ) -> None:
         if category not in self._totals:
             return
         self._totals[category][key] += 1
         self._per_floor[category][floor][key] += 1
+        if procedural:
+            self._procedural_totals[category][key] += 1
+            self._procedural_per_floor[category][floor][key] += 1
 
-    def get_total(self, category: str, key: str) -> int:
+    def get_total(self, category: str, key: str, *, procedural_only: bool = False) -> int:
         if category not in self._totals:
             return 0
+        if procedural_only:
+            return self._procedural_totals[category][key]
         return self._totals[category][key]
 
     def format_report(self, category: Optional[str] = None) -> str:
@@ -115,15 +134,36 @@ class GenerationTracker:
             for floor in sorted(floors.keys()):
                 lines.append(f"  Nivel {floor}:")
                 floor_counter = floors[floor]
+                procedural_counter = self._procedural_per_floor[cat].get(floor, {})
                 for key, count in sorted(floor_counter.items()):
                     label = self._labels[cat].get(key, key)
-                    lines.append(f"    {label}: {count}")
+                    proc_count = procedural_counter.get(key, 0)
+                    if proc_count and proc_count != count:
+                        lines.append(f"    {label}: {count} (procedurales: {proc_count})")
+                    elif proc_count:
+                        lines.append(f"    {label}: {count} procedurales")
+                    else:
+                        lines.append(f"    {label}: {count}")
+            totals = self._totals[cat]
+            if totals:
+                lines.append("  Totales:")
+                for key, count in sorted(totals.items()):
+                    label = self._labels[cat].get(key, key)
+                    proc_count = self._procedural_totals[cat].get(key, 0)
+                    if proc_count and proc_count != count:
+                        lines.append(f"    {label}: {count} (procedurales: {proc_count})")
+                    elif proc_count:
+                        lines.append(f"    {label}: {count} procedurales")
+                    else:
+                        lines.append(f"    {label}: {count}")
         return "\n".join(lines)
 
     def reset(self) -> None:
         for cat in self._categories:
             self._totals[cat].clear()
             self._per_floor[cat].clear()
+            self._procedural_totals[cat].clear()
+            self._procedural_per_floor[cat].clear()
 
 
 generation_tracker = GenerationTracker()
@@ -142,7 +182,12 @@ def _build_spawn_rule_entries(
         entry.setdefault("base_weight", entry.get("base_weight", 0))
         entry.setdefault("weight_per_floor", entry.get("weight_per_floor", 0))
         entry.setdefault("max_instances", entry.get("max_instances"))
+        entry.setdefault("min_instances", entry.get("min_instances"))
         entity = getattr(entity_factories, name)
+        try:
+            setattr(entity, "_spawn_key", name)
+        except Exception:
+            pass
         entry["entity"] = entity
         entry["name"] = name
         entry["display_name"] = _get_spawn_display_name(entity)
@@ -166,6 +211,134 @@ cavern_item_spawn_rules = _build_spawn_rule_entries(
 debris_chances = _resolve_entity_table(settings.DEBRIS_CHANCES)
 cavern_monster_count_by_floor = settings.CAVERN_MONSTER_COUNT_BY_FLOOR
 cavern_item_count_by_floor = settings.CAVERN_ITEM_COUNT_BY_FLOOR
+
+def _get_max_instances_for_item(key: str) -> Optional[int]:
+    entry = item_spawn_rules.get(key)
+    if not entry:
+        return None
+    return entry.get("max_instances")
+
+
+def _get_spawn_key(entity: Entity, default: Optional[str] = None) -> Optional[str]:
+    return getattr(entity, "_spawn_key", default)
+
+
+def _can_spawn_item_procedurally(key: str, pending: Optional[Counter] = None) -> bool:
+    max_instances = _get_max_instances_for_item(key)
+    if max_instances is None:
+        return True
+    current = generation_tracker.get_total("items", key, procedural_only=True)
+    if pending:
+        current += pending.get(key, 0)
+    return current < max_instances
+
+
+def record_entity_spawned(
+    entity: Entity,
+    floor: int,
+    category: str,
+    *,
+    key: Optional[str] = None,
+    procedural: bool,
+    source: str = "",
+) -> None:
+    resolved_key = key or _get_spawn_key(entity) or getattr(entity, "id_name", None) or getattr(entity, "name", None)
+    if not resolved_key:
+        return
+    generation_tracker.record(
+        category, floor, resolved_key, procedural=procedural, source=source
+    )
+
+
+def record_loot_items(loot: List[Entity], floor: int, *, procedural: bool, source: str) -> None:
+    for item in loot:
+        record_entity_spawned(
+            item, floor, "items", procedural=procedural, source=source
+        )
+
+
+def _compute_target_min_instances(entry: Dict) -> Optional[int]:
+    raw_min = entry.get("min_instances")
+    if raw_min is None:
+        return None
+    try:
+        target = int(raw_min)
+    except (TypeError, ValueError):
+        return None
+    target = max(0, target)
+    max_instances = entry.get("max_instances")
+    if max_instances is not None:
+        try:
+            target = min(target, int(max_instances))
+        except (TypeError, ValueError):
+            pass
+    return target
+
+
+def _eligible_levels_for_rule(levels: List[GameMap], min_floor: int) -> List[Tuple[int, GameMap]]:
+    return [(idx + 1, level) for idx, level in enumerate(levels) if (idx + 1) >= min_floor]
+
+
+def _force_min_instances(
+    entry: Dict,
+    category: str,
+    levels: List[GameMap],
+    missing: int,
+    *,
+    source: str,
+) -> None:
+    min_floor = entry.get("min_floor", 1)
+    candidates = _eligible_levels_for_rule(levels, min_floor)
+    if not candidates:
+        if settings.DEBUG_MODE and __debug__:
+            print(f"DEBUG: Sin niveles elegibles para min_instances de {entry.get('name')}")
+        return
+
+    for _ in range(missing):
+        placed = False
+        for _ in range(100):
+            floor, level = random.choice(candidates)
+            x = random.randint(1, level.width - 2)
+            y = random.randint(1, level.height - 2)
+            if not _can_place_entity(level, x, y):
+                continue
+            spawned = entry["entity"].spawn(level, x, y)
+            record_entity_spawned(
+                spawned,
+                floor,
+                category,
+                key=entry.get("name"),
+                procedural=True,
+                source=source,
+            )
+            placed = True
+            break
+        if not placed and settings.DEBUG_MODE and __debug__:
+            print(f"DEBUG: No se pudo colocar instancia extra para {entry.get('name')}")
+
+
+def enforce_minimum_spawns(levels: List[GameMap]) -> None:
+    """Force-spawn entries that declare min_instances and haven't reached that count procedurally."""
+    categories = [
+        ("items", item_spawn_rules),
+        ("monsters", enemy_spawn_rules),
+    ]
+    for category, rules in categories:
+        for name, entry in rules.items():
+            target = _compute_target_min_instances(entry)
+            if target is None or target <= 0:
+                continue
+            current = generation_tracker.get_total(category, name, procedural_only=True)
+            missing = max(0, target - current)
+            if missing <= 0:
+                continue
+            _force_min_instances(
+                entry,
+                category,
+                levels,
+                missing,
+                source="min_instances_enforcer",
+            )
 
 
 def _compute_rule_weight(entry: Dict, floor: int) -> float:
@@ -201,7 +374,9 @@ def _select_spawn_entries(
             if floor < entry.get("min_floor", 1):
                 continue
             max_instances = entry.get("max_instances")
-            current_total = generation_tracker.get_total(category, entry["name"])
+            current_total = generation_tracker.get_total(
+                category, entry["name"], procedural_only=True
+            )
             current_total += pending_counts.get(entry["name"], 0)
             if max_instances is not None and current_total >= max_instances:
                 continue
@@ -222,6 +397,7 @@ def _select_weighted_spawn_entries(
     rules: Dict[str, Dict],
     number_of_entities: int,
     floor: int,
+    category: Optional[str] = None,
 ) -> List[Dict]:
     selections: List[Dict] = []
     pending_counts: Counter = Counter()
@@ -233,6 +409,10 @@ def _select_weighted_spawn_entries(
                 continue
             max_instances = entry.get("max_instances")
             current_total = pending_counts.get(entry["name"], 0)
+            if category:
+                current_total += generation_tracker.get_total(
+                    category, entry["name"], procedural_only=True
+                )
             if max_instances is not None and current_total >= max_instances:
                 continue
             weight = _compute_rule_weight(entry, floor)
@@ -1400,13 +1580,21 @@ def _place_town_old_man_chest(
         return
 
     # Ítems aleatorios en el cofre del viejo
-    loot = _build_chest_loot(floor_number)
-    loot.extend(_build_old_man_bonus_loot())
+    loot_random = _build_chest_loot(floor_number)
+    loot_bonus = _build_old_man_bonus_loot()
+    loot_static: List[Entity] = []
 
     # Ítems garantizados en el cofre del viejo
     for key in settings.OLD_MAN_CHEST:
         prototype = getattr(entity_factories, key, None)
-        loot.append(copy.deepcopy(prototype))
+        if prototype is None:
+            continue
+        loot_static.append(copy.deepcopy(prototype))
+
+    loot: List[Entity] = []
+    loot.extend(loot_random)
+    loot.extend(loot_bonus)
+    loot.extend(loot_static)
 
     if not loot:
         return
@@ -1432,6 +1620,15 @@ def _place_town_old_man_chest(
             continue
         chest_entity = entity_factories.chest.spawn(dungeon, chest_x, chest_y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
+        record_loot_items(
+            loot_random, floor_number, procedural=True, source="old_man_chest"
+        )
+        record_loot_items(
+            loot_bonus, floor_number, procedural=True, source="old_man_chest_bonus"
+        )
+        record_loot_items(
+            loot_static, floor_number, procedural=False, source="old_man_chest_static"
+        )
         return
 
 
@@ -1493,11 +1690,15 @@ def _build_old_man_bonus_loot() -> List[Entity]:
     chosen_keys = random.choices(keys, weights=weights, k=picks)
 
     bonus_loot: List[Entity] = []
+    pending_counts: Counter = Counter()
     for item_key in chosen_keys:
+        if not _can_spawn_item_procedurally(item_key, pending_counts):
+            continue
         prototype = getattr(entity_factories, item_key, None)
         if prototype is None:
             continue
         bonus_loot.append(copy.deepcopy(prototype))
+        pending_counts[item_key] += 1
 
     return bonus_loot
 
@@ -1520,12 +1721,13 @@ def _spawn_entity_template(
         entity.spawn_coord = (x, y)
         spawned = entity.spawn(dungeon, x, y)
         _maybe_fill_container_loot(spawned, floor_number)
-        if settings.DEBUG_MODE:
-            if __debug__:
-                print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
-            if category and rule_name:
-                generation_tracker.record(category, floor_number, rule_name)
-            placed = True
+        if category and rule_name:
+            record_entity_spawned(
+                spawned, floor_number, category, key=rule_name, procedural=True, source=context
+            )
+        if settings.DEBUG_MODE and __debug__:
+            print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
+        placed = True
         break
     if settings.DEBUG_MODE:
         if not placed and __debug__:
@@ -1622,11 +1824,15 @@ def _build_loot_for_floor(
     weights = [float(entry[1]) for entry in loot_entries]
     chosen_keys = random.choices(keys, weights=weights, k=count)
     loot: List[Entity] = []
+    pending_counts: Counter = Counter()
     for key in chosen_keys:
+        if not _can_spawn_item_procedurally(key, pending_counts):
+            continue
         prototype = getattr(entity_factories, key, None)
         if not prototype:
             continue
         loot.append(copy.deepcopy(prototype))
+        pending_counts[key] += 1
     return loot
 
 
@@ -1666,6 +1872,7 @@ def _maybe_fill_container_loot(entity: Entity, floor_number: int) -> None:
     else:
         return
     entity_factories.fill_container_with_items(entity, loot)
+    record_loot_items(loot, floor_number, procedural=True, source="container_spawn")
 
 
 def maybe_place_table(
@@ -1699,6 +1906,7 @@ def maybe_place_table(
         loot = _build_table_loot(floor_number)
         table_entity = entity_factories.table.spawn(dungeon, x, y)
         entity_factories.fill_container_with_items(table_entity, loot)
+        record_loot_items(loot, floor_number, procedural=True, source="table")
         if settings.DEBUG_MODE:
             if __debug__:
                 print(f"DEBUG: Generando... Table en x={x} y={y}")
@@ -1739,6 +1947,7 @@ def maybe_place_bookshelf(
         loot = _build_bookshelf_loot(floor_number)
         bookshelf_entity = entity_factories.bookshelf.spawn(dungeon, x, y)
         entity_factories.fill_container_with_items(bookshelf_entity, loot)
+        record_loot_items(loot, floor_number, procedural=True, source="bookshelf")
         if settings.DEBUG_MODE:
             if __debug__:
                 print(f"DEBUG: Generando... Bookshelf en x={x} y={y}")
@@ -1778,6 +1987,7 @@ def maybe_place_chest(
         loot = _build_chest_loot(floor_number)
         chest_entity = entity_factories.chest.spawn(dungeon, x, y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
+        record_loot_items(loot, floor_number, procedural=True, source="chest")
         if settings.DEBUG_MODE:
             if __debug__:
                 print(f"DEBUG: Generando... Chest en x={x} y={y}")
@@ -2288,7 +2498,7 @@ def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_num
 
 
 def report_generation_stats(category: Optional[str] = None) -> str:
-    """Devuelve un resumen legible de cuántos monstruos/ítems se han generado por nivel."""
+    """Devuelve un resumen legible de cuántos monstruos/ítems se han generado por nivel y en total."""
     return generation_tracker.format_report(category)
 
 

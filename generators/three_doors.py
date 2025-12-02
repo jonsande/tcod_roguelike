@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Tuple, TYPE_CHECKING
+from collections import Counter
 
 import entity_factories
 #import fixed_maps
@@ -20,6 +21,9 @@ from procgen import (
     maybe_place_table,
     maybe_place_bookshelf,
     spawn_door_entity,
+    _get_spawn_key,
+    _can_spawn_item_procedurally,
+    record_entity_spawned,
 )
 
 if TYPE_CHECKING:
@@ -139,6 +143,7 @@ def _place_random_entities_three_doors(
     dungeon: GameMap,
     *,
     forbidden_cells: List[Tuple[int, int]],
+    floor_number: int,
 ) -> None:
     """Place random monsters/items using the custom three-doors tables."""
     min_monsters, max_monsters = THREE_DOORS_MONSTER_COUNT
@@ -170,19 +175,43 @@ def _place_random_entities_three_doors(
     random.shuffle(allowed_cells)
     cursor = 0
 
+    item_pending: Counter = Counter()
+
     for monster in monsters:
         if cursor >= len(allowed_cells):
             break
         x, y = allowed_cells[cursor]
         cursor += 1
-        monster.spawn(dungeon, x, y)
+        spawned = monster.spawn(dungeon, x, y)
+        key = _get_spawn_key(monster)
+        record_entity_spawned(
+            spawned,
+            floor_number,
+            "monsters",
+            key=key,
+            procedural=True,
+            source="three_doors",
+        )
 
     for item in items:
         if cursor >= len(allowed_cells):
             break
+        key = _get_spawn_key(item)
+        if key and not _can_spawn_item_procedurally(key, item_pending):
+            continue
         x, y = allowed_cells[cursor]
         cursor += 1
-        item.spawn(dungeon, x, y)
+        spawned = item.spawn(dungeon, x, y)
+        if key:
+            item_pending[key] += 1
+        record_entity_spawned(
+            spawned,
+            floor_number,
+            "items",
+            key=key,
+            procedural=True,
+            source="three_doors",
+        )
 
 
 def generate_three_doors_map(
@@ -255,7 +284,9 @@ def generate_three_doors_map(
     forbidden_cells.extend(random_monsters_array)
     forbidden_cells.extend(potion_array)
 
-    _place_random_entities_three_doors(new_room, dungeon, forbidden_cells=forbidden_cells)
+    _place_random_entities_three_doors(
+        new_room, dungeon, forbidden_cells=forbidden_cells, floor_number=floor_number
+    )
 
     for x, y in walls_array:
         dungeon.tiles[(x, y)] = walls

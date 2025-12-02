@@ -544,11 +544,13 @@ class Fighter(FireStatusMixin, BaseComponent):
         
     @property
     def to_hit_penalty(self) -> int:
+        penalty = 0
         if self.parent.equipment:
             # Por algún motivo esto está retornando 0
-            return self.parent.equipment.to_hit_penalty
-        else:
-            return 0
+            penalty += self.parent.equipment.to_hit_penalty
+        if self.is_blind:
+            penalty += 4  # Blind creatures have a harder time landing blows.
+        return penalty
         
     @property
     def armor_value_bonus(self) -> int:

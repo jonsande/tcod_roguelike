@@ -33,6 +33,13 @@ def _get_hot_path_target(dungeon: "GameMap") -> Optional[Tuple[int, int]]:
     return hot_path[-1]
 
 
+def _record_spawn(*, entity, floor: int, category: str, key: str, source: str) -> None:
+    # Import diferido para evitar el ciclo de importación con procgen.
+    from procgen import record_entity_spawned
+
+    record_entity_spawned(entity, floor, category, key=key, procedural=False, source=source)
+
+
 def _place_the_artifact(dungeon: "GameMap") -> bool:
     """Coloca The Artifact en la última sala del hot_path del último piso."""
     global artifact_exists, artifact_location
@@ -76,7 +83,8 @@ def _place_the_artifact(dungeon: "GameMap") -> bool:
         if not found_spot:
             return False
 
-    entity_factories.the_artifact.spawn(dungeon, *final_target)
+    spawned = entity_factories.the_artifact.spawn(dungeon, *final_target)
+    _record_spawn(entity=spawned, floor=the_artifact_floor, category="items", key="the_artifact", source="unique")
     artifact_exists = True
     artifact_location = (the_artifact_floor, final_target)
     return True
@@ -112,7 +120,8 @@ def place_uniques(floor, center_of_last_room, dungeon):
             if grial_exists == True:
                 pass
             else:
-                entity_factories.grial.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                spawned = entity_factories.grial.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                _record_spawn(entity=spawned, floor=floor, category="items", key="grial", source="unique")
                 grial_exists = True
     else:
         pass
@@ -138,7 +147,8 @@ def place_uniques(floor, center_of_last_room, dungeon):
             if sauron_exists == True:
                 pass
             else:
-                entity_factories.sauron.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                spawned = entity_factories.sauron.spawn(dungeon, center_of_last_room[0], center_of_last_room[1])
+                _record_spawn(entity=spawned, floor=floor, category="monsters", key="sauron", source="unique")
                 sauron_exists = True
     else:
         pass

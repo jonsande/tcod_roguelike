@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Tuple, TYPE_CHECKING
+from collections import Counter
 
 import random
 
@@ -12,6 +13,8 @@ from procgen import (
     RectangularRoom,
     _build_bookshelf_loot,
     _resolve_upstairs_location,
+    _can_spawn_item_procedurally,
+    _get_spawn_key,
     ensure_breakable_tiles,
     ensure_path_between,
     guarantee_downstairs_access,
@@ -21,6 +24,8 @@ from procgen import (
     maybe_place_table,
     place_entities_fixdungeon,
     spawn_door_entity,
+    record_entity_spawned,
+    record_loot_items,
 )
 
 if TYPE_CHECKING:
@@ -136,6 +141,7 @@ def _place_random_entities_the_library(
     dungeon: GameMap,
     *,
     forbidden_cells: List[Tuple[int, int]],
+    floor_number: int,
 ) -> None:
     """Place random monsters/items using the custom three-doors tables."""
     min_monsters, max_monsters = THE_LIBRARY_MONSTER_COUNT
@@ -167,19 +173,43 @@ def _place_random_entities_the_library(
     random.shuffle(allowed_cells)
     cursor = 0
 
+    item_pending: Counter = Counter()
+
     for monster in monsters:
         if cursor >= len(allowed_cells):
             break
         x, y = allowed_cells[cursor]
         cursor += 1
-        monster.spawn(dungeon, x, y)
+        spawned = monster.spawn(dungeon, x, y)
+        key = _get_spawn_key(monster)
+        record_entity_spawned(
+            spawned,
+            floor_number,
+            "monsters",
+            key=key,
+            procedural=True,
+            source="library",
+        )
 
     for item in items:
         if cursor >= len(allowed_cells):
             break
+        key = _get_spawn_key(item)
+        if key and not _can_spawn_item_procedurally(key, item_pending):
+            continue
         x, y = allowed_cells[cursor]
         cursor += 1
-        item.spawn(dungeon, x, y)
+        spawned = item.spawn(dungeon, x, y)
+        if key:
+            item_pending[key] += 1
+        record_entity_spawned(
+            spawned,
+            floor_number,
+            "items",
+            key=key,
+            procedural=True,
+            source="library",
+        )
 
 def generate_the_library_map(
     map_width: int,
@@ -238,7 +268,9 @@ def generate_the_library_map(
     forbidden_cells.extend(bookshelf_array)
 
     #place_entities_fixdungeon(new_room, dungeon, floor_number, forbidden_cells)
-    _place_random_entities_the_library(new_room, dungeon, forbidden_cells=forbidden_cells)
+    _place_random_entities_the_library(
+        new_room, dungeon, forbidden_cells=forbidden_cells, floor_number=floor_number
+    )
 
     for x, y in walls_array:
         dungeon.tiles[(x, y)] = walls
@@ -280,21 +312,37 @@ def generate_the_library_map(
         # genéricos en entity_factories
         loot = _build_bookshelf_loot(floor_number)
         entity_factories.fill_container_with_items(shelf, loot)
+        record_loot_items(loot, floor_number, procedural=True, source="library_bookshelf")
 
     for x, y in snake_array:
-        entity_factories.snake.spawn(dungeon, x, y)
+        spawned = entity_factories.snake.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="library_static"
+        )
 
     for x, y in swarm_rat_array:
-        entity_factories.swarm_rat.spawn(dungeon, x, y)
+        spawned = entity_factories.swarm_rat.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="library_static"
+        )
 
     for x, y in goblin_array:
-        entity_factories.goblin.spawn(dungeon, x, y)
+        spawned = entity_factories.goblin.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="library_static"
+        )
 
     for x, y in orc_array:
-        entity_factories.orc.spawn(dungeon, x, y)
+        spawned = entity_factories.orc.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="library_static"
+        )
 
     for x, y in sentinel_array:
-        entity_factories.sentinel.spawn(dungeon, x, y)
+        spawned = entity_factories.sentinel.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=False, source="library_static"
+        )
 
     # Aquí se generan los monstruos que van a colocarse en las casillas en las que haya
     # una "M". Configurar las opciones de monstruos posibles al gusto.
@@ -302,10 +350,16 @@ def generate_the_library_map(
         selected_monster = entity_factories.monster_roulette(
             choices=RANDOM_MONSTERS_IN_STATIC_POSITIONS
         )
-        selected_monster.spawn(dungeon, x, y)
+        spawned = selected_monster.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "monsters", procedural=True, source="library_random"
+        )
 
     for x, y in potion_array:
-        entity_factories.health_potion.spawn(dungeon, x, y)
+        spawned = entity_factories.health_potion.spawn(dungeon, x, y)
+        record_entity_spawned(
+            spawned, floor_number, "items", procedural=False, source="library_static"
+        )
 
     player_intro = random.choice(player_starts) if player_starts else center_of_last_room
     if place_player:

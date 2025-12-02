@@ -1475,7 +1475,7 @@ snake = Actor(
         max_stamina=5,
         woke_ai_cls=SneakeEnemy,
         poisons_on_hit=True,
-        poisonous=6,
+        poisonous=8,
         natural_weapon=NaturalWeapon(name="Bite", min_dmg=0, max_dmg=0, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=0),
