@@ -79,6 +79,7 @@ class Engine:
         self.satiety_counter = 0
         self.spawn_monsters_counter = 0
         self.temporal_effects = []
+        self.lamp_hint_shown = False
         self.center_room_array = []
         self.identified_items = []
         self.debug = debug

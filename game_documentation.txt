@@ -1,8 +1,15 @@
 1. EL COMBATE
 
-- Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará.
+- ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos básicos para sobrevivir: 
+  - todo enemigo ha de tomarse en serio. 
+  - A veces empezar un combate no es la mejor táctica. 
+  - En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). 
+  - No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). 
+  - Aprende a hacer uso del entorno. A veces el sigilo es tu mejor baza. 
+  - Aprende a escapar.
 
-- Avisos preliminares: ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos para sobrevivir: todo enemigo ha de tomarse en serio. A veces empezar un combate no es la mejor táctica. En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). Aprende a hacer uso del entorno. A veces el siguilo es tu mejor baza. Aprende a escapar.
+- ¿Cómo se ataca? Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará (hay algunas excepciones, que el jugador deberá descubrir por sí mismo).
+
 
 1.1. EL MODO COMBATE (MODO MELEE)
 
@@ -20,7 +27,7 @@
                             STAMINA |  TO-HIT  | DEFENSE
 Atacar (MeleeAction):         -1    |  reset   |   -1            x    
 Defenderse (WaitAction):      -1    |   +1     |   +1            x   
-Retroceder(MovementAction):   +1    |  reset   |    -            x
+Retroceder(MovementAction):   +1    |  reset   |   +1            x
 
 - Si el atacante logra un impacto y este hace daño obtiene un modificador al índice TO-HIT en el siguiente turno, hasta un máximo de 3:
 
@@ -88,9 +95,10 @@ Redibir daño:                 -     |  reset   |  reset          x
    Bandit                 5
 
 
+1.5. CONSEJOS
 
-
-
+- En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
+- Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.
 
 
 

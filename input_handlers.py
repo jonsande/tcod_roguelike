@@ -5,7 +5,7 @@ from tcod import libtcodpy
 import os
 import random
 import textwrap
-from typing import Callable, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Callable, List, Optional, Tuple, TYPE_CHECKING, Union
 from collections import defaultdict
 
 import tcod
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from entity import Item
 
 from components.ai import Dummy
+from components.fighter import BreakableWallFighter
 from settings import DEBUG_MODE
 
 MOVE_KEYS = {
@@ -81,6 +82,18 @@ WAIT_KEYS = {
     tcod.event.KeySym.KP_5,
     tcod.event.KeySym.CLEAR,
 }
+
+SHIFT_MODIFIERS = (
+    tcod.event.Modifier.LSHIFT
+    | tcod.event.Modifier.RSHIFT
+    | tcod.event.KMOD_LSHIFT
+    | tcod.event.KMOD_RSHIFT
+    | getattr(tcod.event, "KMOD_SHIFT", 0)
+    | getattr(tcod.event.Modifier, "SHIFT", 0)
+)
+
+SCANCODE_SLASH = getattr(tcod.event.Scancode, "SLASH", None)
+SCANCODE_QUESTION = getattr(tcod.event.Scancode, "QUESTION", None)
 
 CONFIRM_KEYS = {
     tcod.event.KeySym.RETURN,
@@ -376,7 +389,7 @@ class AskUserEventHandler(EventHandler):
 
 
 class CombatControlHandler(AskUserEventHandler):
-    TITLE = "COMBAT CONTROL PANEL"
+    TITLE = "MONSTER INFO"
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
@@ -398,8 +411,10 @@ class CombatControlHandler(AskUserEventHandler):
             title=self.TITLE,
             # Para que el fondo sea transparente o no:
             clear=True,
-            fg=(99,238,99),
-            bg=(2,45,0),
+            # fg=(99,238,99),
+            # bg=(2,45,0),
+            fg=(150,150,150),
+            bg=(20,20,20),
         )
 
         #console.print(
@@ -409,7 +424,11 @@ class CombatControlHandler(AskUserEventHandler):
         monsters_list = []
 
         for i in self.engine.game_map.actors:
-            if self.engine.game_map.visible[i.x, i.y] and i != self.engine.player:               
+            if (
+                self.engine.game_map.visible[i.x, i.y]
+                and i != self.engine.player
+                and not isinstance(i.fighter, BreakableWallFighter)
+            ):
                 monsters_list.append(i)
     
         sorted_monsters_list = sorted(monsters_list, key=lambda e: self.engine.player.distance(e.x, e.y))
@@ -428,7 +447,7 @@ class CombatControlHandler(AskUserEventHandler):
             armor_value = f"{e.fighter.armor_value}"
             hp = f"{e.fighter.hp}"
             aggravated = f"{e.fighter.aggravated}"
-            power = f"({e.fighter.strength} + {e.fighter.weapon_dmg_info} + {e.fighter.no_weapon_dmg_info}) * {e.fighter.weapon_proficiency}"
+            strength = f"({e.fighter.strength} + {e.fighter.weapon_dmg_info} * {e.fighter.weapon_proficiency}" # + {e.fighter.no_weapon_dmg_info})
 
             if DEBUG_MODE:
                 print("DEBUG: e.name: ", e.name)
@@ -436,9 +455,9 @@ class CombatControlHandler(AskUserEventHandler):
 
             if isinstance(e.ai, Dummy) == False:
                 if e.fighter.aggravated == True:
-                    string=f"{name} ({distance}) (!) \n SP:  DEF:  DMG:      ToHit:  AV:"
+                    string=f"{name} ({distance}) (!) \n SP:  DEF:  DMG:        Hit:  AV:"
                 else:
-                    string=f"{name} ({distance}) \n SP:  DEF:  DMG:      ToHit:  AV:"
+                    string=f"{name} ({distance}) \n SP:  DEF:  DMG:        Hit:  AV:"
 
                 console.print(
                     x=x+1, 
@@ -448,7 +467,7 @@ class CombatControlHandler(AskUserEventHandler):
 
                 console.print(x + 5, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.stamina}", fg=color.blue)
                 console.print(x + 11, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.defense}", fg=color.orange)
-                console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.power}+1D{e.fighter.weapon_proficiency}", fg=color.red)
+                console.print(x + 17, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.strength}+{e.fighter.weapon_dmg_info}", fg=color.red)
                 console.print(x + 29, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.to_hit}", fg=color.orange)
                 console.print(x + 34, y + counter_mons + 2 + i + counter_lines, f"{e.fighter.armor_value}", fg=color.orange)
                 counter_lines += 1
@@ -1322,6 +1341,31 @@ class AreaRangedAttackHandler(SelectIndexHandler):
 
 class MainGameEventHandler(EventHandler):
 
+    def _is_help_key(self, key: int, modifier: int, scancode: Optional[int]) -> bool:
+        """Return True if the key combination should open the help screen."""
+        question_sym = getattr(tcod.event.KeySym, "QUESTION", None)
+        question_sym_alt = getattr(tcod.event.KeySym, "QUESTIONMARK", None)
+        shift_down = bool(modifier & SHIFT_MODIFIERS)
+
+        if key in (question_sym, question_sym_alt):
+            return True
+
+        if key == tcod.event.KeySym.SLASH and shift_down:
+            return True
+
+        # Some layouts may send the ASCII code directly.
+        if isinstance(key, int) and key == ord("?"):
+            return True
+
+        if scancode in (SCANCODE_QUESTION, SCANCODE_SLASH) and shift_down:
+            return True
+
+        # Extra fallback: F1 always opens help.
+        if key == tcod.event.KeySym.F1:
+            return True
+
+        return False
+
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
 
         """This method will receive key press events, and return either an 
@@ -1334,6 +1378,8 @@ class MainGameEventHandler(EventHandler):
 
         key = event.sym
         modifier = event.mod
+        shift_down = bool(modifier & SHIFT_MODIFIERS)
+        scancode = getattr(event, "scancode", None)
 
         player = self.engine.player
 
@@ -1353,6 +1399,9 @@ class MainGameEventHandler(EventHandler):
         # Salir del juego
         elif key == tcod.event.KeySym.ESCAPE:
             return ConfirmQuitHandler(self)
+        # Ayuda y documentación (antes de SLASH para no chocar con "look")
+        elif self._is_help_key(key, modifier, scancode):
+            return HelpScreenEventHandler(self.engine)
         # Ver el historial
         elif key == tcod.event.KeySym.v:
             return HistoryViewer(self.engine)
@@ -1393,7 +1442,9 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.KeySym.c:
             return actions.CloseDoorAction(player)
         # Inspeccionar alrededores
-        elif key == tcod.event.KeySym.x or key == tcod.event.KeySym.SLASH:
+        elif key == tcod.event.KeySym.SLASH:
+            return LookHandler(self.engine)
+        elif key == tcod.event.KeySym.x:
             return LookHandler(self.engine)
         elif key == tcod.event.KeySym.z:
             return ExamineScreenEventHandler(self.engine)
@@ -1501,6 +1552,134 @@ class HistoryViewer(EventHandler):
         elif event.sym == tcod.event.KeySym.END:
             self.cursor = self.log_length - 1  # Move directly to the last message.
         else:  # Any other key moves back to the main game state.
+            return MainGameEventHandler(self.engine)
+        return None
+
+
+class HelpScreenEventHandler(EventHandler):
+    """Display controls and extended documentation with scroll support."""
+
+    TITLE = "Ayuda y controles"
+
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+        self.cursor = 0
+        self._max_cursor = 0
+        self._raw_lines = self._build_content_lines()
+
+    def _build_content_lines(self) -> List[str]:
+        controls = [
+            "CONTROLES",
+            "",
+            "Usa las flechas (o RePag/AvPag) para desplazarte por esta ayuda.",
+            "",
+            "También puedes abrir esta ayuda con F1.",
+            "",
+            "Movimiento: Flechas, Numpad (1-9 sin 5) o vi-keys (h j k l y u b n)",
+            "",
+            "Esperar: . o 5 (Numpad).",
+            "",
+            "Interactuar/escaleras: Espacio.",
+            "",
+            "Examinar/mirar: x, z o /",
+            "",
+            "Información de enemigos visibles: p",
+            "",
+            "Recoger objeto: g",
+            "",
+            "Usar/equipar objeto del inventario: a",
+            "",
+            "Inspeccionar objeto del inventario: i",
+            "",
+            "Soltar objeto: d",
+            "",
+            "Lanzar objeto: t",
+            "",
+            "Cerrar puerta adyacente: c",
+            "",
+            "Linterna: q (encender/apagar)",
+            "",
+            "Ficha del personaje: @ o \"",
+            "",
+            "Historial de mensajes: v",
+            "",
+            "Salir del juego: ESC",
+            "",
+            "Consola de depuracion: Retroceso (solo modo debug).",
+            "",
+            "",
+            #"DOCUMENTACIÓN DEL JUEGO",
+            #"",
+        ]
+        # Esta opción para imprimir también el game_documentation.txt
+        #return controls + self._load_documentation_lines()
+        return controls
+
+    def _load_documentation_lines(self) -> List[str]:
+        doc_path = os.path.join(os.path.dirname(__file__), "game_documentation.txt")
+        try:
+            with open(doc_path, "r", encoding="utf-8") as doc_file:
+                contents = doc_file.read().splitlines()
+        except FileNotFoundError:
+            return ["(No se encontró game_documentation.txt)."]
+        except OSError as exc:
+            return [f"(No se pudo leer game_documentation.txt: {exc})"]
+
+        return contents if contents else ["(game_documentation.txt está vacío.)"]
+
+    def _wrap_lines(self, width: int) -> List[str]:
+        wrapped: List[str] = []
+        for line in self._raw_lines:
+            if not line:
+                wrapped.append("")
+                continue
+            parts = textwrap.wrap(
+                line,
+                width=width,
+                expand_tabs=False,
+                replace_whitespace=False,
+                drop_whitespace=False,
+            )
+            wrapped.extend(parts or [""])
+        return wrapped
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        super().on_render(console)  # Draw the main state as the background.
+
+        help_console = tcod.console.Console(console.width - 6, console.height - 6)
+        help_console.draw_frame(0, 0, help_console.width, help_console.height)
+        help_console.print_box(
+            0,
+            0,
+            help_console.width,
+            1,
+            f"┤{self.TITLE}├",
+            alignment=libtcodpy.CENTER,
+        )
+
+        wrap_width = help_console.width - 2
+        wrapped_lines = self._wrap_lines(wrap_width)
+        visible_height = help_console.height - 2
+
+        self._max_cursor = max(len(wrapped_lines) - visible_height, 0)
+        self.cursor = max(0, min(self.cursor, self._max_cursor))
+
+        for i, line in enumerate(
+            wrapped_lines[self.cursor : self.cursor + visible_height]
+        ):
+            help_console.print(1, 1 + i, line)
+
+        help_console.blit(console, 3, 3)
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[MainGameEventHandler]:
+        if event.sym in CURSOR_Y_KEYS:
+            adjust = CURSOR_Y_KEYS[event.sym]
+            self.cursor = max(0, min(self.cursor + adjust, self._max_cursor))
+        elif event.sym == tcod.event.KeySym.HOME:
+            self.cursor = 0
+        elif event.sym == tcod.event.KeySym.END:
+            self.cursor = self._max_cursor
+        else:
             return MainGameEventHandler(self.engine)
         return None
         

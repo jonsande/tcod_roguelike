@@ -145,7 +145,7 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "gray_key", "quantity": 1},
     # {"item": "identify_scroll", "quantity": 6},
     # {"item": "antidote_ring", "quantity": 1},
-    {"item": "infra_vision_potion", "quantity": 5},
+    # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
     # {"item": "power_potion", "quantity": 6},
 ]

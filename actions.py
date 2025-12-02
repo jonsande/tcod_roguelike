@@ -233,6 +233,8 @@ class TakeStairsAction(Action):
                 print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TakeStairsAction")
                 print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
 
+            starting_floor = self.engine.game_world.current_floor
+
             if self.engine.game_world.current_floor > 1:
 
                 # Se gana experiencia por bajar escaleras (proporcional al nivel de mazmorra)
@@ -266,6 +268,17 @@ class TakeStairsAction(Action):
 
             self.engine.message_log.add_message(
                 "You descend the staircase.", color.descend
+                )
+            if (
+                self.entity is self.engine.player
+                and starting_floor == 1
+                and self.engine.game_world.current_floor == 2
+                and not getattr(self.engine, "lamp_hint_shown", False)
+            ):
+                self.engine.lamp_hint_shown = True
+                self.engine.message_log.add_message(
+                    "Press 'q' to turn on your lamp.",
+                    color.orange,
                 )
             if self.entity is self.engine.player:
                 play_stair_descend_sound()
@@ -1506,11 +1519,11 @@ class ToogleLightAction(Action):
 
         if fighter.lamp_on:
             fighter.lamp_on = False
-            fighter.base_stealth += 1
+            fighter.base_stealth += 2
             self.engine.message_log.add_message("You turn OFF your lamp", color.descend)
         else:
             fighter.lamp_on = True
-            fighter.base_stealth -= 1
+            fighter.base_stealth -= 2
             self.engine.message_log.add_message("You turn ON your lamp", color.enemy_die)
 
         if DEBUG_MODE:
