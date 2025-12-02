@@ -192,7 +192,10 @@ sand_bag = Item(
     color=(210,210,110),
     name="Sand bag",
     id_name = "Sand bag",
-    uses=3,
+    uses=4,
+    max_uses=4,
+    stackable=False,
+    info="A small pouch of gritty sand. Activate to pick a target within 2 tiles; a valid throw blinds the creature for 2 turns. Blinded foes see almost nothing and suffer -4 to hit and -4 defense. Holds 4 handfuls and disappears when empty. Cannot stack.",
     consumable=consumable.BlindConsumable(number_of_turns=2),
 )
 loot_tables.register_loot_item("sand_bag", sand_bag)
@@ -1175,7 +1178,7 @@ adventurer = Actor(
         super_memory=False,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=20, items=loot_tables.build_monster_inventory("Adventurer", amount=4)),
+    inventory=Inventory(capacity=20, loot_table_key="Adventurer", loot_amount=4),
     level=Level(level_up_base=20),
 )
 
@@ -1189,7 +1192,7 @@ adventurer.on_spawn = _setup_adventurer_equipment
 #     ai_cls=Neutral,
 #     equipment=Equipment(),
 #     fighter=Fighter(hp=32, base_defense=5, strength=4, recover_rate=0, fov=0, weapon_proficiency = (1, 4)),
-#     inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Adventurer Unique", 3)),
+#     inventory=Inventory(capacity=1, loot_table_key="Adventurer Unique", loot_amount=3),
 #     level=Level(xp_given=50),
 # )
 
@@ -1214,7 +1217,7 @@ rat = Actor(
         luck=0,
         natural_weapon=NaturalWeapon(name="Rat claws", min_dmg=1, max_dmg=3),
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Giant rat", amount=1)),
+    inventory=Inventory(capacity=1, loot_table_key="Giant rat", loot_amount=1),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )
@@ -1303,7 +1306,7 @@ goblin = Actor(
     #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
     #inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", 3)),
     #inventory=Inventory(capacity=1, items=[dagger]),
-    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", amount=1)),
+    inventory=Inventory(capacity=3, loot_table_key="Goblin", loot_amount=1),
     level=Level(xp_given=3),
 )
 #goblin.on_spawn = _setup_creature_equipment
@@ -1330,7 +1333,7 @@ monkey = Actor(
         woke_ai_cls=HostileEnemy,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Monkey", amount=1)),
+    inventory=Inventory(capacity=1, loot_table_key="Monkey", loot_amount=1),
     level=Level(xp_given=3),
 )
 monkey.on_spawn = _setup_creature_equipment
@@ -1356,7 +1359,7 @@ orc = Actor(
         woke_ai_cls=HostileEnemy,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Orc", 4)),
+    inventory=Inventory(capacity=3, loot_table_key="Orc", loot_amount=4),
     level=Level(xp_given=5),
 )
 orc.on_spawn = _setup_creature_equipment
@@ -1381,7 +1384,7 @@ true_orc = Actor(
         woke_ai_cls=HostileEnemy,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
         ),
-    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("True Orc", 4)),
+    inventory=Inventory(capacity=3, loot_table_key="True Orc", loot_amount=4),
     level=Level(xp_given=10),
 )
 true_orc.on_spawn = _setup_creature_equipment
@@ -1407,7 +1410,7 @@ skeleton = Actor(
         action_time_cost=12,
         natural_weapon=NaturalWeapon(name="Bone blade", min_dmg=1, max_dmg=5),
     ),
-    inventory=Inventory(capacity=2, items=loot_tables.build_monster_inventory("Skeleton", amount=2)),
+    inventory=Inventory(capacity=2, loot_table_key="Skeleton", loot_amount=2),
     level=Level(xp_given=8),
 )
 skeleton.on_spawn = _setup_creature_equipment
@@ -1500,7 +1503,7 @@ bandit = Actor(
         base_to_hit=2,
         natural_weapon=NaturalWeapon(name="Cheater fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
     ),
-    inventory=Inventory(capacity=5, items=loot_tables.build_monster_inventory("Bandit", 5)),
+    inventory=Inventory(capacity=5, loot_table_key="Bandit", loot_amount=5),
     level=Level(xp_given=14),
 )
 bandit.on_spawn = _setup_creature_equipment
@@ -1526,7 +1529,7 @@ cultist = Actor(
         action_time_cost=7,
         natural_weapon=NaturalWeapon(name="Ceremonial dagger", min_dmg=1, max_dmg=4, dmg_bonus=1),
     ),
-    inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Cultist", amount=2)),
+    inventory=Inventory(capacity=3, loot_table_key="Cultist", loot_amount=2),
     level=Level(xp_given=12),
 )
 cultist.on_spawn = _setup_creature_equipment
@@ -1549,7 +1552,7 @@ sentinel = Actor(
         max_stamina=3,
         action_time_cost=10,
     ),
-    inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Sentinel", 2)),
+    inventory=Inventory(capacity=1, loot_table_key="Sentinel", loot_amount=2),
     level=Level(xp_given=2),
     to_eat_drop=meat,
 )

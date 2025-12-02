@@ -20,13 +20,15 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Las criaturas deben huir con hp bajos.
+- [ ] Slimes! Los slimes deben poder atravesar puertas.
+- [!] Las criaturas deben huir con hp bajos.
 - [ ] Personajes únicos!
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
 - [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
 - [ ] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, parece que todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en si en una tirada de randint(7,12) para establecer los puntos hp de un goblin sale 12, todos los goblins generados tienen 12 puntos de hp (comprueba que es correcto lo que digo). ¿Por qué sucede esto? Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 12 puntos de hp, pero otros con 7, o con 9, etc. ¿Es posible?
 
 IA
+- [!] Las criaturas deben huir con hp bajos
 - [ ] Una vez que un enemigo no visible ha sido aggravated tiene que haber una probabilidad de darle esquinazo. No puede ser que el jugador quede ya como objetivo. En cada turno habrá que hacer una tirada para ver si sigue buscándole o no.
 - [ ] Mejorar IAs de enemigos para que vaya más rápido cuando en un mapa hay muchos. Que haya algo así como un estado de letargo, en la que no hagan apenas cálculos.
 - [ ] Que algunos enemigos cojan objetos del suelo. Sobre todo si los ha lanzado el jugador.
@@ -112,6 +114,8 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
+- [ ] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
+- [ ] Bastones mágicos!
 - [ ] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
 - [ ] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas. 
@@ -195,27 +199,27 @@ COMBATE
 - [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
-- [ ] Revisar las mecánicas de sigilo y la ia al respecto.
+- [x] Revisar las mecánicas de sigilo y la ia al respecto.
 - Sistema de puertas con llave:
     - [x] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.
-    - [ ] Las llaves deben poder generarse en el inventario de mosntruos. Esto hay que programarlo en _ensure_keys_for_locked_doors() de game_map.py.
-- [ ] Generación de ítems aleatorios en los mapas de tipo fixed maps.
-- [ ] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
+    - [x] Las llaves deben poder generarse en el inventario de mosntruos. Esto hay que programarlo en _ensure_keys_for_locked_doors() de game_map.py.
+- [x] Generación de ítems aleatorios en los mapas de tipo fixed maps.
+- [x] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
 - [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.
-- [ ] Esperar junto a una puerta cerrada para oir/escuchar. Te dice si hay alguna criatura a unas 5 o 6 casillas a distancia tras la puerta.
+- [x] Esperar junto a una puerta cerrada para oir/escuchar. Te dice si hay alguna criatura a unas 5 o 6 casillas a distancia tras la puerta.
 - [!] Solucionar el tema de la lámpara/linterna y el fov!!
 - [ ] La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
 - [x] Cofres!
 - [!] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida.
 - [ ] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit.
-- [ ] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
+- [x] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
 - [!] Trampas!
 - [ ] Portales mágicos!
 - [x] Objeto malditos!: debe ser simplificado (tipo unexplored, no nethack: o sea, que no haya con un mismo nombre una versión maldita y otra no, pues complica mucho el código). 
 - [ ] Unos objetos se considerarán "bueno", otros "malos", y otros "netrales". Crearles ese atributo, a fin de poder crear un pergamino de tipo "detectar magia".
 - [ ] Profundizar en el sistema de críticos (creo que hay algo en el stealth mode, pero nada más)
 - [ ] Profundizar en el sistema de suerte.
-- [ ] Sí que va a haber un sistema de experiencia. Estará oculto. El jugador no sabrá nada. Servirá para subir la weapon proficiency. Hay que rediseñarlo. Dará puntos por los túrnos que se pase en melee junto a una criatura hostil (hay que arreglar eso de que junto a neutrales se entre en melee también).
+- [DESCARTADO] Sí que va a haber un sistema de experiencia. Estará oculto. El jugador no sabrá nada. Servirá para subir la weapon proficiency. Hay que rediseñarlo. Dará puntos por los túrnos que se pase en melee junto a una criatura hostil (hay que arreglar eso de que junto a neutrales se entre en melee también).
 
 VARIOS
 - [ ] El nombre del Personaje Jugador (PJ) debe generarse proceduralmente, siguiendo las siguientes reglas y consideraciones: habrá una batería de hasta 12 nombres de pila, y un contador de cuántas veces se ha jugado una partida con ese nombre de pila. Al comenzar una partida, se escogerá aleatoriamente un nombre de pila, se le añadirá el artículo " the ", y por último se le añadirá un ordinal (escrito en texto, no en número), de modo que quede un resultado así como, por ejemplo, "Abelardo the fourth". No podrá haber más de 16 ordinales por nombre.

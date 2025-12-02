@@ -145,7 +145,7 @@ class LongSword(Equippable):
             max_dmg=8,
             dmg_bonus=0,
             defense_bonus=1,
-            stealth_penalty=1, 
+            stealth_penalty=0, 
             )
 
 
@@ -168,7 +168,7 @@ class Spear(Equippable):
             min_dmg=1, 
             max_dmg=8,
             dmg_bonus=0,
-            defense_bonus=2,
+            defense_bonus=1,
             to_hit_bonus=1,
             )
 

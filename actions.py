@@ -617,6 +617,8 @@ class ThrowItemAction(Action):
                         f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})",
                         failure_color,
                     )
+                if target is self.engine.player:
+                    target.fighter.register_enemy_miss()
 
             # Tanto si impacta como si no impacta...
 
@@ -1146,6 +1148,8 @@ class MeleeAction(ActionWithDirection):
                     f"{attack_desc} but FAILS ({hit_dice}vs{target.fighter.defense})", 
                     failure_color,
                 )
+            if target is self.engine.player:
+                target.fighter.register_enemy_miss()
             play_melee_attack_sound(self.entity, "miss", target_is_dummy=target_is_dummy)
 
 
@@ -1492,12 +1496,91 @@ class WaitAction(Action):
                 # recuperamos 1 de stamina
                 self.entity.fighter.stamina += 1
 
+        if self.entity is self.engine.player:
+            self._handle_listen_through_door()
+
         # TIME SYSTEM
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
         if DEBUG_MODE:
             print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in WaitAction.")
             print(f"{bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
         #pass
+
+    def _handle_listen_through_door(self) -> None:
+        """Gestiona la escucha tras una puerta al esperar varios turnos."""
+        engine = self.engine
+        gamemap = engine.game_map
+        px, py = self.entity.x, self.entity.y
+        current_pos = (px, py)
+
+        deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        adjacent_doors = []
+        for dx, dy in deltas:
+            nx, ny = px + dx, py + dy
+            if gamemap.in_bounds(nx, ny) and gamemap.is_closed_door(nx, ny):
+                adjacent_doors.append(((nx, ny), (dx, dy)))
+
+        if not adjacent_doors:
+            engine.reset_listen_state()
+            return
+
+        prev_door = getattr(engine, "_listen_door_position", None)
+        chosen = next((info for info in adjacent_doors if info[0] == prev_door), None)
+        if not chosen:
+            chosen = adjacent_doors[0]
+        door_pos, (dx, dy) = chosen
+
+        if (
+            getattr(engine, "_listen_wait_position", None) != current_pos
+            or door_pos != prev_door
+        ):
+            engine._listen_wait_turns = 0
+
+        engine._listen_wait_position = current_pos
+        engine._listen_door_position = door_pos
+        engine._listen_wait_turns += 1
+
+        if engine._listen_wait_turns < 4:
+            return
+
+        engine._listen_wait_turns = 0
+        engine.message_log.add_message(
+            "You try to listen through the door",
+            color.white,
+        )
+        roll = random.randint(1, 6)
+        if DEBUG_MODE:
+            print(f"DEBUG: Listen roll 1d6 -> {roll}")
+
+        listen_origin_x = door_pos[0] + dx
+        listen_origin_y = door_pos[1] + dy
+        if not gamemap.in_bounds(listen_origin_x, listen_origin_y):
+            listen_origin_x, listen_origin_y = door_pos
+
+        heard_something = False
+        if roll >= 4:
+            for actor in gamemap.actors:
+                if not isinstance(actor, Actor):
+                    continue
+                if actor is self.entity or not actor.is_alive:
+                    continue
+                dot = (actor.x - door_pos[0]) * dx + (actor.y - door_pos[1]) * dy
+                if dot < 0:
+                    continue
+                if actor.distance(listen_origin_x, listen_origin_y) <= 5:
+                    heard_something = True
+                    break
+
+        if heard_something and roll >= 4:
+            engine.message_log.add_message(
+                "You hear something on the other side",
+                color.orange,
+            )
+        else:
+            engine.message_log.add_message(
+                "You don't hear nothing",
+                color.white,
+            )
 
 
 class PassAction(Action):

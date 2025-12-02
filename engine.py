@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     
 #import gc
 import components.fighter
+import tile_types
 import entity_factories
 from components.ai import Dummy
 
@@ -83,6 +84,10 @@ class Engine:
         self.center_room_array = []
         self.identified_items = []
         self.debug = debug
+        # Contador para escuchar tras puertas al esperar varios turnos.
+        self._listen_wait_turns = 0
+        self._listen_wait_position: Optional[Tuple[int, int]] = None
+        self._listen_door_position: Optional[Tuple[int, int]] = None
         # Esto es para que no haya cortes al reproducir por primera vez el sonido
         # de fogatas. Como es un audio más largo, se precarga la pista de hoguera:
         # _load_sound y preload_campfire_audio(), que llama al mixer al arrancar y 
@@ -94,6 +99,12 @@ class Engine:
         self._active_context: Optional[Context] = None
         self._root_console: Optional[Console] = None
         self._intro_slides: Optional[List[dict]] = None
+
+    def reset_listen_state(self) -> None:
+        """Limpia el estado del contador de escuchar puertas."""
+        self._listen_wait_turns = 0
+        self._listen_wait_position = None
+        self._listen_door_position = None
 
     def clock(self):
         """
@@ -440,6 +451,19 @@ class Engine:
                 color=(50,50,40),
                 name="Downstairs")
             stairs.spawn(self.game_map, stairs.x, stairs.y)
+
+        # Make sure the tile itself remains a stairs tile (can be overwritten when carving paths).
+        if not np.array_equal(self.game_map.tiles[x, y], tile_types.down_stairs):
+            self.game_map.tiles[x, y] = tile_types.down_stairs
+
+    def bugfix_upstairs(self):
+        """Restore the upstairs tile if it was overwritten (e.g. by room carving)."""
+        if not getattr(self.game_map, "upstairs_location", None):
+            return
+
+        x, y = self.game_map.upstairs_location
+        if not np.array_equal(self.game_map.tiles[x, y], tile_types.up_stairs):
+            self.game_map.tiles[x, y] = tile_types.up_stairs
 
 
     def spawn_monsters_upstairs(self):

@@ -66,6 +66,11 @@ class Entity:
     def spawn(self: T, gamemap: GameMap, x: int, y: int) -> T:
         """Spawn a copy of this instance at the given location."""
         clone = copy.deepcopy(self)
+        # Refresh any inventory loot that should be generated per-instance.
+        inventory = getattr(clone, "inventory", None)
+        reroll_loot = getattr(inventory, "reroll_loot", None)
+        if callable(reroll_loot):
+            reroll_loot()
         clone.x = x
         clone.y = y
         clone.parent = gamemap
@@ -168,6 +173,8 @@ class Item(Entity):
         throwable: bool = False,
         #powered: Optional[Powered] = None,
         uses: int = 1,
+        max_uses: Optional[int] = None,
+        stackable: bool = True,
         info: str = "NO INFO"
     ):
         super().__init__(
@@ -195,6 +202,8 @@ class Item(Entity):
         self.identified = identified
         self.id_name = id_name
         self.uses = uses
+        self.max_uses = uses if max_uses is None else max_uses
+        self.stackable = stackable
         self.info = info
 
     def identify(self):

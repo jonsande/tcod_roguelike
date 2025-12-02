@@ -130,6 +130,8 @@ else:
 # Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
 # xp en el futuro. El sistema está mal implementado ahora mismo.
 PLAYER_LEVELING_ENABLED = False
+# Ataques fallidos necesarios (contra el jugador) para ganar +1 a base_defense. Usa 0 para desactivar.
+PLAYER_DEFENSE_MISS_THRESHOLD = 60
 
 # -- Player starting gear -----------------------------------------------------
 # Cada entrada indica el objeto (clave en entity_factories) con el que empieza el
@@ -150,7 +152,7 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    # {"item": "power_potion", "quantity": 6},
+    # {"item": "sand_bag", "quantity": 2},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -168,13 +170,13 @@ PLAYER_STARTING_EQUIP_LIMITS = {
 WALL_STYLE = None
 
 # Parámetros experimentales para el generador generate_dungeon_v2().
-DUNGEON_V2_ROOM_MIN_SIZE = 3
-DUNGEON_V2_ROOM_MAX_SIZE = 8
-DUNGEON_V2_MIN_ROOM_DISTANCE = 2
-DUNGEON_V2_MAX_ROOM_DISTANCE = 12
-DUNGEON_V2_MAX_ROOMS = 75
-DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS = 150
-DUNGEON_V2_MAX_MAP_ATTEMPTS = 150
+# DUNGEON_V2_ROOM_MIN_SIZE = 3
+# DUNGEON_V2_ROOM_MAX_SIZE = 8
+# DUNGEON_V2_MIN_ROOM_DISTANCE = 2
+# DUNGEON_V2_MAX_ROOM_DISTANCE = 12
+# DUNGEON_V2_MAX_ROOMS = 75
+# DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS = 150
+# DUNGEON_V2_MAX_MAP_ATTEMPTS = 150
 
 # Parámetros experimentales para generate_dungeon_v3().
 DUNGEON_V3_MIN_ROOMS = 8

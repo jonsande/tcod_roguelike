@@ -232,14 +232,18 @@ class EventHandler(BaseEventHandler):
 
         action = self._maybe_scramble_player_action(action)
         actor = getattr(action, "entity", None)
+        is_wait_action = isinstance(action, WaitAction)
 
         if actor is self.engine.player and getattr(self.engine.player.fighter, "is_player_paralyzed", False):
-            if not isinstance(action, WaitAction):
+            if not is_wait_action:
                 self.engine.message_log.add_message(
                     "You are paralyzed and cannot act!",
                     color.impossible,
                 )
                 return False
+
+        if actor is self.engine.player and not is_wait_action:
+            self.engine.reset_listen_state()
 
         try:
             action.perform()
@@ -296,6 +300,7 @@ class EventHandler(BaseEventHandler):
         # BugFix provisional:
         # Colocar escaleras para que no queden ocultas por la debris
         self.engine.bugfix_downstairs()
+        self.engine.bugfix_upstairs()
 
         return True
 
@@ -840,18 +845,30 @@ class InventoryEventHandler(AskUserEventHandler):
         equipment = player.equipment
         equipped_entries = []
         grouped_items = defaultdict(list)
+        entries = []
+
+        def _display_name(item: Item) -> str:
+            base_name = item.name
+            if getattr(item, "id_name", "") == "Sand bag":
+                remaining = getattr(item, "uses", 0)
+                max_uses = getattr(item, "max_uses", remaining)
+                base_name = f"{base_name} ({remaining}/{max_uses})"
+            return base_name
 
         for item in player.inventory.items:
             if skip and item is skip:
                 continue
             if not filter_fn(item):
                 continue
+            entry_name = _display_name(item)
             if equipment.item_is_equipped(item):
-                equipped_entries.append((item.name, [item], True))
+                equipped_entries.append((entry_name, [item], True))
             else:
-                grouped_items[item.name].append(item)
+                if getattr(item, "stackable", True):
+                    grouped_items[entry_name].append(item)
+                else:
+                    entries.append((entry_name, [item], False))
 
-        entries = []
         for name, items in grouped_items.items():
             entries.append((name, items, False))
 

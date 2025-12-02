@@ -288,9 +288,9 @@ class HostileEnemyPlus(BaseAI):
         if self.entity.fighter.aggravated == False:
 
             target_stealth = getattr(target.fighter, "stealth", 0)
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, self.entity.fighter.luck)
         else:
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
 
 
         if distance > 1 and distance <= engage_rng:
@@ -460,16 +460,17 @@ class HostileEnemy(BaseAI):
         if self.entity.fighter.aggravated == False:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
 
-            target_stealth = getattr(target.fighter, "stealth", 0)
-            if target_stealth < 0:
-                stealth_penalty = target_stealth
-            else:
-                stealth_penalty = random.randint(0, target_stealth)
-            engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
+            # target_stealth = getattr(target.fighter, "stealth", 0)
+            # if target_stealth < 0:
+            #     stealth_penalty = target_stealth
+            # else:
+            #     stealth_penalty = random.randint(0, target_stealth)
+            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
 
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
-            engage_rng = random.randint(1, 3) + self.entity.fighter.fov
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
         
         # Debug
         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")

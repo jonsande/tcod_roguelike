@@ -353,9 +353,12 @@ class PetrifyConsumable(Consumable):
         self.parent.identify()
 
 class BlindConsumable(Consumable):
-    def __init__(self, number_of_turns: int, uses: int = 1):
+    invalid_target_error = "Invalid target."
+    blind_penalty = -32
+
+    def __init__(self, number_of_turns: int, max_range: int = 2):
         self.number_of_turns = number_of_turns
-        #self.uses = uses
+        self.max_range = max_range
 
     def get_action(self, consumer: Actor) -> SingleRangedAttackHandler:
         self.engine.message_log.add_message(
@@ -370,31 +373,46 @@ class BlindConsumable(Consumable):
         consumer = action.entity
         target = action.target_actor
 
+        if getattr(self.parent, "uses", 0) <= 0:
+            raise Impossible("The sand bag is empty.")
         if not self.engine.game_map.visible[action.target_xy]:
-            raise Impossible("You cannot target an area that you cannot see.")
+            raise Impossible(self.invalid_target_error)
         if not target:
-            raise Impossible("You must select an enemy to target.")
+            raise Impossible(self.invalid_target_error)
         if target is consumer:
-            raise Impossible("Too bad idea.")
-        if target.distance(consumer.x, consumer.y) > 2:
-            raise Impossible("Target too far.")
+            raise Impossible(self.invalid_target_error)
+        dx = abs(target.x - consumer.x)
+        dy = abs(target.y - consumer.y)
+        if max(dx, dy) > self.max_range:
+            raise Impossible(self.invalid_target_error)
 
+        self.engine.message_log.add_message(
+            "You throw a handful of sand at the creature's face."
+        )
         self._effect_message(
             target,
-            "You are blinded!",
-            "{name} is blinded!",
+            None,
+            "{name} is blinded by the sand!",
             color.status_effect_applied,
         )
-        target.ai = components.ai.ParalizeEnemy(
-            entity=target, previous_ai=target.ai, turns_remaining=self.number_of_turns,
+        target.fighter.gain_temporal_bonus(
+            self.number_of_turns,
+            self.blind_penalty,
+            "fov",
+            "{name} wipes the sand from its eyes.",
         )
         
-        if self.parent.uses == 0:
+        self.parent.identify()
+        self._consume_charge()
+
+    def _consume_charge(self) -> None:
+        self.parent.uses = max(0, getattr(self.parent, "uses", 0) - 1)
+        if self.parent.uses <= 0:
+            self.engine.message_log.add_message(
+                "The sand bag is empty.",
+                color.impossible,
+            )
             self.consume()
-        else:
-            self.parent.uses -= 1
-            
-        self.parent.identify()        
 
 class ParalisisConsumable(SingleTargetScrollConsumable):
     def __init__(self, number_of_turns: int):

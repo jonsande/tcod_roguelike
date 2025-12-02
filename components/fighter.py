@@ -4,13 +4,14 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import copy
 import random
 import numpy as np
+from i18n import _
 
 import color
 from components.base_component import BaseComponent
 from render_order import RenderOrder
 import tile_types
 import loot_tables
-from settings import DEBUG_MODE
+from settings import DEBUG_MODE, PLAYER_DEFENSE_MISS_THRESHOLD
 from audio import (
     update_campfire_audio,
     play_pain_sound,
@@ -275,6 +276,8 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.player_confusion_turns = 0
         self.is_player_paralyzed = False
         self.player_paralysis_turns = 0
+        # Cuenta ataques fallidos de enemigos contra el jugador para bonificar defensa.
+        self.missed_by_enemy_counter = 0
 
     @property
     def hp(self) -> int:
@@ -423,7 +426,10 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     @property
     def defense(self) -> int:
-        return self.base_defense + self.defense_bonus + self.base_defense_bonus
+        if self._is_paralyzed():
+            return 0
+        blind_penalty = 4 if self.is_blind else 0
+        return self.base_defense + self.defense_bonus + self.base_defense_bonus - blind_penalty
         #return self.base_defense + self.defense_bonus + self.to_defense_counter
     
     @property
@@ -528,6 +534,8 @@ class Fighter(FireStatusMixin, BaseComponent):
     @property
     def to_hit(self) -> int:
         result = self.base_to_hit + self.to_hit_bonus - self.to_hit_penalty
+        if self.is_blind:
+            result -= 4  # Blindness hampers accuracy.
         return result
     
     @property
@@ -568,9 +576,18 @@ class Fighter(FireStatusMixin, BaseComponent):
         if self.parent.equipment:
             # Por algún motivo esto está retornando 0
             penalty += self.parent.equipment.to_hit_penalty
-        if self.is_blind:
-            penalty += 4  # Blind creatures have a harder time landing blows.
         return penalty
+
+    def _is_paralyzed(self) -> bool:
+        """Return True when paralysis should nullify defense."""
+        try:
+            from components.ai import ParalizeEnemy
+        except Exception:
+            ParalizeEnemy = None
+        ai = getattr(self.parent, "ai", None)
+        if ParalizeEnemy and isinstance(ai, ParalizeEnemy):
+            return True
+        return getattr(self, "is_player_paralyzed", False)
         
     @property
     def armor_value_bonus(self) -> int:
@@ -855,6 +872,25 @@ class Fighter(FireStatusMixin, BaseComponent):
             self.player_confusion_turns = 0
             self.engine.message_log.add_message(
                 "You are no longer confused.", color.status_effect_applied
+            )
+
+    def register_enemy_miss(self) -> None:
+        """Aumenta la defensa base del jugador tras varios fallos enemigos."""
+        engine = getattr(self, "engine", None)
+        player = getattr(engine, "player", None) if engine else None
+
+        if PLAYER_DEFENSE_MISS_THRESHOLD <= 0:
+            return
+        if player is None or self.parent is not player:
+            return
+
+        self.missed_by_enemy_counter += 1
+        if self.missed_by_enemy_counter >= PLAYER_DEFENSE_MISS_THRESHOLD:
+            self.base_defense += 1
+            self.missed_by_enemy_counter = 0
+            engine.message_log.add_message(
+                _("Your defensive skills are improving!"),
+                color.orange,
             )
 
         
