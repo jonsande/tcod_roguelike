@@ -120,7 +120,10 @@ DEBUG_DRAW_HOT_PATH = False
 
 # -- Game settings ------------------------------------------------------
 
-INTRO_MESSAGE = "After a long journey, you find the entrance to the labyrinth."
+if LANGUAGE == "es":
+    INTRO_MESSAGE = "Tras un largo viaje, finalmente encuentras la entrada al laberinto."
+else:
+    INTRO_MESSAGE = "After a long journey, you find the entrance to the labyrinth."
 
 # -- Player progression -------------------------------------------------------
 # Permite activar/desactivar el sistema de subida de nivel del jugador.

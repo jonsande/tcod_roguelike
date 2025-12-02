@@ -6,5 +6,10 @@
   "[N] Play a new game": "[N] Empezar juego nuevo",
   "[C] Continue last game": "[C] Continuar juego",
   "[Q] Quit": "[Q] Salir",
-  "LOADING": "CARGANDO"
+  "LOADING": "CARGANDO",
+  "After a long journey, you find the entrance to the labyrinth.": "Tras un largo viaje, finalmente encuentras la entrada al laberinto.",
+  "(Press F1 for help)": "(Pulsa F1 para obtener ayuda)",
+  "CONTROLS": "CONTROLES",
+  "Use the arrows (or Page Up/Page Down) to navigate through this help.": "Usa las flechas (o RePag/AvPag) para desplazarte por esta ayuda.",
+  "You can also open this help with F1.": "También puedes abrir esta ayuda con F1."
 }

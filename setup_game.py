@@ -178,6 +178,9 @@ def new_game() -> Engine:
     engine.message_log.add_message(
         INTRO_MESSAGE, color.welcome_text
     )
+    engine.message_log.add_message(
+        _("(Press F1 for help)"), color.orange
+    )
 
     _add_starting_items(player)
 
