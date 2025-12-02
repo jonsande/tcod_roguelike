@@ -19,8 +19,21 @@ from i18n import _
 
 def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
     """If the current event handler has an active Engine then save it."""
-    if isinstance(handler, input_handlers.EventHandler):
-        handler.engine.save_as(filename)
+    # Some handlers (like ConfirmQuitHandler) wrap the main game handler and
+    # don't inherit from EventHandler, but still carry or point to the engine.
+    current = handler
+    visited = set()
+    engine = None
+
+    while current and id(current) not in visited:
+        visited.add(id(current))
+        engine = getattr(current, "engine", None)
+        if engine:
+            break
+        current = getattr(current, "parent", None)
+
+    if engine:
+        engine.save_as(filename)
         print(_("Game saved."))
 
 

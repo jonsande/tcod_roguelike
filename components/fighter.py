@@ -359,6 +359,26 @@ class Fighter(FireStatusMixin, BaseComponent):
         self._base_fov = value - self.fov_bonus
 
     @property
+    def effective_fov(self) -> int:
+        """Return the current sight radius, accounting for lamp state and location."""
+        base_fov = max(0, self.fov)
+        if getattr(self, "is_blind", False):
+            return 1
+        engine = getattr(self, "engine", None)
+        is_player = bool(engine and getattr(engine, "player", None) is getattr(self, "parent", None))
+        if not is_player:
+            return base_fov
+        in_town = False
+        try:
+            in_town = bool(engine and engine.game_world.current_floor == 1)
+        except Exception:
+            in_town = False
+        if in_town:
+            return base_fov
+        lamp_bonus = 5 if self.lamp_on else 0
+        return base_fov + lamp_bonus
+
+    @property
     def max_stamina(self) -> int:
         return self._base_max_stamina + self.max_stamina_bonus
 

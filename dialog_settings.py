@@ -7,6 +7,7 @@ ADVENTURER_GREETING_MESSAGES = [
     "Adventurer says: Aunque tengas sed, cuídate de beber sustancias que no sabes lo que son. Podrían matarte.",
     "Adventurer says: Algunos muros ocultan pasadizos o puertas secretas.",
     "Adventurer says: ¿Lo has oído? Esa risa me pone los pelos de punta.",
+    "Adventurer says: Ayúdame a inspeccionar las paredes de las cámaras. Debe de haber algún pasadizo secreto por aquí.",
     "Adventurer says: Greetings, fellow explorer!",
     "Adventurer says: Get out of my way!",
     "Adventurer says: Have you checked every bookshelf? Some hide switches.",

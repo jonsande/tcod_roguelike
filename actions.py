@@ -1494,35 +1494,30 @@ class PassAction(Action):
     
 class ToogleLightAction(Action):
     def perform(self):
-        if DEBUG_MODE:
-            print(f"DEBUG: PLAYER FOV: {self.engine.player.fighter.fov}")
+        fighter = self.engine.player.fighter
+        in_town = getattr(self.engine.game_world, "current_floor", 0) == 1
 
-        # if self.engine.player.fighter.lamp_on == False:
-        #     self.engine.player.fighter.lamp_on == True
-        #     self.engine.player.fighter.fov += 4
-        #     self.engine.player.fighter.base_stealth += 1
-        #     self.engine.message_log.add_message("You turn ON your lamp", color.descend)
-        #     return 0
-        # if self.engine.player.fighter.lamp_on == True:
-        #     self.engine.player.fighter.lamp_on == False
-        #     self.engine.player.fighter.fov -= 4
-        #     self.engine.player.fighter.base_stealth -= 1
-        #     self.engine.message_log.add_message("You turn OFF your lamp", color.enemy_die)
-        #     return 0
-        
-        # TODO: esto ahora mismo es provisional. Hay que relativizarlo.
-        if self.engine.player.fighter.fov == 6:
-            self.engine.player.fighter.base_stealth += 1
-            self.engine.player.fighter.fov = 1
-            #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
+        if in_town:
+            self.engine.message_log.add_message(
+                "Daylight already lights everything here.",
+                color.descend,
+            )
+            return 0
+
+        if fighter.lamp_on:
+            fighter.lamp_on = False
+            fighter.base_stealth += 1
             self.engine.message_log.add_message("You turn OFF your lamp", color.descend)
-            return 0
-        if self.engine.player.fighter.fov == 1:
-            self.engine.player.fighter.fov = 6
-            self.engine.player.fighter.base_stealth -= 1
-            #print(f"PLAYER FOV: {self.engine.player.fighter.fov}")
+        else:
+            fighter.lamp_on = True
+            fighter.base_stealth -= 1
             self.engine.message_log.add_message("You turn ON your lamp", color.enemy_die)
-            return 0
+
+        if DEBUG_MODE:
+            print(f"DEBUG: PLAYER BASE FOV: {fighter.fov}, lamp_on={fighter.lamp_on}")
+
+        self.engine.update_fov()
+        return 0
     
 
 #class DefendAction(Action):

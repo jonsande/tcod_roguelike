@@ -225,7 +225,8 @@ class Engine:
             radius = 90
         else:
             # Efecto "titilar" de la lámpara, farol, linterna.
-            radius = max(0, random.randint(0, 1) + self.player.fighter.fov)
+            base_radius = self.player.fighter.effective_fov
+            radius = max(0, random.randint(0, 1) + base_radius)
 
             # Aquí intentamos quitar el efecto titilar si
             # la lámpara está apagada.
@@ -768,6 +769,18 @@ class Engine:
         bg = console.rgb["bg"]
         np.multiply(fg, factor, out=fg, casting="unsafe")
         np.multiply(bg, factor, out=bg, casting="unsafe")
+
+    def __getstate__(self):
+        """Exclude active display handles from pickling."""
+        state = self.__dict__.copy()
+        state["_active_context"] = None
+        state["_root_console"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._active_context = None
+        self._root_console = None
 
     def schedule_intro(self, slides: Sequence[dict]) -> None:
         """Configura las pantallas de introducción que se reproducirán al iniciar partida."""

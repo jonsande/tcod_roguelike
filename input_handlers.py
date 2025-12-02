@@ -1173,6 +1173,16 @@ class SelectIndexHandler(AskUserEventHandler):
         super().__init__(engine)
         player = self.engine.player
         engine.mouse_location = player.x, player.y
+        self._cursor_reset = False
+
+    def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
+        """Force exit after the cursor has been reset (e.g., after a failed action)."""
+        handler = super().handle_events(event)
+        cursor_reset = self._cursor_reset
+        self._cursor_reset = False
+        if handler is self and cursor_reset:
+            return MainGameEventHandler(self.engine)
+        return handler
 
     def _reset_mouse_location(self) -> None:
         """Return the cursor to the player's current tile."""
@@ -1181,6 +1191,7 @@ class SelectIndexHandler(AskUserEventHandler):
         #self.engine.mouse_location = player.x, player.y
         # Esto para que el cursor vuelva a la esquina superior izquierda.
         self.engine.mouse_location = 0, 0
+        self._cursor_reset = True
 
     def on_render(self, console: tcod.Console) -> None:
         """Highlight the tile under the cursor."""
