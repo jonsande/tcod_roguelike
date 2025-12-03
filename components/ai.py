@@ -534,6 +534,236 @@ class HostileEnemy(BaseAI):
         
             #return WaitAction(self.entity).perform()
 
+        """
+        SISTEMA DE DEAMBULAR:
+        Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
+        Mirar en esta misma página el final de la classe ConfusedEnemy
+        """
+
+class HostileEnemyV2(BaseAI):
+
+    _NEIGHBOR_DELTAS = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ]
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self.path: List[Tuple[int, int]] = []
+        self.path2: List[Tuple[int, int]] = []
+        #self.spawn_point = (self.entity.x, self.entity.y)
+        self._wander_cooldown = self._roll_wander_delay()
+        self._aggressor: Optional[Actor] = None
+        self._lost_sight_counter: Optional[int] = None
+
+    def _wander_idle(self) -> None:
+        if self._wander_cooldown > 0:
+            self._wander_cooldown -= 1
+            return WaitAction(self.entity).perform()
+
+        gamemap = self.engine.game_map
+        directions = list(self._NEIGHBOR_DELTAS)
+        random.shuffle(directions)
+        for dx, dy in directions:
+            nx = self.entity.x + dx
+            ny = self.entity.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            if gamemap.get_blocking_entity_at_location(nx, ny):
+                continue
+            try:
+                MovementAction(self.entity, dx, dy).perform()
+                self._wander_cooldown = self._roll_wander_delay()
+                return
+            except exceptions.Impossible:
+                continue
+
+        self._wander_cooldown = self._roll_wander_delay()
+        WaitAction(self.entity).perform()
+
+    def _roll_wander_delay(self) -> int:
+        return random.randint(1, 6)
+
+    def _is_valid_aggressor(self, actor: Optional[Actor]) -> bool:
+        if not actor:
+            return False
+        fighter = getattr(actor, "fighter", None)
+        if not fighter or getattr(fighter, "hp", 0) <= 0:
+            return False
+        return getattr(actor, "gamemap", None) is self.engine.game_map
+
+    def _can_see_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, fighter.fov)
+        if radius <= 0:
+            return actor.x == self.entity.x and actor.y == self.entity.y
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+        visible = compute_fov(
+            transparent,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        return bool(visible[actor.x, actor.y])
+
+    def perform(self) -> None:
+
+        target = self._select_target()
+        if not target:
+            #return WaitAction(self.entity).perform()
+            return self._wander_idle()
+        
+        dx = target.x - self.entity.x
+        dy = target.y - self.entity.y
+        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            self_invisible = True
+            self_visible = False
+        else:
+            self_invisible = False
+            self_visible = True
+        
+        # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
+
+        # ENGAGE SYSTEM (ORIGINAL)
+        # Los enemigos persiguen al PJ en busca de melee en
+        # cuanto entran en el campo de visión del PJ (del
+        # propio PJ, no del suyo)
+        """
+        if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+            if distance <= 1:
+                return MeleeAction(self.entity, dx, dy).perform()
+
+            self.path = self.get_path_to(target.x, target.y)
+
+        if self.path:
+            dest_x, dest_y = self.path.pop(0)
+            return MovementAction(
+                self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+            ).perform()
+        
+        """
+
+        # ENGAGE SYSTEM (REVISED)
+        # Este sistema es mucho más potente de lo que parece a primera vista.
+        # Entre otras cosas permite implementar un sistema de sigilo (y de puntos
+        # de experiencia por salvar tiradas al sigilo)
+        # El siguiente trozo de código lo que hace, fundamentalmente, es que 
+        # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
+        # y que ese rango y valores sean independiente del FOV del PJ
+
+        self.path = self.get_path_to(target.x, target.y)
+        # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
+        # la persecución (con un dandint(0,) es todavaía más probable que abandone
+        # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
+        # un enemigo puede abandonar la persecución aun estando en casilla
+        # contigua.
+
+        # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
+        target_stealth = getattr(target.fighter, "stealth", 0)
+        target_luck = getattr(target.fighter, "luck", 0)
+        if self.entity.fighter.aggravated == False:
+            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
+            # if target_stealth < 0:
+            #     stealth_penalty = target_stealth
+            # else:
+            #     stealth_penalty = random.randint(0, target_stealth)
+            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
+
+        else:
+            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, target_luck)
+        
+        # Debug
+        #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
+        #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
+
+        if distance > 1 and distance <= engage_rng:
+            #self.engine.player.fighter.is_in_melee = False
+            if self.entity.fighter.aggravated == False:
+                self.entity.fighter.aggravated = True
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                else:
+                    if settings.DEBUG_MODE:
+                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+
+            # Esta condición es para evitar el error IndexError: pop from empty list
+            # que me ha empezado a dar a raíz de implementar las puertas como tiles y
+            # como entidades
+            if not self.path:
+                return self._wander_idle()
+                #return WaitAction(self.entity).perform()
+            else:
+                dest_x, dest_y = self.path.pop(0)
+                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+
+        elif distance <= 1:
+
+            if self.entity.fighter.aggravated == False:
+                # TODO: Comprobar si este cambio del aggravated es correcto. ¿Está siendo agraviado antes
+                # de recibir el ataque por sorpresa?
+                self.entity.fighter.aggravated = True
+                return WaitAction(self.entity).perform()
+            else:
+                if self.entity.fighter.stamina == 0:
+                    if self_visible:
+                        self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+                    return WaitAction(self.entity).perform()
+                else:
+                    return MeleeAction(self.entity, dx, dy).perform()
+        
+        elif distance > engage_rng:
+
+            # TODO: Creo que aquí es donde podemos mejorar el rendimiento del juego.
+
+            #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
+
+            self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+            """self.path.pop(0) devuelve las coordenadas de la casilla
+            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
+            """self.path2.pop(0) devuelve las coordenadas de la casilla
+            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
+            original en la que fué spawmeada)"""
+
+            if not self.path2:
+
+                #return WaitAction(self.entity).perform()
+                return self._wander_idle()
+            
+            else:
+                # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
+
+                if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
+                    self.entity.fighter.wait_counter += 1
+                    return WaitAction(self.entity).perform()
+                else:
+                    self.entity.fighter.wait_counter -= 1
+                    dest_x, dest_y = self.path2.pop(0)
+                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+        
+            #return WaitAction(self.entity).perform()
+
 
         """
         SISTEMA DE DEAMBULAR:

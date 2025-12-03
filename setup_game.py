@@ -356,7 +356,7 @@ class LoadingScreenHandler(input_handlers.BaseEventHandler):
                     center_x - 1,
                     center_y + 5,
                     # "Pulsa cualquier tecla para continuar",
-                    "= Press any key =",
+                    _("(Press any key)"),
                     fg=color.menu_text,
                     alignment=libtcodpy.CENTER,
                 )

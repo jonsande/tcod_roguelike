@@ -207,6 +207,13 @@ class EventHandler(BaseEventHandler):
 
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle events for input handlers with an engine."""
+        if getattr(self.engine, "tile_info_pause_active", False):
+            if isinstance(event, tcod.event.KeyDown):
+                self.engine.dismiss_tile_info_pause()
+                return self
+            if not isinstance(event, tcod.event.Quit):
+                return self
+
         action_or_state = self.dispatch(event)
         if isinstance(action_or_state, BaseEventHandler):
             return action_or_state

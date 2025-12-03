@@ -1,33 +1,26 @@
-VARIOS
-- [x] Analyze the combat message issue for adventurers
-- [x] Identify where combat messages are added in actions.py (MeleeAction and possibly ThrowItemAction)
-- [x] Add visibility check for messages when adventurer is involved
-- [x] Implement helper method _add_combat_message in MeleeAction
-- [x] Replace add_message calls with _add_combat_message
-- [x] Test the changes
-
+AÚN SIN CATALOGAR
 - [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
 - [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
-- [ ] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
+- [x] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
 
 RENDIMIENTO
 - [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo. P.D.: es el cálculo de pathfinding, parece.
 
 ARMAS
-- [!] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
-- [-] Añadir en una casilla la distancia a la que se puede lanzar una daga. [Esto depende de la fuerza y pericia del jugador]
+- [x] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
+- [x] Añadir en una casilla la distancia a la que se puede lanzar una daga. [P.D. Esto depende de la fuerza y pericia del jugador]
 - [ ] Bajarles el color a los sprites de armas.
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Slimes! Los slimes deben poder atravesar puertas.
+- [ ] Slimes! Los slimes deben poder atravesar puertas. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
 - [!] Las criaturas deben huir con hp bajos.
-- [ ] Personajes únicos!
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
 - [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
-- [ ] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, parece que todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en si en una tirada de randint(7,12) para establecer los puntos hp de un goblin sale 12, todos los goblins generados tienen 12 puntos de hp (comprueba que es correcto lo que digo). ¿Por qué sucede esto? Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 12 puntos de hp, pero otros con 7, o con 9, etc. ¿Es posible?
+- [-] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, parece que todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en si en una tirada de randint(7,12) para establecer los puntos hp de un goblin sale 12, todos los goblins generados tienen 12 puntos de hp (comprueba que es correcto lo que digo). ¿Por qué sucede esto? Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 12 puntos de hp, pero otros con 7, o con 9, etc. ¿Es posible? [P.D. Creo que está parcialmente implementado, pero hay que comprobarlo. Lo que sí está implementado es que la generacín de inventario ahora es exclusiva de cada instancia; antes sucedía que todas las instancias de la clase tenían el mismo inventario resultante de su loot_table].
 
 IA
+- [ ] Ampliar el AI HostileEnemy: las criaturas con una BaseAI de tipo HostileEnemy que no hayas sido todavía agraviadas nunca (aggravated), deben tener un comportamiento "oscilante". Es decir, moverse aleatoriamente (pero sin abrir puertas, ni atacar, ni hacer bump sobre nadie ni nada) a alguna casilla de su alrededor cada cierto tiempo (cada 1d6 turnos). Por otra parte, una criatura con una BaseAI de tipo HostileEnemy que haya sido agraviada (aggravated) alguna vez, dejará de estar agraviada si se cumplen la siguiente condición: el personaje que lo agravió queda fuera de su campo de visión (fov) durante 12 + 1d20 turnos. [NOTA: el sistema "oscilante" es útil para hacer más interesante el stealth, pues de otro modo es casi imposible pillar por sorpresa a un enemigo, a no ser que esté dormido.]
 - [!] Las criaturas deben huir con hp bajos
 - [ ] Una vez que un enemigo no visible ha sido aggravated tiene que haber una probabilidad de darle esquinazo. No puede ser que el jugador quede ya como objetivo. En cada turno habrá que hacer una tirada para ver si sigue buscándole o no.
 - [ ] Mejorar IAs de enemigos para que vaya más rápido cuando en un mapa hay muchos. Que haya algo así como un estado de letargo, en la que no hagan apenas cálculos.
@@ -39,24 +32,25 @@ AVENTURERS
 - [x] Los aventureros exploran la planta en busca de la habitación con escaleras. Si la encuentran, toman las escaleras y desaparecen. Después de eso hay una probabilidad de encontrar sus cadáveres en niveles inferiores. Si en su camino pasan junto a un fuego, se quedarán junto al fuego hasta que este se extinga. Si se quedan sin stamina en algún momento, esperarán un turno para recuperar un punto. Son neutrales al personaje jugador, pero si este ataca a un adventurer, se volverá hostil. Si un jugador ocupa una de las casillas junto a un adventurer este "le hablara". Soltará un mensaje aleatorio de una batería enorme. Esta manera será el modo habitual de conseguir pistas sobre el juego. No todas las pistas serán verdaderas. Pero no todo lo que los adventurers digan serán pistas.
 - [ ] Aún hay veces que los adventurers se quedan como dando vueltas en una habitación (creo que cuando algún breakable wall interfiere su camino).
 - [x] Los adventurers deberían equiparse con un arma nada más generarse (si tienen alguna en el inventario).
-- [ ] Los adventurers podrían coger pociones u otros objetos que se encontraran en su línea de visión.
+- [ ] Los adventurers podrían/deberían (según el caso) coger pociones u otros objetos que se encontraran en su línea de visión.
 
-PERSONAJES
-- [ ] Personajes únicos o especiales:
-- [!] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje).
+PERSONAJES ÚNICOS O ESPECIALES
+- [!] Duende (maligno y benigno). Puede dar consejos al PJ, ayudarlo o putearlo. Se anuncia su presencia en un nivel por medio del sonido de unas risitas (con su correspondiente mensaje). Debe haber varias notas que lo mencionan. Algunas con verdades sobre él y otras con falsedades.
 - [-] Anciano del fuego eterno. Normalmente en el nivel de superficie. Junto a un campfire que nunca se apaga. Le da consejos cripticos al PJ. En ocasiones le puede obsequiar con un objeto mágico. En otras partidas el viejo no está, y sólo están los restos de la fogata.
-- [ ] Robot estropeado pero aún operativo.
+- [ ] Robot estropeado pero aún operativo (imitando quizá el sprite de Cogmind).
+- [ ] Slime parlante.
 
 EFECTOS SONOROS / SONIDO
 - [ ] Sonido de viento en el nivel de superficie.
 - [-] Sonido de queja/lamento al recibir daño (específico de cada criatura).
 - [-] Sonido de ataques con armas y desarmado. [Sistema implementado, pero sin configurar]
+- [ ] Sonido del fireball y del pergamino del rayo.
 - [x] Sonidos de recoger objetos.
 - [x] Sonido de fuergo jungo a las fogatas (al recuperar vida, disparar el función correspondiente).
 - [x] Que la transición de música ambiente sea con fade in/out.
 - [x] Sonido ambiente!
 - [x] Sistema para sonidos sfx
-- [ ] Más sonidos (algunos personalizados, que marquen alguna diferencia) de pisadas, risas, armas, fuego.
+- [-] Más sonidos (algunos personalizados, que marquen alguna diferencia) de pisadas, risas, armas, fuego.
 
 EFECTOS VISUALES
 - [ ] Efecto de partículas (viento) en movimiento en el nivel de superficie.
@@ -66,14 +60,17 @@ EFECTOS VISUALES
 - [x] Efectos lightnin bolt.
 - [x] Efectos lanzamiento de objetos.
 - [x] Efecto de transición al/del negro al cambiar de niveles (fading).
-- [ ] Ahora mismo la luz (el fov) de los adventurers sólo se ve si el adventurer es visible. Esto lo ideal es cambiarlo. Aunque el adventurer no sea visible, si alguna de las casillas que sí es visible para el adventurer es visible por el personaje jugador, esa casilla debe verse iluminada.
+- [ ] Ahora mismo la luz (el fov) de los adventurers sólo se ve si el adventurer es visible. Esto lo ideal es cambiarlo. Aunque el adventurer no sea visible, si alguna de las casillas iluminadas por el adventurer (e.e. casillas que sí son visibles para el adventurer) es visible por el personaje jugador, esa casilla debe verse iluminada. Lo mismo con los campfires. Las casillas iluminadas por el campfire que sean visibles por el jugador deben estar iluminadas, aunque el jugador no vea la casilla en la que se encuentra el campfire.
 
 PERGAMINOS
-- [ ] Limitar la distancia a la que se pueden "lanzar" los pergaminos.
+- [DESCARTADO] Limitar la distancia a la que se pueden "lanzar" los pergaminos. [P.D. Está naturalmente limitada por la limitación de visión]
 - [x] Pergamino de descender de nivel.
 - [ ] El paralysis scroll dura quizá poco.
 - [ ] Algún sistema para aumentar el stealth de forma permanente (un pergamino).
-- [ ] Pergamino summon monsters
+- [ ] Pergamino summon monsters.
+- [x] Pergamino de identificación.
+- [!] Pergamino de levantar muertos blanco. Todos los cadáveres de la planta se convertiran en skeletons, hostiles hacia el lanzador.
+- [!] Pergamino de levantar muertos negro. Todos los cadáveres de la planta se convertirán en skeletons que atacarán a toda criatura visible, excepto al lanzador/lector del pergamino.
 - [ ] Pergamino de generar humo (impide la visión en un área determinada)
 - [x] Pergamino de teletransporte
 - [x] Pergamino que haga el player.fighter.super_memory True, para que se active el sistema de memoria típico
@@ -110,7 +107,7 @@ COFRES
 
 MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [ ] Rediseñar de un modo coherente las mesas. Ahora mismo son un fighter de la clase Door. Esto es muy raro. Unificar criterios y buscar una forma más elegante e intuitiva de gestionar el ser de las tablas.
-- [ ] Librerías con libros y/o pergaminos.
+- [x] Librerías con libros y/o pergaminos.
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
@@ -170,7 +167,7 @@ WORLD GENERATION
 DUNGEON GENERATION
 - [x] Hot path.
 - [-] Green zone: función que te devuelve el conjunto de habitaciones que son accesibles desde una habitación cualquiera. [Hecho pero con defectos. Hay función específica para debugging]
-- [ ] Cerciorarse de que el max_instances de un objeto está funcionando.
+- [x] Cerciorarse de que el max_instances de un objeto está funcionando. [P.D. Se ha rehecho el sistema. Ahora funciona. Afecta, lo mismo que el nuevo min_instances únicamente a lo generado proceduralemente, no a lo generado estáticamente].
 - [x] La probabilidad de generarse un objeto por habitación debe ser independiente.
 - [ ] El color de los sprites de muro debe ser relativo y fijo al nivel. 
 - [ ] Arreglar problemas con la generación de fixed rooms (custom rooms)
@@ -192,11 +189,12 @@ COMBATE
 - [x] Rediseñar el sistema de cálculo de daño del combate. Cambiar el modo en que funcionan las armas a este respecto. Hacerlo todo más claro. Y más congruente con el factor "pericia del luchador" (proficiency).
 - [!] Describir bien cómo funciona el combate, con sus elementos tácticos y sus fórmulas.
 - [!] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
-- [ ] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes).
+- [-] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes).
 - [x] Modificar la mecánica del combate táctico. Actualmente es:
-- [ ] Si el enemigo está paralizado (o ciego), no debería bajarte stamina por luchar contra él o pasar turno junto a él. Tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. Debe tmb haber un bonus a tu hit muy grande.
+- [DESCARTADO] Si el enemigo está paralizado (o ciego), no debería bajarte stamina por luchar contra él o pasar turno junto a él. Tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. 
+- [x] Si el enemigo está ciego o paralizado, debe tmb haber un bonus a tu hit muy grande. (Hecho: ahora mismo el bonus viene por la penalización al Defense y al to hit que sufre el propio cegado o paralizado).
 - [ ] Ataques especiales!! Por ejemplo, que puedas hacer un ataque al mismo tiempo que retrocedes una casilla, o una carga, o un ataque con desplazamiento lateral... Algo que le de un rollo ajedrez.
-- [ ] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
+- [-] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
 - [x] Revisar las mecánicas de sigilo y la ia al respecto.
@@ -205,13 +203,13 @@ MECÁNICAS
     - [x] Las llaves deben poder generarse en el inventario de mosntruos. Esto hay que programarlo en _ensure_keys_for_locked_doors() de game_map.py.
 - [x] Generación de ítems aleatorios en los mapas de tipo fixed maps.
 - [x] Cuando hay varios objetos en el suelo y se da a recoger, debe salir un menú para escoger qué objeto se quiere recoger.
-- [ ] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.
+- [x] Cuando hay más de un objeto de la misma clase en el suelo, debe salir un multiplicador.
 - [x] Esperar junto a una puerta cerrada para oir/escuchar. Te dice si hay alguna criatura a unas 5 o 6 casillas a distancia tras la puerta.
-- [!] Solucionar el tema de la lámpara/linterna y el fov!!
+- [x] Solucionar el tema de la lámpara/linterna y el fov!!
 - [ ] La recopilación de notas, para descubrir historias (y secretos) debería ser una pieza clave del juego.
 - [x] Cofres!
-- [!] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida.
-- [ ] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit.
+- [-] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida. [P.D. Actualmente se suve el DEF por un sistema básico de xp: se contabiliza el número de impactos fallados dirigidos contra el jugador; a partir de un determinado número, configurable desde el settings, gana 1 punto a DEF y el contador se reinicia].
+- [-] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit. [P.D. En el modelo actual el to hit se puede subir mediante pociones y a las bonificaciones de las propias armas; pendiente está crear algún encantamiento o pergamino dedicado a ello].
 - [x] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
 - [!] Trampas!
 - [ ] Portales mágicos!

@@ -41,6 +41,7 @@ from components.ai import Dummy
 
 AnimationGlyph = Tuple[int, int, str, Tuple[int, int, int]]
 AnimationFrame = Tuple[List[AnimationGlyph], float]
+TileInfoContext = Tuple[str, Tuple[int, int], str]
 
 
 # Calendario:
@@ -99,12 +100,71 @@ class Engine:
         self._active_context: Optional[Context] = None
         self._root_console: Optional[Console] = None
         self._intro_slides: Optional[List[dict]] = None
+        self._tile_info_pause_active = False
+        self._tile_info_pause_lines: List[str] = []
+        self._tile_info_pause_context: Optional[TileInfoContext] = None
+        self._tile_info_overlay_position: Tuple[int, int] = (1, 0)
+        self._tile_info_suppressed_contexts: dict[str, Optional[TileInfoContext]] = {
+            "player": None,
+            "mouse": None,
+        }
+        self._tile_info_last_positions: dict[str, Optional[Tuple[int, int]]] = {
+            "player": None,
+            "mouse": None,
+        }
 
     def reset_listen_state(self) -> None:
         """Limpia el estado del contador de escuchar puertas."""
         self._listen_wait_turns = 0
         self._listen_wait_position = None
         self._listen_door_position = None
+
+    @property
+    def tile_info_pause_active(self) -> bool:
+        return self._tile_info_pause_active
+
+    @property
+    def tile_info_overlay_lines(self) -> List[str]:
+        return self._tile_info_pause_lines
+
+    @property
+    def tile_info_overlay_position(self) -> Tuple[int, int]:
+        return self._tile_info_overlay_position
+
+    def activate_tile_info_pause(
+        self,
+        lines: List[str],
+        *,
+        source: str,
+        coords: Tuple[int, int],
+        text: str,
+        position: Tuple[int, int],
+    ) -> None:
+        self._tile_info_pause_active = True
+        self._tile_info_pause_lines = list(lines)
+        self._tile_info_pause_context = (source, coords, text)
+        self._tile_info_overlay_position = position
+
+    def dismiss_tile_info_pause(self) -> None:
+        if not self._tile_info_pause_active:
+            return
+        context = self._tile_info_pause_context
+        if context:
+            source = context[0]
+            self._tile_info_suppressed_contexts[source] = context
+        self._tile_info_pause_active = False
+        self._tile_info_pause_lines = []
+        self._tile_info_pause_context = None
+
+    def update_tile_info_position(self, source: str, coords: Tuple[int, int]) -> None:
+        last_position = self._tile_info_last_positions.get(source)
+        if last_position != coords:
+            self._tile_info_last_positions[source] = coords
+            self._tile_info_suppressed_contexts[source] = None
+
+    def is_tile_info_context_suppressed(self, source: str, coords: Tuple[int, int], text: str) -> bool:
+        context: TileInfoContext = (source, coords, text)
+        return self._tile_info_suppressed_contexts.get(source) == context
 
     def clock(self):
         """
@@ -713,18 +773,27 @@ class Engine:
             location=(69, 37),
             )
         
-        render_functions.render_player_tile_info(
-            console=console,
-            engine=self,
-            x=1,
-            y=0,
-        )
-
-        # Inspección de objetos
-        render_functions.render_names_at_mouse_location(
-            #console=console, x=51, y=37, engine=self
-            console=console, x=1, y=1, engine=self
-        )
+        if self.tile_info_pause_active:
+            render_functions.render_tile_info_overlay(console=console, engine=self)
+        else:
+            player_tile_lines = render_functions.render_player_tile_info(
+                console=console,
+                engine=self,
+                x=1,
+                y=0,
+            )
+            if self.tile_info_pause_active:
+                render_functions.render_tile_info_overlay(console=console, engine=self)
+            else:
+                next_y = max(1, player_tile_lines)
+                render_functions.render_names_at_mouse_location(
+                    console=console,
+                    x=1,
+                    y=next_y,
+                    engine=self,
+                )
+                if self.tile_info_pause_active:
+                    render_functions.render_tile_info_overlay(console=console, engine=self)
 
         # Combat mode indicator:
         if self.player.fighter.is_in_melee == True:

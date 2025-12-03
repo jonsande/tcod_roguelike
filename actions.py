@@ -847,6 +847,7 @@ class MeleeAction(ActionWithDirection):
         target = self.target_actor
         does_damage = False
         does_a_hit = False
+        stealth_attack = False
 
         # Comprobar si atacante y/o objetivo son visibles para el jugador
         # Útil para impresión de mensajes y más.
@@ -867,9 +868,11 @@ class MeleeAction(ActionWithDirection):
             raise exceptions.Impossible("Nothing to attack.")
 
         target_ai = getattr(target, "ai", None)
+        target_is_dummy = self.is_dummy_object(target_ai)
+        target_fighter = getattr(target, "fighter", None)
+        was_aggravated = getattr(target_fighter, "aggravated", False)
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
-        target_is_dummy = self.is_dummy_object(target_ai)
         
         # Stamina check
         if self.entity.fighter.stamina <= 0:
@@ -893,35 +896,44 @@ class MeleeAction(ActionWithDirection):
         # hit_dice = round(hit_dice)
 
         # TODO: Hay que revisar todo esto para que funcione como en ThrowItemAction
-        # Mecánica backstab/stealth/sigilo (beta)
+        # MECÁNICA BACKSTAB/STEALTH/SIGILO (beta)
+        
         # Bonificador al impacto
-        if not target_is_dummy:
+        if target_is_dummy == False:
 
-            if target.fighter.aggravated == False:
+            if was_aggravated == False:
                 #import ipdb;ipdb.set_trace()
                 #hit_dice = hit_dice + self.entity.fighter.luck + self.entity.fighter.base_stealth
-                hit_dice = random.randint(1, 6) + self.entity.fighter.base_stealth + ((self.entity.fighter.to_hit + self.entity.fighter.luck) * self.entity.fighter.weapon_proficiency)
+                hit_dice = random.randint(1, 6) + self.entity.fighter.stealth + self.entity.fighter.to_hit + self.entity.fighter.luck
                 hit_dice = round(hit_dice)
-                if self.engine.debug == True:
-                    print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
+                stealth_attack = True
 
         # Si impacta
         if hit_dice > target.fighter.defense:
 
             does_a_hit = True
 
+            # Relativizar colores
             if self.entity is self.engine.player:
                 damage_color = color.health_recovered
 
                 # Despertar durmiente en caso de ser golpeado (aun sin daño)
-                #import ipdb;ipdb.set_trace()
                 from components.ai import HostileEnemy, SleepingEnemy
                 if isinstance(target, Actor) and isinstance(target.ai, SleepingEnemy):
                     target.ai = HostileEnemy(target)
 
             else:
                 damage_color = color.red
-            
+
+            if stealth_attack:
+
+                self.engine.message_log.add_message(
+                        f"{self.entity.name} BACKSTABS {target.name}!", 
+                        damage_color
+                        )
+                if self.engine.debug == True:
+                    print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
+
             # TODO: Hay que rehacer todo esto para que funcione con el nuevo sistema
             # de cálculo de daños.
             # Mecánica ataque envenenado
@@ -938,7 +950,7 @@ class MeleeAction(ActionWithDirection):
                             if attacker_visible or target_visible:
                                 print(f"{target.name} is POISONED! (The {self.entity.name} was poisonous)")
                                 self.engine.message_log.add_message(
-                                    "{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
+                                    f"{target.name} is POISONED! (The {self.entity.name} was poisonous)", 
                                     damage_color
                                     )
                             
@@ -977,9 +989,10 @@ class MeleeAction(ActionWithDirection):
             weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
             
             print(f"{bcolors.WARNING}Calculating MELEE damage with the following stats:{color.bcolors.ENDC}")
+            main_weapon = self.entity.fighter.main_hand_weapon
             weapon_name = (
-                self.entity.fighter.main_hand_weapon.name
-                if self.entity.fighter.main_hand_weapon
+                main_weapon.name
+                if main_weapon
                 else self.entity.fighter.natural_weapon_name
                 if self.entity.fighter.natural_weapon_name
                 else "None (unarmed attack)"
@@ -996,42 +1009,46 @@ class MeleeAction(ActionWithDirection):
       
             #total_equipment_dmg_bonus = getattr(self.entity.fighter, "total_equipment_dmg_bonus", 0)
             #import ipdb;ipdb.set_trace()
+            
             damage = ((strength + weapon_dmg_dice_roll + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
             damage = round(damage)
             print(f"{bcolors.WARNING}--> Final MELEE damage: {damage}{bcolors.ENDC}")
 
             # Mecánica backstab/stealth/sigilo (beta)
             # Bonificador al daño
-            if isinstance(target, Actor):
-                if not target_is_dummy:
-                    if target.fighter.aggravated == False:
+            if stealth_attack:
 
-                        # Cálculo de daño Backstab
-                        second_weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
-                        damage = damage + strength + second_weapon_dmg_dice_roll
+                if isinstance(target, Actor):
+                    if not target_is_dummy:
+                        if was_aggravated == False:
 
-                        if DEBUG_MODE:
-                            print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
-
-                        # Especial para dagas
-                        if self.item.name == "Dagger":
-                            damage = damage * 1.5
+                            # Cálculo de daño Backstab
+                            second_weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
+                            damage = damage + strength + second_weapon_dmg_dice_roll
                             damage = round(damage)
+
                             if DEBUG_MODE:
-                                print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
+                                print("DEBUG: DAÑO BACKSTAB: ", damage)
 
-                        if target_visible or attacker_visible:
-                            self.engine.message_log.add_message("Successful stealth attack!", damage_color)
-                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful stealth attack! ({damage} dmg points)")
-                            print(f"Backstab final damage: {damage}")
+                            # Especial para dagas
+                            if main_weapon and main_weapon.name == "Dagger":
+                                damage = damage * 1.5
+                                damage = round(damage)
+                                if DEBUG_MODE:
+                                    print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
 
-                        # Experiencia extra
-                        if self.entity == self.engine.player:
-                            if self.engine.debug == True:
-                                print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
-                            self.engine.player.level.add_xp(target.level.xp_given)
+                            if target_visible or attacker_visible:
+                                self.engine.message_log.add_message("Successful STEALTH attack!", damage_color)
+                                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful STEALTH attack! ({damage} dmg points)")
+                                print(f"Backstab final damage: {damage}")
 
-                        target.fighter.aggravated = True
+                            # Experiencia extra
+                            if self.entity == self.engine.player:
+                                if self.engine.debug == True:
+                                    print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                                self.engine.player.level.add_xp(target.level.xp_given)
+
+                            target.fighter.aggravated = True
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
 
@@ -1110,6 +1127,8 @@ class MeleeAction(ActionWithDirection):
         
         # Si no impacta:
         else:
+
+            stealth_attack = False
 
             # Relativizar colores
             if self.entity is self.engine.player or self.entity.name == "Adventurer":

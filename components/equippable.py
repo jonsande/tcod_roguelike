@@ -95,7 +95,7 @@ class Dagger(Equippable):
             max_dmg=4,
             dmg_bonus=0,
             defense_bonus=1,
-            stealth_bonus=1, 
+            stealth_bonus=0, 
             to_hit_bonus=1,
             )
 

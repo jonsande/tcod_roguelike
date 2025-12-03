@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from typing import List, Tuple, TYPE_CHECKING
 
+import textwrap
+
 import color
 from render_order import RenderOrder
 from entity import Actor
+from i18n import _
 
 if TYPE_CHECKING:
     from tcod import Console
@@ -13,15 +16,23 @@ if TYPE_CHECKING:
 
 
 def _unique_names(names: List[str]) -> List[str]:
-    """Return the unique names while preserving their original order."""
-    seen: set[str] = set()
-    unique_names: List[str] = []
+    """Return the unique names while preserving order, adding stack counts."""
+    counts: dict[str, int] = {}
+    ordered: List[tuple[str, str]] = []
     for name in names:
         lowered = name.lower()
-        if lowered in seen:
-            continue
-        seen.add(lowered)
-        unique_names.append(name)
+        if lowered not in counts:
+            ordered.append((lowered, name))
+            counts[lowered] = 0
+        counts[lowered] += 1
+
+    unique_names: List[str] = []
+    for lowered, original in ordered:
+        count = counts[lowered]
+        if count > 1:
+            unique_names.append(f"{original} (x{count})")
+        else:
+            unique_names.append(original)
     return unique_names
 
 # Version without equipment info
@@ -95,6 +106,62 @@ def get_items_and_features_at_location(x: int, y: int, game_map: GameMap) -> str
         tile_descriptions.append("There are downstairs")
 
     return ", ".join(_unique_names(item_names) + tile_descriptions)
+
+
+def _wrap_tile_info_text(text: str, width: int) -> List[str]:
+    return textwrap.wrap(text, width=width, break_on_hyphens=False, break_long_words=False)
+
+
+def _append_prompt_to_lines(lines: List[str], prompt: str, width: int) -> List[str]:
+    wrapped_lines = list(lines)
+    if not wrapped_lines:
+        return [prompt]
+
+    final_line = f"{wrapped_lines[-1]} {prompt}"
+    if len(final_line) <= width:
+        wrapped_lines[-1] = final_line
+    else:
+        wrapped_lines.append(prompt)
+    return wrapped_lines
+
+
+def _render_tile_info_block(
+    console: Console,
+    engine: Engine,
+    text: str,
+    x: int,
+    y: int,
+    *,
+    source: str,
+    coords: Tuple[int, int],
+) -> int:
+    engine.update_tile_info_position(source, coords)
+    if engine.tile_info_pause_active:
+        return 0
+    if not text:
+        return 0
+    max_width = max(1, console.width - x - 1)
+    lines = _wrap_tile_info_text(text, max_width)
+    if not lines:
+        return 0
+
+    if len(lines) == 1:
+        console.print(x=x, y=y, string=lines[0], bg=color.black, fg=color.white)
+        return 1
+
+    if engine.is_tile_info_context_suppressed(source, coords, text):
+        return 0
+
+    prompt = _("(Press any key)")
+    lines_with_prompt = _append_prompt_to_lines(lines, prompt, max_width)
+    engine.activate_tile_info_pause(
+        lines_with_prompt,
+        source=source,
+        coords=coords,
+        text=text,
+        position=(x, y),
+    )
+    return 0
 
 
 def render_bar(
@@ -183,31 +250,59 @@ def render_dungeon_level(
 
 def render_names_at_mouse_location(
     console: Console, x: int, y: int, engine: Engine
-) -> None:
+) -> int:
     mouse_x, mouse_y = engine.mouse_location
 
     names_at_mouse_location = get_names_at_location(
         x=mouse_x, y=mouse_y, game_map=engine.game_map
     )
-    
-    console.print(x=x, y=y, string=names_at_mouse_location, bg=color.black, fg=color.white)
-    
+    return _render_tile_info_block(
+        console,
+        engine,
+        names_at_mouse_location,
+        x,
+        y,
+        source="mouse",
+        coords=(mouse_x, mouse_y),
+    )
 
-def render_player_tile_info(console: Console, engine: Engine, x: int = 1, y: int = 0) -> None:
+
+def render_tile_info_overlay(console: Console, engine: Engine) -> None:
+    if not engine.tile_info_pause_active:
+        return
+    x, y = engine.tile_info_overlay_position
+    prompt = _("(Press any key)")
+    for index, line in enumerate(engine.tile_info_overlay_lines):
+        row_y = y + index
+        prompt_start = line.rfind(prompt)
+        if prompt_start != -1:
+            before = line[:prompt_start]
+            prompt_text = line[prompt_start:]
+            if before:
+                console.print(x=x, y=row_y, string=before, bg=color.black, fg=color.white)
+            console.print(
+                x=x + len(before),
+                y=row_y,
+                string=prompt_text,
+                bg=color.black,
+                fg=color.orange,
+            )
+        else:
+            console.print(x=x, y=row_y, string=line, bg=color.black, fg=color.white)
+
+def render_player_tile_info(console: Console, engine: Engine, x: int = 1, y: int = 0) -> int:
     """Render the names of items or stairs that share the player's tile."""
     names_at_player_location = get_items_and_features_at_location(
         x=engine.player.x, y=engine.player.y, game_map=engine.game_map
     )
-
-    if not names_at_player_location:
-        return
-
-    console.print(
-        x=x,
-        y=y,
-        string=names_at_player_location,
-        bg=color.black,
-        fg=color.white,
+    return _render_tile_info_block(
+        console,
+        engine,
+        names_at_player_location,
+        x,
+        y,
+        source="player",
+        coords=(engine.player.x, engine.player.y),
     )
 """
 def render_names_at_mouse_location_alt(

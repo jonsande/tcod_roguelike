@@ -5,6 +5,7 @@ from i18n import _
 
 from components.ai import (
     HostileEnemy,
+    HostileEnemyV2,
     Neutral,
     Dummy,
     ConfusedEnemy,
@@ -1208,7 +1209,7 @@ rat = Actor(
         base_defense=3,
         strength=0,
         recover_rate=0,
-        fov=0,
+        fov=4,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
         aggressivity=5,
         stamina=3,
@@ -1233,7 +1234,7 @@ swarm_rat = Actor(
         base_defense=2,
         strength=0,
         recover_rate=0,
-        fov=8,
+        fov=6,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
         aggressivity=15,
         stamina=2,
@@ -1249,7 +1250,7 @@ cave_bat = Actor(
     char="b",
     color=(94, 94, 150),
     name="Cave bat",
-    ai_cls=SneakeEnemy,
+    ai_cls=SleepingEnemy,
     equipment=Equipment(),
     fighter=Fighter(
         hp=3,
@@ -1284,8 +1285,8 @@ goblin = Actor(
     char="g",
     color=(60,89,33),
     name="Goblin",
-    ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
-    #ai_cls=Scout,
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
+    #ai_cls=HostileEnemyV2,
     equipment=Equipment(),
     fighter=Fighter(
         hp=8,
