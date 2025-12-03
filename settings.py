@@ -113,9 +113,9 @@ else:
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = True
+GOD_MODE = False
 GOD_MODE_STEALTH = False
-DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+DEBUG_MODE = False # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
 
 # -- Game settings ------------------------------------------------------
