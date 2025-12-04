@@ -21,7 +21,7 @@ from audio import (
 )
 
 if TYPE_CHECKING:
-    from entity import Actor, Obstacle
+    from entity import Actor, Obstacle, Item
 
 x = 0
 
@@ -169,66 +169,99 @@ class FireStatusMixin:
                     color.red,
                 )
 
+    def tick_recovery(self) -> None:
+        """Passive HP regen helper; safe default for non-healing components."""
+        recover_rate = getattr(self, "recover_rate", 0) or 0
+        recover_amount = getattr(self, "recover_amount", 0) or 0
+        if recover_rate <= 0 or recover_amount <= 0:
+            return
+        max_hp = getattr(self, "max_hp", None)
+        hp = getattr(self, "hp", None)
+        if max_hp is None or hp is None:
+            return
+        if hp >= max_hp:
+            setattr(self, "_recover_counter", recover_rate)
+            return
+        counter = getattr(self, "_recover_counter", recover_rate)
+        counter -= 1
+        if counter > 0:
+            setattr(self, "_recover_counter", counter)
+            return
+        setattr(self, "_recover_counter", recover_rate)
+        new_hp_value = min(max_hp, hp + recover_amount)
+        try:
+            self.hp = new_hp_value
+        except Exception:
+            setattr(self, "_hp", new_hp_value)
+
 from components.ai import HostileEnemy
 class Fighter(FireStatusMixin, BaseComponent):
 
     parent: Actor
 
     def __init__(
-            self, 
-            hp: int, 
-            base_defense: int, 
-            strength: int,
-            recover_rate: int, 
-            fov: int = 0, 
-            weapon_proficiency: float = 1.0,
-            base_stealth: int = 0,
-            aggressivity: int = 0,
-            wait_counter: int = 0,
-            base_to_hit: int = 0,
-            #max_to_hit: int = 6,
-            base_armor_value: int = 0,
-            temporal_effects: bool = False,
-            luck: int = 0,
-            critical_chance: int = 2,
-            satiety: int = 32,
-            max_satiety: int = 32,
-            stamina: int = 3,
-            max_stamina: int = 3,
-            is_in_melee: bool = False,
-            defending: bool = False,
-            to_hit_counter: int= 0,
-            to_power_counter: int= 0,
-            to_defense_couter: int = 0,
-            #energy_points: int = 10,
-            #current_energy_points: int = 10,
-            current_time_points: int = 10,
-            action_time_cost: int = 10,
-            can_fortify: bool = False,
-            fortified: bool = False,
-            woke_ai_cls = HostileEnemy,
-            poisons_on_hit: bool = False,
-            poisonous: int = 0,
-            is_poisoned: bool = False,
-            poisoned_counter: int = 0,
-            poison_dmg: int = 0,
-            poison_resistance: int = 0,
-            super_memory: bool = False,
-            lamp_on: bool = False,
-            fire_resistance: int = 1,
-            escape_threshold: int = 10,
-            natural_weapon: Optional[NaturalWeapon] = None,
-            ):
+        self,
+        hp: int,
+        base_defense: int,
+        strength: int,
+        recover_rate: int = 50,
+        recover_amount: int = 1,
+        fov: int = 0,
+        weapon_proficiency: float = 1.0,
+        base_stealth: int = 0,
+        aggressivity: int = 0,
+        wait_counter: int = 0,
+        base_to_hit: int = 0,
+        #max_to_hit: int = 6,
+        base_armor_value: int = 0,
+        temporal_effects: bool = False,
+        luck: int = 0,
+        critical_chance: int = 2,
+        satiety: int = 32,
+        max_satiety: int = 32,
+        stamina: int = 3,
+        max_stamina: int = 3,
+        is_in_melee: bool = False,
+        defending: bool = False,
+        to_hit_counter: int = 0,
+        to_power_counter: int = 0,
+        to_defense_couter: int = 0,
+        #energy_points: int = 10,
+        #current_energy_points: int = 10,
+        current_time_points: int = 10,
+        action_time_cost: int = 10,
+        can_fortify: bool = False,
+        fortified: bool = False,
+        woke_ai_cls=HostileEnemy,
+        poisons_on_hit: bool = False,
+        poisonous: int = 0,
+        is_poisoned: bool = False,
+        poisoned_counter: int = 0,
+        poison_dmg: int = 0,
+        poison_resistance: int = 0,
+        super_memory: bool = False,
+        lamp_on: bool = False,
+        fire_resistance: int = 1,
+        escape_threshold: int = 10,
+        natural_weapon: Optional[NaturalWeapon] = None,
+        is_slime: bool = False,
+        can_split: bool = False,
+        slime_generation: int = 0,
+    ):
         self.max_hp = hp
         self._hp = hp
         self.base_defense = base_defense
         self._base_strength = strength
-        self._base_recover_rate = recover_rate
+        self._recover_interval = max(0, recover_rate)
+        self._base_recover_amount = max(0, recover_amount)
+        self._recover_counter = self._recover_interval
         self._base_fov = fov
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
         self.aggravated = False
+        if is_slime:
+            self.aggravated = True
         self.aggressivity = aggressivity
         self.wait_counter = wait_counter
         self.base_to_hit = base_to_hit
@@ -250,6 +283,9 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.lamp_on = lamp_on
         self.escape_threshold = escape_threshold
         self.natural_weapon = natural_weapon
+        self.is_slime = is_slime
+        self.can_split = can_split
+        self.slime_generation = slime_generation
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -349,11 +385,20 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     @property
     def recover_rate(self) -> int:
-        return self._base_recover_rate + self.recover_rate_bonus
+        return self._recover_interval
 
     @recover_rate.setter
     def recover_rate(self, value: int) -> None:
-        self._base_recover_rate = value - self.recover_rate_bonus
+        self._recover_interval = max(0, value)
+        self._recover_counter = min(self._recover_counter, self._recover_interval)
+
+    @property
+    def recover_amount(self) -> int:
+        return self._base_recover_amount + self.recover_rate_bonus
+
+    @recover_amount.setter
+    def recover_amount(self, value: int) -> None:
+        self._base_recover_amount = max(0, value - self.recover_rate_bonus)
 
     @property
     def fov(self) -> int:
@@ -787,18 +832,197 @@ class Fighter(FireStatusMixin, BaseComponent):
         return amount
     
     def autoheal(self):
-        if self.hp == self.max_hp:
-            return 0
-        
-        # new_hp_value = self.hp + 1
-        new_hp_value = self.hp + self.recover_rate
+        """Backward-compatible alias for tick_recovery."""
+        return self.tick_recovery()
 
+    def tick_recovery(self) -> None:
+        """Handle passive HP regeneration based on recover_rate (turn interval)."""
+        if self.recover_rate <= 0 or self.recover_amount <= 0:
+            return
+        if self.hp >= self.max_hp:
+            # Keep counter fresh so healing starts after taking damage.
+            self._recover_counter = self.recover_rate
+            return
+        self._recover_counter -= 1
+        if self._recover_counter > 0:
+            return
+        self._recover_counter = self.recover_rate
+        new_hp_value = self.hp + self.recover_amount
         if new_hp_value > self.max_hp:
             new_hp_value = self.max_hp
-
         self.hp = new_hp_value
 
-    def take_damage(self, amount: int) -> None:
+    def _slime_visible(self) -> bool:
+        engine = getattr(self, "engine", None)
+        try:
+            return bool(engine and engine.game_map.visible[self.parent.x, self.parent.y])
+        except Exception:
+            return False
+
+    def _absorb_attack_item(self, attacker: Optional["Actor"], attack_item: Optional["Item"]) -> bool:
+        if not attack_item:
+            return False
+        equippable = getattr(attack_item, "equippable", None)
+        if not equippable and not getattr(attack_item, "throwable", False):
+            return False
+
+        inventory = getattr(self.parent, "inventory", None)
+        if not inventory or inventory.capacity <= len(inventory.items):
+            return False
+
+        engine = getattr(self, "engine", None)
+        # Try to detach from previous owner.
+        if attacker:
+            equipment = getattr(attacker, "equipment", None)
+            if equipment:
+                for slot in ("weapon", "armor", "artifact", "ring_left", "ring_right"):
+                    if getattr(equipment, slot, None) is attack_item:
+                        setattr(equipment, slot, None)
+            attacker_inventory = getattr(attacker, "inventory", None)
+            if attacker_inventory and attack_item in attacker_inventory.items:
+                try:
+                    attacker_inventory.items.remove(attack_item)
+                except ValueError:
+                    pass
+
+        # Remove from ground if needed.
+        if getattr(attack_item, "parent", None) is not inventory:
+            try:
+                current_container = attack_item.gamemap
+            except Exception:
+                current_container = None
+            entities = getattr(current_container, "entities", None)
+            if entities:
+                entities.discard(attack_item)
+
+        attack_item.parent = inventory
+        inventory.items.append(attack_item)
+
+        if engine:
+            if attacker and attacker is getattr(engine, "player", None):
+                engine.message_log.add_message(
+                    f"Your {attack_item.name} is absorbed by the slime!",
+                    color.impossible,
+                )
+            elif self._slime_visible():
+                engine.message_log.add_message(
+                    f"The {self.parent.name} absorbs {attack_item.name}.",
+                    color.status_effect_applied,
+                )
+        return True
+
+    def _slime_split_positions(self, gamemap, x: int, y: int):
+        positions = [(x, y)]
+        offsets = [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (-1, 1),
+            (1, -1),
+            (1, 1),
+        ]
+        for dx, dy in offsets:
+            nx, ny = x + dx, y + dy
+            try:
+                in_bounds = gamemap.in_bounds(nx, ny)
+                walkable = gamemap.tiles["walkable"][nx, ny] if in_bounds else False
+            except Exception:
+                continue
+            if not in_bounds or not walkable:
+                continue
+            if gamemap.get_blocking_entity_at_location(nx, ny):
+                continue
+            positions.append((nx, ny))
+            break
+        return positions
+
+    def _spawn_slime_fragment(self, gamemap, x: int, y: int, child_hp: int, child_capacity: int):
+        try:
+            from entity_factories import slime as slime_proto
+        except Exception:
+            return None
+        fragment = slime_proto.spawn(gamemap, x, y)
+        fragment.name = "Small slime"
+        fragment.char = "s"
+        fragment.fighter.max_hp = child_hp
+        fragment.fighter.hp = child_hp
+        fragment.fighter.can_split = False
+        fragment.fighter.is_slime = True
+        fragment.fighter.slime_generation = self.slime_generation + 1
+        fragment.fighter.recover_rate = self.recover_rate
+        fragment.fighter.recover_amount = self.recover_amount
+        fragment.inventory.capacity = child_capacity
+        fragment.inventory.items = []
+        return fragment
+
+    def _split_slime(self) -> None:
+        gamemap = getattr(self, "gamemap", None)
+        parent_entity = getattr(self, "parent", None)
+        if not gamemap or not parent_entity:
+            return
+        engine = getattr(self, "engine", None)
+        inventory = getattr(parent_entity, "inventory", None)
+        items = list(getattr(inventory, "items", []) or [])
+        capacity = getattr(inventory, "capacity", 0) if inventory else 0
+        if inventory is not None:
+            inventory.items = []
+
+        child_capacity = max(0, capacity // 2)
+        child_hp = max(1, self.max_hp // 2)
+
+        if parent_entity in gamemap.entities:
+            gamemap.entities.discard(parent_entity)
+
+        positions = self._slime_split_positions(gamemap, parent_entity.x, parent_entity.y)
+        children = []
+        for pos in positions:
+            child = self._spawn_slime_fragment(gamemap, pos[0], pos[1], child_hp, child_capacity)
+            if child:
+                children.append(child)
+            if len(children) >= 2:
+                break
+
+        visible = self._slime_visible()
+        if engine and visible and children:
+            engine.message_log.add_message(
+                "The slime splits into smaller blobs!",
+                color.status_effect_applied,
+            )
+
+        # Distribute items among children; drop leftovers.
+        random.shuffle(items)
+        for item in items:
+            placed = False
+            for child in children:
+                child_inv = getattr(child, "inventory", None)
+                if child_inv and child_inv.capacity > len(child_inv.items):
+                    child_inv.items.append(item)
+                    item.parent = child_inv
+                    placed = True
+                    break
+            if not placed and gamemap:
+                item.place(parent_entity.x, parent_entity.y, gamemap)
+
+        self._hp = 0
+
+    def take_damage(
+        self,
+        amount: int,
+        attacker: Optional["Actor"] = None,
+        attack_item: Optional["Item"] = None,
+    ) -> None:
+        if getattr(self, "is_slime", False):
+            fatal = amount >= self.hp
+            if fatal and getattr(self, "can_split", False):
+                self._split_slime()
+                return
+            if not fatal:
+                self._absorb_attack_item(attacker, attack_item)
+            self.hp -= amount
+            return
+
         self.hp -= amount
    
     def gain_temporal_bonus(self, turns, amount, attribute, message_down):
@@ -904,8 +1128,9 @@ class Door(FireStatusMixin, BaseComponent):
             self, hp: int, 
             base_defense: int, 
             strength: int, 
-            recover_rate: int, 
-            fov: int, 
+            recover_rate: int = 50, 
+            recover_amount: int = 0,
+            fov: int = 0, 
             weapon_proficiency: float = 1.0,
             base_stealth: int = 0,
             aggressivity: int = 0,
@@ -935,6 +1160,8 @@ class Door(FireStatusMixin, BaseComponent):
         self.base_defense = base_defense
         self.strength = strength
         self.recover_rate = recover_rate
+        self.recover_amount = recover_amount
+        self._recover_counter = self.recover_rate
         self.fov = fov
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
@@ -1120,18 +1347,29 @@ class Door(FireStatusMixin, BaseComponent):
     
 
     def autoheal(self):
-        if self.hp == self.max_hp:
-            return 0
-        
-        # new_hp_value = self.hp + 1
-        new_hp_value = self.hp + self.recover_rate
+        return self.tick_recovery()
 
+    def tick_recovery(self) -> None:
+        if self.recover_rate <= 0 or self.recover_amount <= 0:
+            return
+        if self.hp >= self.max_hp:
+            self._recover_counter = self.recover_rate
+            return
+        self._recover_counter -= 1
+        if self._recover_counter > 0:
+            return
+        self._recover_counter = self.recover_rate
+        new_hp_value = self.hp + self.recover_amount
         if new_hp_value > self.max_hp:
             new_hp_value = self.max_hp
-
         self.hp = new_hp_value
 
-    def take_damage(self, amount: int) -> None:
+    def take_damage(
+        self,
+        amount: int,
+        attacker: Optional["Actor"] = None,
+        attack_item: Optional["Item"] = None,
+    ) -> None:
         self.hp -= amount
     
     
@@ -1152,6 +1390,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         base_defense: int = 0,
         strength: int = 0,
         recover_rate: int = 0,
+        recover_amount: int = 0,
         base_armor_value: int = 0,
         loot_drop_chance: float = 0.25,
         current_time_points: int = 0,
@@ -1163,6 +1402,8 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.base_defense = base_defense
         self.strength = strength
         self.recover_rate = recover_rate
+        self.recover_amount = recover_amount
+        self._recover_counter = self.recover_rate
         self.base_armor_value = base_armor_value
         self.loot_drop_chance = loot_drop_chance
         self.current_time_points = current_time_points
@@ -1223,7 +1464,12 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.hp = new_hp_value
         return amount_recovered
 
-    def take_damage(self, amount: int) -> None:
+    def take_damage(
+        self,
+        amount: int,
+        attacker: Optional["Actor"] = None,
+        attack_item: Optional["Item"] = None,
+    ) -> None:
         self.hp -= amount
 
     def drop_loot(self) -> None:

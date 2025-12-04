@@ -589,7 +589,11 @@ class ThrowItemAction(Action):
                         print(f"You hear sounds of fighting.")
                         self.engine.message_log.add_message(f"You hear sounds of fighting.")
 
-                    target.fighter.hp -= damage
+                    target.fighter.take_damage(
+                        damage,
+                        attacker=self.entity,
+                        attack_item=self.item,
+                    )
 
                 # Si impacta pero no hace daño
                 else:
@@ -1097,7 +1101,11 @@ class MeleeAction(ActionWithDirection):
                     )
                 play_melee_attack_sound(self.entity, "hit_damage", target_is_dummy=target_is_dummy)
 
-                target.fighter.hp -= damage
+                target.fighter.take_damage(
+                    damage,
+                    attacker=self.entity,
+                    attack_item=main_weapon,
+                )
 
             # Si no hace daño
             else:

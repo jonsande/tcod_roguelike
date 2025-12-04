@@ -77,7 +77,6 @@ class Engine:
         if settings.GOD_MODE:
             self.player.fighter.fov = 90
         self.turn = 0
-        self.autoheal_counter = 0
         self.satiety_counter = 0
         self.spawn_monsters_counter = 0
         self.temporal_effects = []
@@ -462,17 +461,10 @@ class Engine:
 
 
     def autohealmonsters(self):
-        self.autoheal_counter += 1
-        if self.autoheal_counter == 50:
-            
-            for obj in set(self.game_map.actors) - {self.player}:
-            #for obj in gc.get_objects():
-                if isinstance(obj, components.fighter.Fighter):
-                    components.fighter.Fighter.autoheal(obj)
-
-            self.player.fighter.autoheal()
-
-            self.autoheal_counter = 0
+        for actor in set(self.game_map.actors):
+            fighter = getattr(actor, "fighter", None)
+            if fighter:
+                fighter.tick_recovery()
 
 
     #def where_the_hell_the_stairs_are(self):

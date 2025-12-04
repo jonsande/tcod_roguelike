@@ -115,7 +115,7 @@ else:
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
 GOD_MODE = False
 GOD_MODE_STEALTH = False
-DEBUG_MODE = False # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
+DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
 
 # -- Game settings ------------------------------------------------------
@@ -615,6 +615,7 @@ CAVERN_MONSTER_SPAWN_RULES = {
     "orc": {"min_floor": 4, "weight_progression": [(4, 12), (6, 25), (9, 10)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
     "skeleton": {"min_floor": 6, "weight_progression": [(5, 5), (7, 10)]},
+    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]}
 }
 
 # -- Cavern item population ---------------------------------------------------
@@ -810,12 +811,14 @@ ENEMY_SPAWN_RULES = {
             (16, 0),
         ],
     },
+    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
     "goblin": {"min_floor": 2, "weight_progression": [(1, 10), (2, 40), (4, 50), (6, 20), (10, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
+    "slime": {"min_floor": 2, "weight_progression": [(2, 100), (3, 15), (5, 10)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},

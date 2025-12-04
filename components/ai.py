@@ -911,6 +911,38 @@ class Neutral(BaseAI):
         self._last_hp = current_hp
         return WaitAction(self.entity).perform()
 
+class SlimeAI(BaseAI):
+    """Passive slime that drifts around without attacking."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+
+    def on_attacked(self, attacker: "Actor") -> None:
+        """Use default aggravation behavior so stealth works normally."""
+        return super().on_attacked(attacker)
+
+    def perform(self) -> None:
+        gamemap = getattr(self, "engine", None)
+        gamemap = getattr(gamemap, "game_map", None)
+        if not gamemap:
+            return WaitAction(self.entity).perform()
+
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        random.shuffle(directions)
+
+        for dx, dy in directions:
+            dest_x = self.entity.x + dx
+            dest_y = self.entity.y + dy
+            if not gamemap.in_bounds(dest_x, dest_y):
+                continue
+            if not gamemap.tiles["walkable"][dest_x, dest_y]:
+                continue
+            if gamemap.get_blocking_entity_at_location(dest_x, dest_y):
+                continue
+            return MovementAction(self.entity, dx, dy).perform()
+
+        return WaitAction(self.entity).perform()
+
 class AdventurerAI(BaseAI):
     """Adventurers wander between rooms, rest when exhausted, stay neutral unless provoked,
     take stairs, enjoy campfires and sometimes talk."""
