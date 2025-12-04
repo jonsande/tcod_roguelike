@@ -236,6 +236,10 @@ class ParalizeEnemy(BaseAI):
 
 wait_counter = 0
 class HostileEnemyPlus(BaseAI):
+    """Actualmente esta AI sólo la usan los Bandidos. Básicamente tienen el mismo
+    comportamiento que HostileEnemy AI sólo que en combate en ocasiones retroceden
+    unos pasos antes de volver a atacar"""
+
     def __init__(self, entity: Actor):
         super().__init__(entity)
         self.path: List[Tuple[int, int]] = []
@@ -562,6 +566,7 @@ class HostileEnemyV2(BaseAI):
         self._aggressor: Optional[Actor] = None
         self._lost_sight_counter: Optional[int] = None
 
+    # Movimiento oscilante/errático
     def _wander_idle(self) -> None:
         if self._wander_cooldown > 0:
             self._wander_cooldown -= 1
@@ -640,6 +645,23 @@ class HostileEnemyV2(BaseAI):
             self_invisible = False
             self_visible = True
         
+        # HUIDA EN CASO DE PUNTOS DE VIDA BAJOS
+        escape_threshold = round((self.entity.fighter.max_hp * self.entity.fighter.escape_threshold) / 100)
+        
+        # EN CONSTRUCCIÓN
+        # if self.entity.fighter.hp < escape_threshold:
+            
+        #     if distance < 8:
+        #         near_rooms = self.engine.game_map.nearest_rooms_from(self.entity.x, self.entity.y)
+        #         for room in near_rooms:
+        #             self.path = self.get_path_to(room[0], room[1])
+        #             if len(self.path) >= 1:
+        #                 break
+        #     if self.path:
+        #         dest_x, dest_y = self.path.pop(0)
+        #         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+
         # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
 
         # ENGAGE SYSTEM (ORIGINAL)
@@ -669,7 +691,10 @@ class HostileEnemyV2(BaseAI):
         # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
         # y que ese rango y valores sean independiente del FOV del PJ
 
+        # Camino / Serie de casillas hasta el objetivo,si hay camino transitable (si 
+        # hay puertas o muros se considera intransitable)
         self.path = self.get_path_to(target.x, target.y)
+
         # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
         # la persecución (con un dandint(0,) es todavaía más probable que abandone
         # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
@@ -690,7 +715,7 @@ class HostileEnemyV2(BaseAI):
 
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, target_luck)
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
         
         # Debug
         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
@@ -738,6 +763,7 @@ class HostileEnemyV2(BaseAI):
 
             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
 
+            # Go home. La criatura regresa al punto de generación
             self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
 
             """self.path.pop(0) devuelve las coordenadas de la casilla

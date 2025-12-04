@@ -216,6 +216,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             super_memory: bool = False,
             lamp_on: bool = False,
             fire_resistance: int = 1,
+            escape_threshold: int = 10,
             natural_weapon: Optional[NaturalWeapon] = None,
             ):
         self.max_hp = hp
@@ -247,6 +248,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.critical_chance = critical_chance + luck
         self._base_super_memory = super_memory
         self.lamp_on = lamp_on
+        self.escape_threshold = escape_threshold
         self.natural_weapon = natural_weapon
 
         #self.energy_points = energy_points

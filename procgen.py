@@ -950,13 +950,149 @@ def _is_traversable_for_hot_path(
             return True
     return False
 
-# BUG: Funciona bastante bien, pero sigue incluyendo algunas casillas intransitables en el
-# camino. Esto ya pasó al intentar programar el movimiento de los adventurers. Al final lo
-# solucionamos (no sé por qué) buscando el camino más corto "por fases"; es decir, buscando
-# primero el camino más corte de la habitación A a la B (sin tener en cuenta el destino
-# final total), y repitiendo. En este caso las habitaciones elegidas deberían extraerse de
-# del hot_path (a saber, la serie de los centros de las habitaciones que componen el camino
-# más corto a las escaleras).
+
+def _build_hot_path_cost(
+    dungeon: GameMap,
+    *,
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> np.ndarray:
+    """Coste de Pathfinder al estilo get_path_to: base walkable, puertas/rompibles con coste a 0, muros siguen a 0."""
+    base_walkable = np.array(dungeon.tiles["walkable"], dtype=np.int16)
+    cost = np.zeros_like(base_walkable, dtype=np.int16)
+    cost[base_walkable.astype(bool)] = 1  # suelo normal
+
+    for x in range(dungeon.width):
+        for y in range(dungeon.height):
+            tile = dungeon.tiles[x, y]
+            if np.array_equal(tile, tile_types.closed_door):
+                cost[x, y] = 2  # transitable, un poco peor que suelo
+            elif np.array_equal(tile, tile_types.breakable_wall):
+                cost[x, y] = 3  # transitable potencialmente, peor aún
+
+    # for entity in dungeon.entities:
+    #     if not getattr(entity, "blocks_movement", False):
+    #         continue
+    #     ex, ey = getattr(entity, "x", None), getattr(entity, "y", None)
+    #     if ex is None or ey is None or not dungeon.in_bounds(ex, ey):
+    #         continue
+    #     if cost[ex, ey] == 0:
+    #         continue  # no se reactiva un muro real
+    #     # BUG: Si se añade algún coste, aunque sea 1, a veces preferirá atravesar muros
+    #     # instransitables.
+    #     cost[ex, ey] += 20  # Coste añadido si hay una entidad que bloquea el paso.
+
+    return cost
+
+
+def _compute_segment_path(
+    dungeon: GameMap,
+    start: Tuple[int, int],
+    goal: Tuple[int, int],
+    *,
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
+    """Camino más corto start->goal con Pathfinder, tratando puertas/muros rompibles como transitables."""
+    if start == goal:
+        return []
+    if not dungeon.in_bounds(*start) or not dungeon.in_bounds(*goal):
+        return []
+
+    cost = _build_hot_path_cost(dungeon, allowed_tiles=None)
+    if cost[start[0], start[1]] == 0 or cost[goal[0], goal[1]] == 0:
+        return []
+    graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
+    pathfinder = tcod.path.Pathfinder(graph)
+    pathfinder.add_root(start)
+    try:
+        raw_path: List[List[int]] = pathfinder.path_to(goal).tolist()
+    except Exception:
+        return []
+    if len(raw_path) <= 1:
+        return []
+    return [(px, py) for px, py in raw_path[1:]]
+
+
+def _compute_step_by_step_hot_path(
+    dungeon: GameMap,
+    centers_path: List[Tuple[int, int]],
+    *,
+    start: Tuple[int, int],
+    goal: Tuple[int, int],
+    allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
+    """Une start -> centros (en orden) -> goal concatenando caminos de Pathfinder."""
+    if not centers_path:
+        segment = _compute_segment_path(dungeon, start, goal, allowed_tiles=allowed_tiles)
+        return segment
+
+    full_path: List[Tuple[int, int]] = []
+    current = start
+    checkpoints = centers_path + [goal]
+    for checkpoint in checkpoints:
+        if current == checkpoint:
+            continue
+        segment = _compute_segment_path(dungeon, current, checkpoint, allowed_tiles=allowed_tiles)
+        if not segment:
+            return []
+        if full_path and full_path[-1] == segment[0]:
+            full_path.extend(segment[1:])
+        else:
+            full_path.extend(segment)
+        current = checkpoint
+    return full_path
+
+
+def _is_valid_hot_path_step(dungeon: GameMap, x: int, y: int) -> bool:
+    if not dungeon.in_bounds(x, y):
+        return False
+    if dungeon.tiles["walkable"][x, y]:
+        return True
+    tile = dungeon.tiles[x, y]
+    if np.array_equal(tile, tile_types.closed_door):
+        return True
+    if np.array_equal(tile, tile_types.breakable_wall):
+        return True
+    return False
+
+
+def _is_valid_hot_path(dungeon: GameMap, path: List[Tuple[int, int]]) -> bool:
+    return all(_is_valid_hot_path_step(dungeon, x, y) for x, y in path)
+
+
+def build_step_by_step_hot_path(
+    dungeon: GameMap,
+    *,
+    centers: Optional[List[Tuple[int, int]]] = None,
+    start: Optional[Tuple[int, int]] = None,
+    goal: Optional[Tuple[int, int]] = None,
+) -> List[Tuple[int, int]]:
+    """Calcula el camino paso a paso usando rooms_hot_path, y lo valida."""
+    centers_path = centers if centers is not None else getattr(dungeon, "rooms_hot_path", []) or getattr(dungeon, "hot_path", [])
+
+    if start is None:
+        player = getattr(getattr(dungeon, "engine", None), "player", None)
+        if player and getattr(player, "gamemap", None) is dungeon:
+            start = (player.x, player.y)
+        elif getattr(dungeon, "upstairs_location", None):
+            start = dungeon.upstairs_location
+        elif centers_path:
+            start = centers_path[0]
+        else:
+            start = (0, 0)
+    if goal is None:
+        goal = getattr(dungeon, "downstairs_location", None) or start
+
+    path = _compute_step_by_step_hot_path(
+        dungeon,
+        centers_path,
+        start=start,
+        goal=goal,
+        allowed_tiles=None,
+    )
+    if not _is_valid_hot_path(dungeon, path):
+        return []
+    return path
+
 def _shortest_tile_path(
     dungeon: GameMap,
     start: Tuple[int, int],
@@ -1118,27 +1254,28 @@ def _draw_green_zone(
 
 # BUG: Funciona bastante bien, pero sigue incluyendo algunas casillas intransitables en el
 # camino. Esto ya pasó al intentar programar el movimiento de los adventurers. Al final lo
-# solucionamos (no sé por qué) buscando el camino más corto "por fases"; es decir, buscando
+# solucionamos (no sé por qué [P.D: ahora sí sé por qué; ver más abajo]) buscando el camino más corto "por fases"; es decir, buscando
 # primero el camino más corte de la habitación A a la B (sin tener en cuenta el destino
 # final total), y repitiendo. En este caso las habitaciones elegidas deberían extraerse de
 # del hot_path (a saber, la serie de los centros de las habitaciones que componen el camino
-# más corto a las escaleras).
+# más corto a las escaleras). [P.D.: hay que usar el pathfinder de tcod, que es lo que usan
+# los actores para buscar el camino de un punto a otro]
 def _draw_hot_path(
     dungeon: GameMap,
-    shortest_path: List[Tuple[int, int]],
+    shortest_path: Optional[List[Tuple[int, int]]] = None,
     *,
     dark_color: Tuple[int, int, int] = (180, 50, 50),
     light_color: Tuple[int, int, int] = (255, 90, 90),
     allowed_tiles: Optional[Set[Tuple[int, int]]] = None,
 ) -> None:
-    """Pinta sobre el mapa el shortest_path para depuración sin modificar el glyph."""
+    """Pinta el camino paso a paso (ya calculado) sobre el mapa para depuración."""
+    if shortest_path is None:
+        shortest_path = getattr(dungeon, "step_by_step_hot_path", [])
     if not shortest_path:
         return
 
     for x, y in shortest_path:
         if not dungeon.in_bounds(x, y):
-            continue
-        if not _is_traversable_for_hot_path(dungeon, x, y, allowed_tiles=allowed_tiles):
             continue
         if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
             continue

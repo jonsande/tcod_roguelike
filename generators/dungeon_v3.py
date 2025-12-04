@@ -12,7 +12,6 @@ from game_map import GameMap
 from procgen import (
     RectangularRoom,
     _DisjointSet,
-    _collect_hot_path_coords,
     _collect_room_entry_candidates_v3,
     _manhattan_distance,
     _maybe_place_entry_feature,
@@ -21,6 +20,7 @@ from procgen import (
     _room_fits_within_bounds,
     _rooms_intersect_with_padding,
     _shortest_room_path,
+    build_step_by_step_hot_path,
     add_room_decorations,
     carve_fixed_room,
     carve_room,
@@ -167,6 +167,11 @@ def generate_dungeon_v3(
                 locked_colors_registry=locked_colors_in_floor,
             )
 
+    dungeon.room_tiles_map = {
+        room.center: list(room_tiles)
+        for room_tiles, (room, _) in zip(room_tile_sets, rooms)
+    }
+
     if place_downstairs:
         target_room = max(
             rooms,
@@ -196,19 +201,29 @@ def generate_dungeon_v3(
         downstairs_room_idx = len(rooms) - 1
 
     hot_path_centers: List[Tuple[int, int]] = []
-    hot_path_coords: List[Tuple[int, int]] = []
     if upstairs_room_idx is not None and downstairs_room_idx is not None:
         idx_path = _shortest_room_path(centers, connections, upstairs_room_idx, downstairs_room_idx)
         if idx_path:
             hot_path_centers = [centers[i] for i in idx_path]
-            hot_path_coords = _collect_hot_path_coords(dungeon, hot_path_centers, allowed_tiles=dug_tiles)
-    dungeon.hot_path = hot_path_centers
-    dungeon.shortest_path = hot_path_coords
+    start_for_hot_path = entry_point or dungeon.upstairs_location or (engine.player.x, engine.player.y)
+    if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
+        step_by_step_hot_path = build_step_by_step_hot_path(
+            dungeon,
+            centers=hot_path_centers,
+            start=start_for_hot_path,
+            goal=dungeon.downstairs_location or start_for_hot_path,
+        )
+    else:
+        step_by_step_hot_path = []
+    dungeon.rooms_hot_path = list(hot_path_centers)
+    dungeon.hot_path = list(hot_path_centers)  # compat
+    dungeon.step_by_step_hot_path = step_by_step_hot_path
+    dungeon.shortest_path = step_by_step_hot_path  # compat
     dungeon.locked_door_colors = locked_colors_in_floor
     if getattr(settings, "DEBUG_DRAW_HOT_PATH", False):
         from procgen import _draw_hot_path  # Lazy import to avoid circular dependency
 
-        _draw_hot_path(dungeon, hot_path_coords, allowed_tiles=dug_tiles)
+        _draw_hot_path(dungeon, dungeon.step_by_step_hot_path, allowed_tiles=None)
 
     if floor_number == settings.TOTAL_FLOORS:
         last_hot_room_center = hot_path_centers[-1] if hot_path_centers else (0, 0)

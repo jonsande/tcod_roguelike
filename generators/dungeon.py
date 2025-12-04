@@ -52,6 +52,7 @@ def generate_dungeon(
     dungeon = GameMap(engine, map_width, map_height, entities=entities)
 
     rooms: List[RectangularRoom] = []
+    room_floor_tiles: List[List[Tuple[int, int]]] = []
 
     center_of_last_room = (0, 0)
     downstairs_candidate: Optional[Tuple[int, int]] = None
@@ -83,6 +84,7 @@ def generate_dungeon(
             continue
 
         carve_room(dungeon, new_room)
+        floor_tiles = list(new_room.iter_floor_tiles())
 
         used_fixed_room = False
         if template:
@@ -119,6 +121,8 @@ def generate_dungeon(
                     f"\nDungeon: {dungeon}\nFloor number: {floor_number}\n"
                     f"Room center: {new_room.center}\nFixed: {used_fixed_room}{bcolors.ENDC}"
                 )
+        rooms.append(new_room)
+        room_floor_tiles.append(floor_tiles)
 
         if rooms and DUNGEON_EXTRA_CONNECTION_CHANCE > 0:
             for _ in range(DUNGEON_EXTRA_CONNECTION_ATTEMPTS):
@@ -137,7 +141,6 @@ def generate_dungeon(
 
         place_entities(new_room, dungeon, floor_number)
         uniques.place_uniques(floor_number, center_of_last_room, dungeon)
-        rooms.append(new_room)
 
     if place_downstairs:
         if not downstairs_candidate:
@@ -195,6 +198,9 @@ def generate_dungeon(
     maybe_place_chest(dungeon, floor_number, rooms)
     maybe_place_table(dungeon, floor_number, rooms)
     maybe_place_bookshelf(dungeon, floor_number, rooms)
+    dungeon.room_tiles_map = {
+        room.center: tiles for room, tiles in zip(rooms, room_floor_tiles)
+    }
     dungeon.center_rooms = list(rooms_array)
     return dungeon
 

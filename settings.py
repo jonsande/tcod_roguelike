@@ -128,7 +128,7 @@ else:
 # -- Player progression -------------------------------------------------------
 # Permite activar/desactivar el sistema de subida de nivel del jugador.
 # Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
-# xp en el futuro. El sistema está mal implementado ahora mismo.
+# xp en el futuro. El sistema está obsoleto y mal implementado ahora mismo.
 PLAYER_LEVELING_ENABLED = False
 # Ataques fallidos necesarios (contra el jugador) para ganar +1 a base_defense. Usa 0 para desactivar.
 PLAYER_DEFENSE_MISS_THRESHOLD = 60

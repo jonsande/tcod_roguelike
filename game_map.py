@@ -96,7 +96,7 @@ class GameMapTown:
                 return actor
 
         return None
-    
+
     def in_bounds(self, x: int, y: int) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
         return 0 <= x < self.width and 0 <= y < self.height
@@ -250,6 +250,7 @@ class GameMap:
         self.downstairs_location = (0, 0)
         self.upstairs_location = None
         self.center_rooms: List[Tuple[int, int]] = []
+        self.room_tiles_map: dict[Tuple[int, int], List[Tuple[int, int]]] = {}
         #self.downstairs_location = []
 
     @property
@@ -303,6 +304,65 @@ class GameMap:
     def in_bounds(self, x: int, y: int) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
         return 0 <= x < self.width and 0 <= y < self.height
+
+    def nearest_rooms_from(self, x: int, y: int) -> List[Tuple[int, int]]:
+        """Devuelve todos los centros de habitación ordenados por distancia Manhattan a (x, y)."""
+        centers = getattr(self, "center_rooms", None) or []
+        if not centers:
+            return []
+
+        filtered = []
+        for cx, cy in centers:
+            if not self.in_bounds(cx, cy):
+                continue
+            filtered.append((cx, cy))
+
+        if not filtered:
+            return []
+
+        def manhattan(point: Tuple[int, int]) -> int:
+            px, py = point
+            return abs(px - x) + abs(py - y)
+
+        return sorted(filtered, key=manhattan)
+    
+
+    def get_room_tiles(self, center: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Devuelve las casillas de la habitación con centro `center` (de la planta actual), tal y como se guardaron al generar el mapa."""
+        if not center:
+            return []
+        return list(self.room_tiles_map.get(center, []))
+    
+    def walkable_tiles_from_position(self, center: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Devuelve todas las casillas (walkable) desde el punto `center`."""
+        if not center:
+            return []
+        cx, cy = center
+        if not self.in_bounds(cx, cy):
+            return []
+        if not self.tiles["walkable"][cx, cy]:
+            return []
+
+        visited: Set[Tuple[int, int]] = set()
+        stack: List[Tuple[int, int]] = [(cx, cy)]
+
+        while stack:
+            x, y = stack.pop()
+            if (x, y) in visited:
+                continue
+            visited.add((x, y))
+
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if not self.in_bounds(nx, ny):
+                    continue
+                if not self.tiles["walkable"][nx, ny]:
+                    continue
+                if (nx, ny) in visited:
+                    continue
+                stack.append((nx, ny))
+
+        return list(visited)
 
     def is_closed_door(self, x: int, y: int) -> bool:
         return self.tiles["dark"]["ch"][x, y] == CLOSED_DOOR_CHAR
@@ -674,6 +734,15 @@ class GameWorld:
         self.engine.update_fov()
         self._sync_ambient_sound()
         return True
+
+    def get_room_tiles_from_certain_floor(self, floor: int, center: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Devuelve las casillas de la habitación `center` en el piso indicado (1-index)."""
+        if floor < 1 or floor > len(self.levels):
+            return []
+        game_map = self.levels[floor - 1]
+        if not game_map or not center:
+            return []
+        return list(getattr(game_map, "room_tiles_map", {}).get(center, []))
 
     def _ensure_keys_for_locked_doors(
         self,
