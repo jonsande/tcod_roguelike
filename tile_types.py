@@ -38,9 +38,20 @@ def new_tile(
 SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 
 
+# ADVERTENCIA: debido a mi falta de conocimientos cuando empecé este código, 
+# las puertas (y creo que los muros rompibles también) están diseñadas de un
+# modo muy poco intuitivo y problemático (sobre todo de cara a todo lo que
+# tiene que ver con pathfinding a través de puertas cerradas): las puertas
+# no son sólo puertas, sino dos cosas a la vez: donde se crea una puerta se
+# crea un tile 'door' y también una instancia de la clase Door (subclase de
+# Entity). Esto se hizo así porque no fui capaz de que las entidades bloquearan
+# la visión (el fov). 
+# En su momento escribí un mensaje en reddit explicándolo:
+# https://www.reddit.com/r/roguelikedev/comments/141w1a0/following_the_tcod_tutorial_2020_doors/
+
 closed_door = new_tile(
-    walkable=False,
-    transparent=False,
+    walkable=False, # CUIDADO! Si se pone True, no se pueden abrir las puertas. No sé por qué.
+    transparent=True,
     dark=(ord("+"), (15, 15, 15), (0, 0, 0)),
     light=(ord("+"), (93, 59, 0), (0, 0, 0)),
 )

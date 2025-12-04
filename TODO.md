@@ -225,7 +225,9 @@ VARIOS
 
 BUGS
 
-GUB: A los adventurers, cuando se les lanza una poción de ceguera se comportan como si nada. Si estás combatiendo con ellos esto es bastante frustrante.
+GUB: A veces los adventurers atacan al jugador! Parecen ataques aleatorios. como si estuviese tratando de moverse a esa casilla (pues no engancha a melee). Se diría que no está bien configurado. Si en la casilla destina esta player, debe hacer un WaitAction.
+
+BUG: A los adventurers, cuando se les lanza una poción de ceguera se comportan como si nada. Si estás combatiendo con ellos esto es bastante frustrante.
 
 BUG: Se están generando fogatas sobre las escaleras de bajada!!!!
 

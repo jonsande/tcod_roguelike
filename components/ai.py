@@ -97,16 +97,26 @@ class BaseAI(Action):
         If there is no valid path then returns an empty list.
         """
         # Copy the walkable array.
-        cost = np.array(self.entity.gamemap.tiles["walkable"], dtype=np.int8)
+        gamemap = self.entity.gamemap
+        cost = np.array(gamemap.tiles["walkable"], dtype=np.int8)
+        if getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False):
+            closed_ch = tile_types.closed_door["dark"]["ch"]
+            door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
+            cost[door_mask] = 1
 
         for entity in self.entity.gamemap.entities:
-            # Check that an enitiy blocks movement and the cost isn't zero (blocking.)
-            if entity.blocks_movement and cost[entity.x, entity.y]:
-                # Add to the cost of a blocked position.
-                # A lower number means more enemies will crowd behind each other in
-                # hallways.  A higher number means enemies will take longer paths in
-                # order to surround the player.
-                cost[entity.x, entity.y] += 20
+            if not entity.blocks_movement or not cost[entity.x, entity.y]:
+                continue
+            if (
+                getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False)
+                and getattr(getattr(entity, "name", ""), "lower", lambda: "")() == "door"
+            ):
+                continue
+            # Add to the cost of a blocked position.
+            # A lower number means more enemies will crowd behind each other in
+            # hallways.  A higher number means enemies will take longer paths in
+            # order to surround the player.
+            cost[entity.x, entity.y] += 20
 
         # Create a graph from the cost array and pass that graph to a new pathfinder.
         graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
@@ -460,21 +470,20 @@ class HostileEnemy(BaseAI):
         # un enemigo puede abandonar la persecución aun estando en casilla
         # contigua.
 
-        # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
+        target_stealth = getattr(target.fighter, "stealth", 0)
+        target_luck = getattr(target.fighter, "luck", 0)
         if self.entity.fighter.aggravated == False:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
-
-            # target_stealth = getattr(target.fighter, "stealth", 0)
             # if target_stealth < 0:
             #     stealth_penalty = target_stealth
             # else:
             #     stealth_penalty = random.randint(0, target_stealth)
             # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
 
         else:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
         
         # Debug
         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
@@ -502,15 +511,26 @@ class HostileEnemy(BaseAI):
 
         elif distance <= 1:
 
-            #self.engine.player.fighter.is_in_melee = True
-
-            if self.entity.fighter.stamina == 0:
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+            # if self.entity.fighter.stamina == 0:
+            #     if self_visible:
+            #         self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+            #     return WaitAction(self.entity).perform()
+            # else:
+            #     return MeleeAction(self.entity, dx, dy).perform()
+        
+            if self.entity.fighter.aggravated == False:
+                # TODO: Comprobar si este cambio del aggravated es correcto aquí. ¿Es posible un
+                # ataque sigiloso contra esta criatura?
+                self.entity.fighter.aggravated = True
                 return WaitAction(self.entity).perform()
             else:
-                return MeleeAction(self.entity, dx, dy).perform()
-        
+                if self.entity.fighter.stamina == 0:
+                    if self_visible:
+                        self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+                    return WaitAction(self.entity).perform()
+                else:
+                    return MeleeAction(self.entity, dx, dy).perform()
+
         elif distance > engage_rng:
 
             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
@@ -647,7 +667,6 @@ class HostileEnemyV2(BaseAI):
         
         # HUIDA EN CASO DE PUNTOS DE VIDA BAJOS
         escape_threshold = round((self.entity.fighter.max_hp * self.entity.fighter.escape_threshold) / 100)
-        
         # EN CONSTRUCCIÓN
         # if self.entity.fighter.hp < escape_threshold:
             
@@ -745,8 +764,8 @@ class HostileEnemyV2(BaseAI):
         elif distance <= 1:
 
             if self.entity.fighter.aggravated == False:
-                # TODO: Comprobar si este cambio del aggravated es correcto. ¿Está siendo agraviado antes
-                # de recibir el ataque por sorpresa?
+                # TODO: Comprobar si este cambio del aggravated es correcto. ¿Es posible un
+                # ataque sigiloso contra esta criatura?
                 self.entity.fighter.aggravated = True
                 return WaitAction(self.entity).perform()
             else:
@@ -758,8 +777,6 @@ class HostileEnemyV2(BaseAI):
                     return MeleeAction(self.entity, dx, dy).perform()
         
         elif distance > engage_rng:
-
-            # TODO: Creo que aquí es donde podemos mejorar el rendimiento del juego.
 
             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
 
@@ -774,8 +791,8 @@ class HostileEnemyV2(BaseAI):
 
             if not self.path2:
 
-                #return WaitAction(self.entity).perform()
-                return self._wander_idle()
+                return WaitAction(self.entity).perform()
+                #return self._wander_idle()
             
             else:
                 # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
@@ -912,10 +929,13 @@ class Neutral(BaseAI):
         return WaitAction(self.entity).perform()
 
 class SlimeAI(BaseAI):
-    """Passive slime that drifts around without attacking."""
+    """Slime that tries to eventually step on every walkable tile of its floor."""
 
     def __init__(self, entity: Actor):
         super().__init__(entity)
+        self._visited: set[tuple[int, int]] = set()
+        self._path: List[Tuple[int, int]] = []
+        self._target: Optional[Tuple[int, int]] = None
 
     def on_attacked(self, attacker: "Actor") -> None:
         """Use default aggravation behavior so stealth works normally."""
@@ -927,21 +947,67 @@ class SlimeAI(BaseAI):
         if not gamemap:
             return WaitAction(self.entity).perform()
 
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        random.shuffle(directions)
+        self._visited.add((self.entity.x, self.entity.y))
 
-        for dx, dy in directions:
-            dest_x = self.entity.x + dx
-            dest_y = self.entity.y + dy
-            if not gamemap.in_bounds(dest_x, dest_y):
-                continue
-            if not gamemap.tiles["walkable"][dest_x, dest_y]:
-                continue
+        # Recompute if no target or path exhausted/blocked.
+        if not self._path:
+            self._target = self._find_next_target(gamemap)
+            if self._target:
+                self._path = self.get_path_to(*self._target)
+
+        while self._path:
+            dest_x, dest_y = self._path.pop(0)
             if gamemap.get_blocking_entity_at_location(dest_x, dest_y):
-                continue
-            return MovementAction(self.entity, dx, dy).perform()
+                # Blocked; force new target search.
+                self._path = []
+                self._target = None
+                break
+            return MovementAction(
+                self.entity, dest_x - self.entity.x, dest_y - self.entity.y
+            ).perform()
 
         return WaitAction(self.entity).perform()
+
+    def _find_next_target(self, gamemap) -> Optional[Tuple[int, int]]:
+        """Pick the closest unvisited walkable tile."""
+        if not gamemap:
+            return None
+        width, height = gamemap.width, gamemap.height
+        can_pass_doors = getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False)
+        closed_ch = tile_types.closed_door["dark"]["ch"]
+        candidates: List[Tuple[int, int]] = []
+
+        for x in range(width):
+            for y in range(height):
+                if not gamemap.in_bounds(x, y):
+                    continue
+                if not gamemap.tiles["walkable"][x, y]:
+                    if not (can_pass_doors and gamemap.tiles["dark"]["ch"][x, y] == closed_ch):
+                        continue
+                if (x, y) in self._visited:
+                    continue
+                candidates.append((x, y))
+
+        if not candidates:
+            # Reset to keep roaming if everything has been visited.
+            self._visited.clear()
+            return None
+
+        player = getattr(self.engine, "player", None)
+
+        def dist(coord: Tuple[int, int]) -> Tuple[int, int]:
+            cx, cy = coord
+            cheb = max(abs(cx - self.entity.x), abs(cy - self.entity.y))
+            player_bias = 1 if player and (cx, cy) == (player.x, player.y) else 0
+            return cheb, player_bias
+
+        # Pick nearest candidate; ties arbitrary.
+        candidates.sort(key=dist)
+        for target in candidates:
+            path = self.get_path_to(*target)
+            if path:
+                return target
+        return None
 
 class AdventurerAI(BaseAI):
     """Adventurers wander between rooms, rest when exhausted, stay neutral unless provoked,
@@ -1391,22 +1457,30 @@ class Scout(BaseAI): # WORK IN PROGRESS
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
 
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            self_invisible = True
+            self_visible = False
+        else:
+            self_invisible = False
+            self_visible = True
+
         self.path = self.get_path_to(target.x, target.y)
 
         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
+        target_stealth = getattr(target.fighter, "stealth", 0)
+        target_luck = getattr(target.fighter, "luck", 0)
         if self.entity.fighter.aggravated == False:
             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
+            # if target_stealth < 0:
+            #     stealth_penalty = target_stealth
+            # else:
+            #     stealth_penalty = random.randint(0, target_stealth)
+            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
 
-            # Esto para evitar errores en caso de que el STEALTH tenga valor negativo
-            target_stealth = getattr(target.fighter, "stealth", 0)
-            if target_stealth < 0:
-                stealth_penalty = target_stealth
-            else:
-                stealth_penalty = random.randint(0, target_stealth)
-            engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
         else:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
-            engage_rng = random.randint(1, 3) + self.entity.fighter.fov
+            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
+            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
         
         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
         #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
@@ -1462,6 +1536,8 @@ class Scout(BaseAI): # WORK IN PROGRESS
                         return WaitAction(self.entity).perform()                   
             else:
                 try:
+                    # TODO: Si lo estoy entendiendo bien, este código tiene un problema:
+                    # un scout va vaciando el array center_room. ¡Esto es muy chapucero!
                     self.checkpoint = self.engine.center_room_array.pop(0)
                     return WaitAction(self.entity).perform()
                 except IndexError:

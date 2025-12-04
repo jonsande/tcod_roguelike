@@ -811,7 +811,7 @@ ENEMY_SPAWN_RULES = {
             (16, 0),
         ],
     },
-    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
+    "slime": {"min_floor": 2, "weight_progression": [(2, 100), (3, 15), (5, 10)]},
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},

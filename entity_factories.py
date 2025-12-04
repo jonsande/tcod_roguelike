@@ -1285,6 +1285,7 @@ slime = Actor(
         is_slime=True,
         can_split=True,
         slime_generation=0,
+        can_pass_closed_doors=True,
     ),
     inventory=Inventory(capacity=4),
     level=Level(xp_given=1),

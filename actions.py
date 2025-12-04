@@ -1235,6 +1235,8 @@ class MovementAction(ActionWithDirection):
         game_map = self.engine.game_map
         door_opened = False
         player_moved = False
+        can_pass_closed_doors = getattr(self.entity.fighter, "can_pass_closed_doors", False)
+        is_closed_door = game_map.is_closed_door(dest_x, dest_y)
 
         if not game_map.in_bounds(dest_x, dest_y):
             if self.engine.game_world.current_floor == 1:
@@ -1248,13 +1250,20 @@ class MovementAction(ActionWithDirection):
                 raise exceptions.Impossible("Debo recuperar el artefacto.")
             else:
                 raise exceptions.Impossible("That way is blocked.")
-        if not game_map.tiles["walkable"][dest_x, dest_y]:
+        blocked_tile = not game_map.tiles["walkable"][dest_x, dest_y]
+        if blocked_tile and is_closed_door and can_pass_closed_doors:
+            # Slither through closed doors without opening them.
+            door_opened = False
+        elif blocked_tile:
             if game_map.try_open_door(dest_x, dest_y, actor=self.entity):
                 door_opened = True
             else:
                 raise exceptions.Impossible("That way is blocked.")
         if not door_opened and game_map.get_blocking_entity_at_location(dest_x, dest_y):
-            raise exceptions.Impossible("That way is blocked.")
+            if is_closed_door and can_pass_closed_doors:
+                pass
+            else:
+                raise exceptions.Impossible("That way is blocked.")
 
         if door_opened:
             if self.entity is self.engine.player:

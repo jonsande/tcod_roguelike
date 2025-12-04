@@ -247,6 +247,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         is_slime: bool = False,
         can_split: bool = False,
         slime_generation: int = 0,
+        can_pass_closed_doors: bool = False,
     ):
         self.max_hp = hp
         self._hp = hp
@@ -286,6 +287,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.is_slime = is_slime
         self.can_split = can_split
         self.slime_generation = slime_generation
+        self.can_pass_closed_doors = can_pass_closed_doors
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
