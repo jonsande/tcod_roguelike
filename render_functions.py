@@ -35,6 +35,52 @@ def _unique_names(names: List[str]) -> List[str]:
             unique_names.append(original)
     return unique_names
 
+
+def _format_list_with_and(words: List[str]) -> str:
+    if not words:
+        return ""
+    if len(words) == 1:
+        return words[0]
+    return f"{', '.join(words[:-1])} and {words[-1]}"
+
+
+def _slime_inside_description(entity: Actor) -> Optional[str]:
+    """Return a '(with ... inside)' suffix describing slime inventory, or None."""
+    fighter = getattr(entity, "fighter", None)
+    if not fighter or not getattr(fighter, "is_slime", False):
+        return None
+    inventory = getattr(entity, "inventory", None)
+    if not inventory:
+        return None
+    counts: dict[str, int] = {}
+    order: List[str] = []
+    for item in getattr(inventory, "items", []):
+        name = getattr(item, "name", None)
+        if not name:
+            continue
+        key = name.lower()
+        if key not in counts:
+            order.append(name)
+            counts[key] = 0
+        counts[key] += 1
+    if not counts:
+        return None
+
+    parts: List[str] = []
+    for original in order:
+        key = original.lower()
+        count = counts.get(key, 1)
+        if count <= 1:
+            parts.append(original)
+        else:
+            plural = original if original.endswith("s") else f"{original}s"
+            parts.append(plural)
+
+    joined = _format_list_with_and(parts)
+    if not joined:
+        return None
+    return f" (with {joined} inside)"
+
 # Version without equipment info
 # def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
 #     if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
@@ -76,6 +122,9 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
                         name += f" (with {equipped_items[0]})"
                     else:
                         name += f" (with {', '.join(equipped_items[:-1])} and {equipped_items[-1]})"
+                slime_suffix = _slime_inside_description(entity)
+                if slime_suffix:
+                    name += slime_suffix
             names.append(name)
 
     tile_descriptions: List[str] = []

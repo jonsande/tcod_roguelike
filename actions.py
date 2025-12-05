@@ -1235,7 +1235,9 @@ class MovementAction(ActionWithDirection):
         game_map = self.engine.game_map
         door_opened = False
         player_moved = False
+        move_dx, move_dy = self.dx, self.dy
         can_pass_closed_doors = getattr(self.entity.fighter, "can_pass_closed_doors", False)
+        can_open_doors = getattr(self.entity.fighter, "can_open_doors", False)
         is_closed_door = game_map.is_closed_door(dest_x, dest_y)
 
         if not game_map.in_bounds(dest_x, dest_y):
@@ -1251,17 +1253,26 @@ class MovementAction(ActionWithDirection):
             else:
                 raise exceptions.Impossible("That way is blocked.")
         blocked_tile = not game_map.tiles["walkable"][dest_x, dest_y]
-        if blocked_tile and is_closed_door and can_pass_closed_doors:
-            # Slither through closed doors without opening them.
-            door_opened = False
-        elif blocked_tile:
-            if game_map.try_open_door(dest_x, dest_y, actor=self.entity):
+
+        # Intentar abrir puerta incluso si el tile es walkable.
+        if is_closed_door and not can_pass_closed_doors:
+            if can_open_doors and game_map.try_open_door(dest_x, dest_y, actor=self.entity):
                 door_opened = True
             else:
                 raise exceptions.Impossible("That way is blocked.")
-        if not door_opened and game_map.get_blocking_entity_at_location(dest_x, dest_y):
+        elif blocked_tile and not (is_closed_door and can_pass_closed_doors):
+            # Otros tiles no walkable (o puertas si no se puede pasar ni abrir).
+            raise exceptions.Impossible("That way is blocked.")
+
+        # Comprobar entidad bloqueante.
+        blocking_entity = game_map.get_blocking_entity_at_location(dest_x, dest_y)
+        if blocking_entity:
             if is_closed_door and can_pass_closed_doors:
                 pass
+            elif door_opened:
+                blocking_entity = game_map.get_blocking_entity_at_location(dest_x, dest_y)
+                if blocking_entity:
+                    raise exceptions.Impossible("That way is blocked.")
             else:
                 raise exceptions.Impossible("That way is blocked.")
 
@@ -1294,7 +1305,7 @@ class MovementAction(ActionWithDirection):
                     self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
                     self.entity.fighter.to_hit_counter = 0
 
-                self.entity.move(self.dx, self.dy)            
+                self.entity.move(move_dx, move_dy)            
                 player_moved = True
             
             # Si no en MELEE 
@@ -1308,7 +1319,7 @@ class MovementAction(ActionWithDirection):
                     self.entity.fighter.base_to_hit -= self.entity.fighter.to_hit_counter
                     self.entity.fighter.to_hit_counter = 0
 
-                self.entity.move(self.dx, self.dy)
+                self.entity.move(move_dx, move_dy)
                 player_moved = True
 
         # Reseteamos toda BONIFICACIÓN
@@ -1333,6 +1344,25 @@ class MovementAction(ActionWithDirection):
 
         if player_moved and self.entity is self.engine.player:
             play_player_footstep()
+        # Especial de slimes
+        elif player_moved and getattr(self.entity.fighter, "is_slime", False):
+            inventory = getattr(self.entity, "inventory", None)
+            if inventory and len(inventory.items) < inventory.capacity:
+                items_here = [
+                    item
+                    for item in self.engine.game_map.items
+                    if self.entity.x == item.x and self.entity.y == item.y
+                ]
+                for item in list(items_here):
+                    if len(inventory.items) >= inventory.capacity:
+                        break
+                    self.engine.game_map.entities.remove(item)
+                    item.parent = inventory
+                    inventory.items.append(item)
+                    if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+                        self.engine.message_log.add_message(
+                            f"The slime absorved the {item.name}!", color.orange
+                        )
 
         # TIME SYSTEM
         #self.entity.fighter.current_energy_points -= 10
@@ -1350,6 +1380,9 @@ class OpenDoorAction(ActionWithDirection):
     def perform(self) -> None:
         fighter = getattr(self.door, "fighter", None)
         if not fighter or not hasattr(fighter, "set_open"):
+            raise exceptions.Impossible("You can't open that.")
+        opener = getattr(self.entity, "fighter", None)
+        if opener and not getattr(opener, "can_open_doors", False):
             raise exceptions.Impossible("You can't open that.")
         if fighter.is_open:
             raise exceptions.Impossible("The door is already open.")

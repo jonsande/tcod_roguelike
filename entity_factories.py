@@ -1161,7 +1161,8 @@ player = Actor(
         poison_resistance=1,
         super_memory=False,
         lamp_on=False,
-        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=0, max_dmg=2, dmg_bonus=0),
+        can_open_doors=True,
     ),
     inventory=Inventory(capacity=35),
     level=Level(level_up_base=20), # Default: 200
@@ -1191,6 +1192,7 @@ adventurer = Actor(
         luck=1,
         critical_chance=1,
         super_memory=False,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=20, loot_table_key="Adventurer", loot_amount=4),
@@ -1285,7 +1287,8 @@ slime = Actor(
         is_slime=True,
         can_split=True,
         slime_generation=0,
-        can_pass_closed_doors=True,
+        can_pass_closed_doors=False,
+        can_open_doors=True,
     ),
     inventory=Inventory(capacity=4),
     level=Level(xp_given=1),
@@ -1349,6 +1352,7 @@ goblin = Actor(
         poison_resistance=6,
         action_time_cost=7,
         woke_ai_cls=HostileEnemyV2,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Goblin claws", min_dmg=1, max_dmg=4, dmg_bonus=0),
     ),
     #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
@@ -1407,6 +1411,7 @@ orc = Actor(
         max_stamina=3,
         action_time_cost=10,
         woke_ai_cls=HostileEnemy,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
     inventory=Inventory(capacity=3, loot_table_key="Orc", loot_amount=4),
@@ -1433,6 +1438,7 @@ true_orc = Actor(
         stamina=4, 
         max_stamina=4,
         woke_ai_cls=HostileEnemy,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
         ),
     inventory=Inventory(capacity=3, loot_table_key="True Orc", loot_amount=4),
@@ -1486,6 +1492,7 @@ troll = Actor(
         action_time_cost=14, 
         stamina=2, 
         max_stamina=2,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
     ),
     inventory=Inventory(capacity=1),
@@ -1558,6 +1565,7 @@ bandit = Actor(
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=2,
+        can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Cheater fist", min_dmg=1, max_dmg=2, dmg_bonus=1)
     ),
     inventory=Inventory(capacity=5, loot_table_key="Bandit", loot_amount=5),

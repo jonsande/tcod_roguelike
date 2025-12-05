@@ -98,8 +98,12 @@ class BaseAI(Action):
         """
         # Copy the walkable array.
         gamemap = self.entity.gamemap
+        fighter = getattr(self.entity, "fighter", None)
+        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+
         cost = np.array(gamemap.tiles["walkable"], dtype=np.int8)
-        if getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False):
+        if can_pass_closed_doors or can_open_doors:
             closed_ch = tile_types.closed_door["dark"]["ch"]
             door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
             cost[door_mask] = 1
@@ -108,7 +112,7 @@ class BaseAI(Action):
             if not entity.blocks_movement or not cost[entity.x, entity.y]:
                 continue
             if (
-                getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False)
+                (can_pass_closed_doors or can_open_doors)
                 and getattr(getattr(entity, "name", ""), "lower", lambda: "")() == "door"
             ):
                 continue
@@ -929,13 +933,12 @@ class Neutral(BaseAI):
         return WaitAction(self.entity).perform()
 
 class SlimeAI(BaseAI):
-    """Slime that tries to eventually step on every walkable tile of its floor."""
+    """Slime that wanders within its current room, visiting tiles until it resets."""
 
     def __init__(self, entity: Actor):
         super().__init__(entity)
         self._visited: set[tuple[int, int]] = set()
-        self._path: List[Tuple[int, int]] = []
-        self._target: Optional[Tuple[int, int]] = None
+        self._room_center: Optional[Tuple[int, int]] = None
 
     def on_attacked(self, attacker: "Actor") -> None:
         """Use default aggravation behavior so stealth works normally."""
@@ -947,66 +950,81 @@ class SlimeAI(BaseAI):
         if not gamemap:
             return WaitAction(self.entity).perform()
 
+        room_center, room_tiles = self._current_room(gamemap)
+        if room_center != self._room_center:
+            self._visited.clear()
+            self._room_center = room_center
+
         self._visited.add((self.entity.x, self.entity.y))
 
-        # Recompute if no target or path exhausted/blocked.
-        if not self._path:
-            self._target = self._find_next_target(gamemap)
-            if self._target:
-                self._path = self.get_path_to(*self._target)
+        dest = self._choose_next_step(gamemap, room_tiles)
+        if dest:
+            dx = dest[0] - self.entity.x
+            dy = dest[1] - self.entity.y
+            return MovementAction(self.entity, dx, dy).perform()
 
-        while self._path:
-            dest_x, dest_y = self._path.pop(0)
-            if gamemap.get_blocking_entity_at_location(dest_x, dest_y):
-                # Blocked; force new target search.
-                self._path = []
-                self._target = None
-                break
-            return MovementAction(
-                self.entity, dest_x - self.entity.x, dest_y - self.entity.y
-            ).perform()
+        # Reset and try again if stuck or room fully visited.
+        self._visited.clear()
+        self._visited.add((self.entity.x, self.entity.y))
+        dest = self._choose_next_step(gamemap, room_tiles)
+        if dest:
+            dx = dest[0] - self.entity.x
+            dy = dest[1] - self.entity.y
+            return MovementAction(self.entity, dx, dy).perform()
 
         return WaitAction(self.entity).perform()
 
-    def _find_next_target(self, gamemap) -> Optional[Tuple[int, int]]:
-        """Pick the closest unvisited walkable tile."""
-        if not gamemap:
-            return None
-        width, height = gamemap.width, gamemap.height
-        can_pass_doors = getattr(getattr(self.entity, "fighter", None), "can_pass_closed_doors", False)
-        closed_ch = tile_types.closed_door["dark"]["ch"]
+    def _current_room(self, gamemap) -> Tuple[Optional[Tuple[int, int]], List[Tuple[int, int]]]:
+        """Return the center and tile list for the room containing the slime, if any."""
+        tile = (self.entity.x, self.entity.y)
+        room_map = getattr(gamemap, "room_tiles_map", {}) or {}
+        for center, tiles in room_map.items():
+            if tile in tiles:
+                return center, tiles
+        return None, []
+
+    def _choose_next_step(self, gamemap, room_tiles: List[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
+        """Pick a random adjacent unvisited tile within the current room (if known)."""
+        directions = [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ]
+        random.shuffle(directions)
+        room_tiles_set = set(room_tiles) if room_tiles else None
+
         candidates: List[Tuple[int, int]] = []
+        for dx, dy in directions:
+            nx, ny = self.entity.x + dx, self.entity.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            if gamemap.get_blocking_entity_at_location(nx, ny):
+                continue
+            if room_tiles_set is not None and (nx, ny) not in room_tiles_set:
+                continue
+            if (nx, ny) in self._visited:
+                continue
+            candidates.append((nx, ny))
 
-        for x in range(width):
-            for y in range(height):
-                if not gamemap.in_bounds(x, y):
-                    continue
-                if not gamemap.tiles["walkable"][x, y]:
-                    if not (can_pass_doors and gamemap.tiles["dark"]["ch"][x, y] == closed_ch):
-                        continue
-                if (x, y) in self._visited:
-                    continue
-                candidates.append((x, y))
+        if candidates:
+            return random.choice(candidates)
 
-        if not candidates:
-            # Reset to keep roaming if everything has been visited.
-            self._visited.clear()
-            return None
+        # If no candidates but room_tiles known and there are still tiles left, allow revisiting to keep moving.
+        if room_tiles_set and not room_tiles_set.issubset(self._visited):
+            # Pick any adjacent tile within room to keep shuffling.
+            for dx, dy in directions:
+                nx, ny = self.entity.x + dx, self.entity.y + dy
+                if (nx, ny) in room_tiles_set and gamemap.in_bounds(nx, ny) and gamemap.tiles["walkable"][nx, ny]:
+                    if not gamemap.get_blocking_entity_at_location(nx, ny):
+                        return (nx, ny)
 
-        player = getattr(self.engine, "player", None)
-
-        def dist(coord: Tuple[int, int]) -> Tuple[int, int]:
-            cx, cy = coord
-            cheb = max(abs(cx - self.entity.x), abs(cy - self.entity.y))
-            player_bias = 1 if player and (cx, cy) == (player.x, player.y) else 0
-            return cheb, player_bias
-
-        # Pick nearest candidate; ties arbitrary.
-        candidates.sort(key=dist)
-        for target in candidates:
-            path = self.get_path_to(*target)
-            if path:
-                return target
         return None
 
 class AdventurerAI(BaseAI):
@@ -1150,10 +1168,15 @@ class AdventurerAI(BaseAI):
         if not gm.in_bounds(dest_x, dest_y):
             return []
 
+        fighter = getattr(self.entity, "fighter", None)
+        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+
         cost = np.array(gm.tiles["walkable"], dtype=np.int8)
         cost = np.where(cost, 1, 0).astype(np.int16)
-        door_mask = gm.tiles["dark"]["ch"] == tile_types.closed_door["dark"]["ch"]
-        cost[door_mask] = 1
+        if can_pass_closed_doors or can_open_doors:
+            door_mask = gm.tiles["dark"]["ch"] == tile_types.closed_door["dark"]["ch"]
+            cost[door_mask] = 1
 
         graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
         pathfinder = tcod.path.Pathfinder(graph)

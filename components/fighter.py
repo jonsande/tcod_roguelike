@@ -189,10 +189,29 @@ class FireStatusMixin:
             return
         setattr(self, "_recover_counter", recover_rate)
         new_hp_value = min(max_hp, hp + recover_amount)
+        amount_recovered = new_hp_value - hp
         try:
             self.hp = new_hp_value
         except Exception:
             setattr(self, "_hp", new_hp_value)
+        self._maybe_show_slime_regen(amount_recovered)
+
+    def _maybe_show_slime_regen(self, amount_recovered: int) -> None:
+        """If this entity is a visible slime, announce its regeneration."""
+        if amount_recovered <= 0:
+            return
+        entity = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not entity or not engine:
+            return
+        if not getattr(self, "is_slime", False):
+            return
+        try:
+            visible = engine.game_map.visible[entity.x, entity.y]
+        except Exception:
+            visible = False
+        if visible:
+            engine.message_log.add_message("The slime regenerates!", color.orange)
 
 from components.ai import HostileEnemy
 class Fighter(FireStatusMixin, BaseComponent):
@@ -248,6 +267,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         can_split: bool = False,
         slime_generation: int = 0,
         can_pass_closed_doors: bool = False,
+        can_open_doors: bool = False,
     ):
         self.max_hp = hp
         self._hp = hp
@@ -288,6 +308,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.can_split = can_split
         self.slime_generation = slime_generation
         self.can_pass_closed_doors = can_pass_closed_doors
+        self.can_open_doors = can_open_doors
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -837,23 +858,6 @@ class Fighter(FireStatusMixin, BaseComponent):
         """Backward-compatible alias for tick_recovery."""
         return self.tick_recovery()
 
-    def tick_recovery(self) -> None:
-        """Handle passive HP regeneration based on recover_rate (turn interval)."""
-        if self.recover_rate <= 0 or self.recover_amount <= 0:
-            return
-        if self.hp >= self.max_hp:
-            # Keep counter fresh so healing starts after taking damage.
-            self._recover_counter = self.recover_rate
-            return
-        self._recover_counter -= 1
-        if self._recover_counter > 0:
-            return
-        self._recover_counter = self.recover_rate
-        new_hp_value = self.hp + self.recover_amount
-        if new_hp_value > self.max_hp:
-            new_hp_value = self.max_hp
-        self.hp = new_hp_value
-
     def _slime_visible(self) -> bool:
         engine = getattr(self, "engine", None)
         try:
@@ -904,7 +908,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             if attacker and attacker is getattr(engine, "player", None):
                 engine.message_log.add_message(
                     f"Your {attack_item.name} is absorbed by the slime!",
-                    color.impossible,
+                    color.orange,
                 )
             elif self._slime_visible():
                 engine.message_log.add_message(
@@ -1347,24 +1351,6 @@ class Door(FireStatusMixin, BaseComponent):
 
         return amount_recovered
     
-
-    def autoheal(self):
-        return self.tick_recovery()
-
-    def tick_recovery(self) -> None:
-        if self.recover_rate <= 0 or self.recover_amount <= 0:
-            return
-        if self.hp >= self.max_hp:
-            self._recover_counter = self.recover_rate
-            return
-        self._recover_counter -= 1
-        if self._recover_counter > 0:
-            return
-        self._recover_counter = self.recover_rate
-        new_hp_value = self.hp + self.recover_amount
-        if new_hp_value > self.max_hp:
-            new_hp_value = self.max_hp
-        self.hp = new_hp_value
 
     def take_damage(
         self,

@@ -257,7 +257,8 @@ BREAKABLE_WALL_LOOT_CHANCE = 0.60
 
 # Configuración de escombros/decoración menor por nivel.
 DEBRIS_CHANCES = {
-    0: [("debris_a", 30)],
+    1: [("debris_a", 90)],
+    2: [("debris_a", 30)],
     3: [("debris_a", 20)],
     6: [("debris_a", 10)],
 }

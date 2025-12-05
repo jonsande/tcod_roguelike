@@ -969,17 +969,17 @@ def _build_hot_path_cost(
             elif np.array_equal(tile, tile_types.breakable_wall):
                 cost[x, y] = 3  # transitable potencialmente, peor aún
 
-    # for entity in dungeon.entities:
-    #     if not getattr(entity, "blocks_movement", False):
-    #         continue
-    #     ex, ey = getattr(entity, "x", None), getattr(entity, "y", None)
-    #     if ex is None or ey is None or not dungeon.in_bounds(ex, ey):
-    #         continue
-    #     if cost[ex, ey] == 0:
-    #         continue  # no se reactiva un muro real
-    #     # BUG: Si se añade algún coste, aunque sea 1, a veces preferirá atravesar muros
-    #     # instransitables.
-    #     cost[ex, ey] += 20  # Coste añadido si hay una entidad que bloquea el paso.
+    for entity in dungeon.entities:
+        if not getattr(entity, "blocks_movement", False):
+            continue
+        ex, ey = getattr(entity, "x", None), getattr(entity, "y", None)
+        if ex is None or ey is None or not dungeon.in_bounds(ex, ey):
+            continue
+        if cost[ex, ey] == 0:
+            continue  # no se reactiva un muro real
+        # BUG: Si se añade algún coste, aunque sea 1, a veces preferirá atravesar muros
+        # instransitables.
+        cost[ex, ey] += 20  # Coste añadido si hay una entidad que bloquea el paso.
 
     return cost
 

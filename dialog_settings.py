@@ -3,9 +3,11 @@
 # Adventurer greetings -------------------------------------------------------
 
 ADVENTURER_GREETING_MESSAGES = [
+    "Adventurer says: ¡Joder! ¡¿Has visto de lo que son capaces esas babas viscosas vivientes?!",
     "Adventurer says: Creo que la mejor forma de saber qué hace una poción es lanzársela a la cara a un goblin.",
     "Adventurer says: Aunque tengas sed, cuídate de beber sustancias que no sabes lo que son. Podrían matarte.",
     "Adventurer says: Algunos muros ocultan pasadizos o puertas secretas.",
+    "Adventurer says: El miedo quita el hambre. Pero es necesario comer.",
     "Adventurer says: ¿Lo has oído? Esa risa me pone los pelos de punta.",
     "Adventurer says: Ayúdame a inspeccionar las paredes de las cámaras. Debe de haber algún pasadizo secreto por aquí.",
     "Adventurer says: Greetings, fellow explorer!",
@@ -23,6 +25,7 @@ ADVENTURER_GREETING_MESSAGES = [
 ]
 
 ADVENTURER_IRRELEVANT_GREETING_MESSAGES = [
+    "Adventurer says: Hace un rato se ha derrumbado una parez y me he quedado atrapado. ¡Pensé que no saldría vivo!"
     "Adventurer says: Sígueme, conozco el camino.",
     "Adventurer says: ¡Mira qué anillo me he encontrado! ¿Te gusta?",
     "Adventurer says: Quita tu mirada de mi anillo.",

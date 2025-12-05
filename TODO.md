@@ -13,7 +13,9 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Slimes! Los slimes deben poder atravesar puertas. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
+- [-] Slimes! Los slimes deben poder atravesar puertas. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
+- [ ] Cuando los slimes se regeneran a la vista del jugador, debe salir un mensaje indicándolo. De otro modo los jugadores no entenderán por qué no pueden matar a un slime (cuando lo hacen incorrectamente).
+- [!] Una forma de simplificar el pathfinding de los slimes. Que lleven un registro de las casillas visitadas; después el slime simplemente intenta moverse a una casilla aleatoria de las que tiene a su alrededor y no está visitada. Así evitamos usar el pathfinding.
 - [!] Las criaturas deben huir con hp bajos.
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
 - [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.

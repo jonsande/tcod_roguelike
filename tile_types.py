@@ -50,8 +50,8 @@ SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 # https://www.reddit.com/r/roguelikedev/comments/141w1a0/following_the_tcod_tutorial_2020_doors/
 
 closed_door = new_tile(
-    walkable=False, # CUIDADO! Si se pone True, no se pueden abrir las puertas. No sé por qué.
-    transparent=True,
+    walkable=True, # CUIDADO! Si se pone True, no se pueden abrir las puertas. No sé por qué.
+    transparent=False,
     dark=(ord("+"), (15, 15, 15), (0, 0, 0)),
     light=(ord("+"), (93, 59, 0), (0, 0, 0)),
 )
@@ -59,8 +59,8 @@ closed_door = new_tile(
 open_door = new_tile(
     walkable=True,
     transparent=True,
-    dark=(ord("-"), (50, 50, 40), (0, 0, 0)),
-    light=(ord("-"), (200, 200, 120), (0, 0, 0)),
+    dark=(ord("-"), (15, 15, 15), (0, 0, 0)),
+    light=(ord("-"), (93, 59, 0), (0, 0, 0)),
 )
 
 if GRAPHIC_MODE == "pseudo_ascii":
@@ -122,7 +122,7 @@ if GRAPHIC_MODE == "pseudo_ascii":
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -141,8 +141,8 @@ if GRAPHIC_MODE == "pseudo_ascii":
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
-            transparent=False, #Para que no sea translúcida esta tiene que ser TRUE!!! (No sé por qué)
+            walkable=True,
+            transparent=False,
             light=light,
             dark=dark,
         )
@@ -160,7 +160,7 @@ if GRAPHIC_MODE == "pseudo_ascii":
             dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -264,7 +264,7 @@ elif GRAPHIC_MODE == "ascii":
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -281,7 +281,7 @@ elif GRAPHIC_MODE == "ascii":
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -298,7 +298,7 @@ elif GRAPHIC_MODE == "ascii":
             dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -415,7 +415,7 @@ else:
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -432,7 +432,7 @@ else:
             dark=dark,
             )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -449,7 +449,7 @@ else:
             dark=dark,
         )
         breakable_wall = new_tile(
-            walkable=False,
+            walkable=True,
             transparent=False,
             light=light,
             dark=dark,
@@ -499,7 +499,7 @@ else:
         dark=dark,
     )
     breakable_wall = new_tile(
-        walkable=False,
+        walkable=True,
         transparent=False,
         light=light,
         dark=dark,
