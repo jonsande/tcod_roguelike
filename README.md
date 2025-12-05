@@ -1,7 +1,7 @@
 
 # The Seeker - Roguelike
 
-![til](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/teaser.gifg)
+![til](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/teaser.gif)
 
 ![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/YetAnotherRoguelike_gameplay.png?raw=true)
 
