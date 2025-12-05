@@ -47,6 +47,7 @@ PERSONAJES ÚNICOS O ESPECIALES
 
 EFECTOS SONOROS / SONIDO
 - [ ] Sonido de viento en el nivel de superficie.
+- [ ] Más sonidos! De muerte específicos por criatura, ataques por arma, bajada de escaleras, etc.
 - [-] Sonido de queja/lamento al recibir daño (específico de cada criatura).
 - [-] Sonido de ataques con armas y desarmado. [Sistema implementado, pero sin configurar]
 - [ ] Sonido del fireball y del pergamino del rayo.
@@ -192,9 +193,9 @@ La fixed dungeon de mitad de descenso se escogerá entre una batería de posible
 COMBATE
 - [!] El valor mínimo de TO-HIT debe ser 0!! Si no se rompe la fórmula. Aun así la penalización de armadura se modifica igual, pues cuando el jugador debería ganar 1 punto en melee, se quedaría en 0.
 - [x] Rediseñar el sistema de cálculo de daño del combate. Cambiar el modo en que funcionan las armas a este respecto. Hacerlo todo más claro. Y más congruente con el factor "pericia del luchador" (proficiency).
-- [!] Describir bien cómo funciona el combate, con sus elementos tácticos y sus fórmulas.
-- [!] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
-- [-] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes).
+- [x] Describir bien cómo funciona el combate, con sus elementos tácticos y sus fórmulas.
+- [x] Modificar el character information, acorde con el rediseño del sistema de cálculo de daño.
+- [-] Echar un vistazo a la mecánica de sigilo/stealth y backstab (es muy antigua y necesita seguramente ajustes). [P.D. Está revisada, pero necesita testeo, y seguramente necesita más revisión].
 - [x] Modificar la mecánica del combate táctico. Actualmente es:
 - [DESCARTADO] Si el enemigo está paralizado (o ciego), no debería bajarte stamina por luchar contra él o pasar turno junto a él. Tiene que cambiar el sistema melee con él. Por ejemplo: no debe gastar stamina esperar turno junto a él. 
 - [x] Si el enemigo está ciego o paralizado, debe tmb haber un bonus a tu hit muy grande. (Hecho: ahora mismo el bonus viene por la penalización al Defense y al to hit que sufre el propio cegado o paralizado).

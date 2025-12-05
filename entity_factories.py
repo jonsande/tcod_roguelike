@@ -24,6 +24,7 @@ from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapo
 from components.inventory import Inventory
 from components.level import Level
 from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest, TableContainer, BookShelfContainer
+from render_order import RenderOrder
 import random
 import numpy as np
 import tile_types
@@ -69,6 +70,7 @@ door = Obstacle(
     level=Level(xp_given=1),
     inventory=Inventory(capacity=0),
     equipment=Equipment(),
+    render_order=RenderOrder.DOOR,
 )
 
 # Keys
@@ -99,7 +101,9 @@ gray_key = Item(
 chest = Chest(
     char="ε",
     open_char="ε",
-    color=(82, 58, 39),
+    color=(255, 228, 0), # Amarillo guay
+    #color=(56, 19, 7), # Marrón oscuro
+    #color=(82, 58, 39), # Marrón más claro
     #color=(255, 255, 255),
     #char="φ",
     #open_char="φ",
@@ -1267,8 +1271,9 @@ swarm_rat = Actor(
 )
 
 slime = Actor(
-    char="s",
-    color=(50, 160, 80),
+    char="S",
+    color=(144, 163, 0),
+    #color=(50, 160, 80),
     name="Slime",
     ai_cls=SlimeAI,
     equipment=Equipment(),
@@ -1373,7 +1378,7 @@ monkey = Actor(
     equipment=Equipment(),
     fighter=Fighter(
         hp=8, 
-        base_defense=4, 
+        base_defense=3, 
         strength=0, 
         recover_rate=50,
         recover_amount=1,

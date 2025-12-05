@@ -1,6 +1,6 @@
 1. MECÁNICAS GENERALES
 
-
+- No todos los muros son lo que parecen. A veces descubrir pasadizos secretos inspeccionando (tecla 'x') las paredes o golpeando contra ellas.
 
 2. MECÁNICAS ESPECIALES
 

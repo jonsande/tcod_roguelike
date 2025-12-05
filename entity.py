@@ -280,6 +280,7 @@ class Obstacle(Entity):
         level: Level,
         equipment: Equipment,
         inventory: Inventory,
+        render_order: RenderOrder = RenderOrder.OBSTACLE,
     ):
         super().__init__(
             x=x,
@@ -288,7 +289,7 @@ class Obstacle(Entity):
             color=color,
             name=name,
             blocks_movement=True,
-            render_order=RenderOrder.OBSTACLE,
+            render_order=render_order,
         )
 
         self.ai: Optional[BaseAI] = ai_cls(self)

@@ -169,6 +169,15 @@ class GameMapTown:
     def close_door(self, x: int, y: int) -> None:
         if not self.is_open_door(x, y):
             return
+        floor_entities = self._door_floor_obstructions(x, y)
+        if floor_entities:
+            entity_names = [getattr(entity, "name", None) for entity in floor_entities if getattr(entity, "name", None)]
+            if entity_names:
+                names = ", ".join(entity_names)
+            else:
+                names = "something"
+            verb = "is" if len(floor_entities) == 1 else "are"
+            raise exceptions.Impossible(f"You can't close the door; {names} {verb} lying on the floor.")
         door_entity = self._get_door_entity(x, y)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(False)
@@ -191,6 +200,19 @@ class GameMapTown:
             if name.lower() == "door" and entity.x == x and entity.y == y:
                 return entity
         return None
+
+    def _door_floor_obstructions(self, x: int, y: int):
+        door_entity = self._get_door_entity(x, y)
+        obstructions = []
+        for entity in self.entities:
+            if entity is door_entity:
+                continue
+            if entity.x != x or entity.y != y:
+                continue
+            order = getattr(entity, "render_order", None)
+            if order in (RenderOrder.ITEM, RenderOrder.CORPSE):
+                obstructions.append(entity)
+        return obstructions
 
     def _is_stairs_tile(self, x: int, y: int) -> bool:
         if self.downstairs_location and (x, y) == self.downstairs_location:
@@ -433,6 +455,12 @@ class GameMap:
     def close_door(self, x: int, y: int) -> None:
         if not self.is_open_door(x, y):
             return
+        floor_entities = self._door_floor_obstructions(x, y)
+        if floor_entities:
+            entity_names = [getattr(entity, "name", None) for entity in floor_entities if getattr(entity, "name", None)]
+            names = ", ".join(entity_names) if entity_names else "something"
+            verb = "is" if len(floor_entities) == 1 else "are"
+            raise exceptions.Impossible(f"You can't close the door; {names} {verb} lying on the floor.")
         door_entity = self._get_door_entity(x, y)
         if door_entity and hasattr(door_entity, "fighter"):
             door_entity.fighter.set_open(False)
@@ -455,6 +483,19 @@ class GameMap:
             if name.lower() == "door" and entity.x == x and entity.y == y:
                 return entity
         return None
+
+    def _door_floor_obstructions(self, x: int, y: int):
+        door_entity = self._get_door_entity(x, y)
+        obstructions = []
+        for entity in self.entities:
+            if entity is door_entity:
+                continue
+            if entity.x != x or entity.y != y:
+                continue
+            order = getattr(entity, "render_order", None)
+            if order in (RenderOrder.ITEM, RenderOrder.CORPSE):
+                obstructions.append(entity)
+        return obstructions
 
     def _is_stairs_tile(self, x: int, y: int) -> bool:
         if self.downstairs_location and (x, y) == self.downstairs_location:
