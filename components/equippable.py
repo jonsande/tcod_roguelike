@@ -86,6 +86,45 @@ class Equippable(BaseComponent):
             output = f"1d{self.max_dmg}+{self.dmg_bonus}"
         return output
 
+    def describe_modifiers(self) -> str:
+        """Return a human-readable list of the item's bonuses and penalties."""
+        lines = []
+
+        if self.min_dmg or self.max_dmg or self.dmg_bonus:
+            dmg = f"1d{self.max_dmg}" if self.max_dmg else "0"
+            if self.dmg_bonus:
+                dmg += f"{self.dmg_bonus:+d}"
+            lines.append(f"\nDamage: {dmg}")
+
+        def add_stat(label: str, value: int):
+            if value:
+                lines.append(f" {label}: {value:+d}")
+
+        add_stat("\nDefense", self.defense_bonus)
+        add_stat("\nStealth", self.stealth_bonus)
+        add_stat("\nStealth penalty", self.stealth_penalty)
+        add_stat("\nTo-hit", self.to_hit_bonus)
+        add_stat("\nTo-hit penalty", self.to_hit_penalty)
+        add_stat("\nArmor value", self.armor_value_bonus)
+        add_stat("\nStrength", self.strength_bonus)
+        add_stat("\nField of view", self.fov_bonus)
+        add_stat("\nMax stamina", self.max_stamina_bonus)
+        add_stat("\nPoison resistance", self.poison_resistance_bonus)
+        add_stat("\nRecovery rate", self.recover_rate_bonus)
+        add_stat("\nBase defense", self.base_defense_bonus)
+        add_stat("\nLuck", self.luck_bonus)
+
+        if self.super_memory_bonus:
+            lines.append(" Grants perfect recall")
+        if getattr(self, "cursed", False):
+            lines.append(" Cursed: cannot be removed")
+
+        if not lines:
+            return ""
+        slot = self.equipment_type.name.title() if self.equipment_type else "Unknown"
+        # return f" Slot: {slot}\n" + "\n".join(lines)
+        return f"\n".join(lines)
+
 
 class Dagger(Equippable):
     def __init__(self) -> None:
@@ -253,6 +292,13 @@ class OrcishWarHelm(Equippable):
             fov_bonus=-1,
             to_hit_penalty=1,
             stealth_penalty=2,
+        )
+
+class Cloak(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.CLOAK,
+            stealth_bonus=1,
         )
 
 class Grial(Equippable):

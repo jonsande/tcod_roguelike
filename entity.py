@@ -233,6 +233,20 @@ class Item(Entity):
                     obj.name = self.id_name
                     obj.identified = True
 
+    def _equippable_suffix(self) -> str:
+        """Return a dynamic description of bonuses/penalties applied when equipped."""
+        equippable = getattr(self, "equippable", None)
+        if not equippable:
+            return ""
+        summary = equippable.describe_modifiers()
+        return f"\n\nEffects when equipped:\n{summary}" if summary else ""
+
+    def full_info(self) -> str:
+        """Return base info plus a generated summary of equippable effects."""
+        base = self.info or "NO INFO"
+        suffix = self._equippable_suffix()
+        return f"{base}{suffix}"
+
 class Book(Item):
     """Consumables or notes that simply reveal their info text when read."""
 

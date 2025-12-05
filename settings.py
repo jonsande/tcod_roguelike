@@ -165,6 +165,7 @@ PLAYER_STARTING_EQUIP_LIMITS = {
     "weapon": 2,
     "armor": 2,
     "head_armor": 1,
+    "cloak": 1,
     "artifact": 1,
     "ring": 2,
 }
@@ -372,10 +373,11 @@ CHEST_ITEM_COUNT_BY_FLOOR = [
 OLD_MAN_CHEST = [
     "leather_armor",
     "leather_cap",
+    "cloak",
 ]
 
 # Cantidad (min, max) de ítems aleatorios que se añaden al cofre del Viejo.
-OLD_MAN_RANDOM_ITEM_COUNT = (1, 2)
+OLD_MAN_RANDOM_ITEM_COUNT = (0, 1)
 
 # Objetos candidatos para el botín adicional del cofre del Viejo.
 # Cada entrada sigue el formato ("id_del_objeto", peso_relativo).
@@ -776,6 +778,7 @@ ITEM_SPAWN_RULES = {
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    "cloak": {"min_floor": 2, "weight_progression": [(2, 5)]},
     # HEADARMOR
     "leather_cap": {"min_floor": 2, "weight_progression": [(2, 5)]},
     "scout_hood": {"min_floor": 2, "weight_progression": [(2, 5)]},
@@ -841,7 +844,7 @@ ENEMY_SPAWN_RULES = {
     "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
-    "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
+    "orc": {"min_floor": 3, "weight_progression": [(4, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},

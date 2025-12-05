@@ -26,6 +26,8 @@ class Equipment(BaseComponent):
         ring_right: Optional[Item] = None,
         head_armor: Optional[Item] = None,
         has_head_slot: bool = False,
+        cloak: Optional[Item] = None,
+        has_cloak_slot: bool = False,
     ):
         self.weapon = weapon
         self.armor = armor
@@ -34,6 +36,14 @@ class Equipment(BaseComponent):
         self.ring_right = ring_right
         self.has_head_slot = has_head_slot
         self.head_armor = head_armor if has_head_slot else None
+        self.has_cloak_slot = has_cloak_slot
+        self.cloak = cloak if has_cloak_slot else None
+
+    def __setstate__(self, state):
+        """Ensure new slots exist when loading older save files."""
+        self.__dict__.update(state)
+        self.__dict__.setdefault("has_cloak_slot", False)
+        self.__dict__.setdefault("cloak", None)
 
     def _equipped_equippables(self):
         return [
@@ -42,6 +52,7 @@ class Equipment(BaseComponent):
                 self.weapon,
                 self.armor,
                 self.head_armor,
+                self.cloak,
                 self.artifact,
                 self.ring_left,
                 self.ring_right,
@@ -79,6 +90,9 @@ class Equipment(BaseComponent):
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.defense_bonus
 
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.defense_bonus
+
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.defense_bonus
 
@@ -107,6 +121,9 @@ class Equipment(BaseComponent):
         if self.head_armor is not None and self.head_armor.equippable is not None:
             total += self.head_armor.equippable.dmg_bonus
 
+        if self.cloak is not None and self.cloak.equippable is not None:
+            total += self.cloak.equippable.dmg_bonus
+
         if self.artifact is not None and self.artifact.equippable is not None:
             #total += self.artifact.equippable.weapon_dmg
             total += self.artifact.equippable.dmg_bonus
@@ -128,6 +145,9 @@ class Equipment(BaseComponent):
 
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.dmg_bonus
+
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.dmg_bonus
 
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.dmg_bonus
@@ -152,6 +172,9 @@ class Equipment(BaseComponent):
 
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.stealth_bonus
+
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.stealth_bonus
 
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.stealth_bonus
@@ -179,6 +202,9 @@ class Equipment(BaseComponent):
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.armor_value_bonus
 
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.armor_value_bonus
+
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.armor_value_bonus
 
@@ -202,6 +228,9 @@ class Equipment(BaseComponent):
 
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.to_hit_bonus
+
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.to_hit_bonus
 
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.to_hit_bonus
@@ -230,6 +259,9 @@ class Equipment(BaseComponent):
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.to_hit_penalty
 
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.to_hit_penalty
+
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.to_hit_penalty
 
@@ -250,6 +282,9 @@ class Equipment(BaseComponent):
 
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.armor_value_bonus
+
+        if self.cloak is not None and self.cloak.equippable is not None:
+            bonus += self.cloak.equippable.armor_value_bonus
 
         if self.artifact is not None and self.artifact.equippable is not None:
             bonus += self.artifact.equippable.armor_value_bonus
@@ -299,6 +334,7 @@ class Equipment(BaseComponent):
             self.weapon == item
             or self.armor == item
             or self.head_armor == item
+            or self.cloak == item
             or self.artifact == item
             or self.ring_left == item
             or self.ring_right == item
@@ -355,6 +391,19 @@ class Equipment(BaseComponent):
                     )
                 return
             slot = "head_armor"
+            identify_on_equip = False
+        elif (
+            equippable_item.equippable
+            and equippable_item.equippable.equipment_type == EquipmentType.CLOAK
+        ):
+            if not self.has_cloak_slot:
+                if add_message:
+                    self.parent.gamemap.engine.message_log.add_message(
+                        "You cannot wear cloaks.",
+                        color.impossible,
+                    )
+                return
+            slot = "cloak"
             identify_on_equip = False
         else:
             if (

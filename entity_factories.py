@@ -623,7 +623,7 @@ old_man = Actor(
     # name="El viejo",
     name="The old man",
     ai_cls=OldManAI,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=40,
         base_defense=0,
@@ -658,7 +658,7 @@ dagger = Item(
     equippable=equippable.Dagger(),
     throwable=True,
     id_name="Dagger",
-    info="A sharp, double-edged blade forged for swift. Ideal for close-quarters combat and silent strikes. Can be thrown at enemies for a quick attack.\nDamage bonus: 3.\nStealth bonus: 1.\nTo-hit bonus: 1.\nWeight: 1 lb.\nRarity: Common."
+    info="A sharp, double-edged blade forged for swift. Ideal for close-quarters combat and silent strikes. Can be thrown at enemies for a quick attack."
 )
 loot_tables.register_loot_item("dagger", dagger)
 
@@ -667,7 +667,8 @@ dagger_plus = Item(
     color=(0, 191, 255), 
     name="Dagger",
     id_name="Dagger (good)",
-    equippable=equippable.DaggerPlus()
+    equippable=equippable.DaggerPlus(),
+    info="A finely balanced dagger with a keener edge and guard."
 )
 loot_tables.register_loot_item("dagger_plus", dagger_plus)
 
@@ -678,7 +679,8 @@ short_sword = Item(
     color=(0, 191, 255), 
     name="Short Sword",
     id_name="Short Sword",
-    equippable=equippable.ShortSword()
+    equippable=equippable.ShortSword(),
+    info="A compact blade favored by scouts and skirmishers."
 )
 loot_tables.register_loot_item("short_sword", short_sword)
 
@@ -765,6 +767,8 @@ def _setup_adventurer_equipment(entity: Actor) -> None:
     _equip_first_item_of_type(entity, EquipmentType.ARMOR)
     if getattr(entity.equipment, "has_head_slot", False):
         _equip_first_item_of_type(entity, EquipmentType.HEADARMOR)
+    if getattr(entity.equipment, "has_cloak_slot", False):
+        _equip_first_item_of_type(entity, EquipmentType.CLOAK)
 
 def _setup_creature_equipment(entity: Actor) -> None:
     #import ipdb;ipdb.set_trace()
@@ -777,13 +781,16 @@ def _setup_creature_equipment(entity: Actor) -> None:
     _equip_first_item_of_type(entity, EquipmentType.ARMOR)
     if getattr(entity.equipment, "has_head_slot", False):
         _equip_first_item_of_type(entity, EquipmentType.HEADARMOR)
+    if getattr(entity.equipment, "has_cloak_slot", False):
+        _equip_first_item_of_type(entity, EquipmentType.CLOAK)
 
 short_sword_plus = Item(
     char="/", 
     color=(0, 191, 155), 
     name="Short Sword",
     id_name="Short Sword (good)",
-    equippable=equippable.ShortSwordPlus()
+    equippable=equippable.ShortSwordPlus(),
+    info="A short sword with superior temper and bite."
 )
 loot_tables.register_loot_item("short_sword_plus", short_sword_plus)
 
@@ -792,7 +799,8 @@ long_sword = Item(
     color=(0, 191, 255), 
     name="Long Sword",
     id_name="Long Sword",
-    equippable=equippable.LongSword()
+    equippable=equippable.LongSword(),
+    info="A versatile blade with reach enough to keep foes at bay."
 )
 
 long_sword_plus = Item(
@@ -800,7 +808,8 @@ long_sword_plus = Item(
     color=(0, 191, 155), 
     name="Long Sword",
     id_name="Long Sword (good)",
-    equippable=equippable.LongSwordPlus()
+    equippable=equippable.LongSwordPlus(),
+    info="A masterwork long sword with a razor-straight edge."
 )
 
 spear = Item(
@@ -809,7 +818,8 @@ spear = Item(
     name="Spear",
     id_name="Spear",
     equippable=equippable.Spear(),
-    throwable=True
+    throwable=True,
+    info="A sturdy haft tipped with iron; easy to thrust or throw."
 )
 loot_tables.register_loot_item("spear", spear)
 
@@ -819,7 +829,8 @@ spear_plus = Item(
     name="Spear",
     id_name="Spear (good)",
     equippable=equippable.SpearPlus(),
-    throwable=True
+    throwable=True,
+    info="A well-balanced spear with a hardened point."
 )
 loot_tables.register_loot_item("spear_plus", spear_plus)
 
@@ -829,7 +840,7 @@ leather_armor = Item(
     name="Leather armor",
     id_name="Leather armor",
     equippable=equippable.LeatherArmor(),
-    info=f"Stealth penalty: 1"
+    info="Layered hide that cushions blows without total freedom of movement.",
 )
 loot_tables.register_loot_item("leather_armor", leather_armor)
 
@@ -838,7 +849,8 @@ chain_mail = Item(
     color=(139, 69, 19), 
     name="Chain Mail",
     id_name="Chain mail",
-    equippable=equippable.ChainMail()
+    equippable=equippable.ChainMail(),
+    info="Interlocking rings of steel that weigh heavy but stop blades.",
 )
 loot_tables.register_loot_item("chain_mail", chain_mail)
 
@@ -882,6 +894,16 @@ orcish_war_helm = Item(
 )
 loot_tables.register_loot_item("orcish_war_helm", orcish_war_helm)
 
+cloak = Item(
+    char="}",
+    color=(120, 80, 40),
+    name="Cloak",
+    id_name="Cloak",
+    equippable=equippable.Cloak(),
+    info="A sturdy travel cloak that softens footfalls.",
+)
+loot_tables.register_loot_item("cloak", cloak)
+
 # RINGS
 
 plain_ring = Item(
@@ -890,6 +912,7 @@ plain_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Plain ring",
     equippable=equippable.PlainRing(),
+    info="An unadorned band; perhaps it will resonate with subtle power.",
 )
 loot_tables.register_loot_item("plain_ring", plain_ring)
 
@@ -1057,7 +1080,8 @@ grial = Item(
     color=(139, 69, 19), 
     name="Grial",
     id_name="The Grial",
-    equippable=equippable.Grial()
+    equippable=equippable.Grial(),
+    info="A sacred chalice that shields its bearer with unseen grace.",
 )
 
 goblin_tooth_amulet = Item(
@@ -1065,7 +1089,8 @@ goblin_tooth_amulet = Item(
     color=(139, 69, 19), 
     name="Tooth necklace",
     id_name="Xzy, the goblin tooth amulet",
-    equippable=equippable.GoblinAmulet()
+    equippable=equippable.GoblinAmulet(),
+    info="A necklace strung with goblin teeth—fetid, eerie, and oddly potent.",
 )
 
 # NOTES, BOOKS, NON MAGIC SCROLLS
@@ -1189,7 +1214,7 @@ player = Actor(
     color=(255, 255, 255),
     name="Player",
     ai_cls=HostileEnemy,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=player_hp,
         base_defense=1,
@@ -1222,7 +1247,7 @@ adventurer = Actor(
     name="Adventurer",
     ai_cls=AdventurerAI,
     #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=3,
@@ -1385,7 +1410,7 @@ goblin = Actor(
     name="Goblin",
     ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
     #ai_cls=HostileEnemyV2,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,
         base_defense=3,
@@ -1419,7 +1444,7 @@ monkey = Actor(
     name="Monkey",
     ai_cls=random.choice([SleepingEnemy, Scout]),
     #ai_cls=Scout,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8, 
         base_defense=3, 
@@ -1445,7 +1470,7 @@ orc = Actor(
     color=(63, 127, 63),
     name="Orc",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=12, 
         base_defense=4, 
@@ -1473,7 +1498,7 @@ true_orc = Actor(
     color=(63, 220, 63),
     name="True Orc",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=4, 
@@ -1500,7 +1525,7 @@ skeleton = Actor(
     color=(180, 180, 180),
     name="Skeleton",
     ai_cls=HostileEnemy,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=16,
         base_defense=4,
@@ -1554,7 +1579,7 @@ sauron = Actor(
     color=(233,176,96),
     name="Sauron",
     ai_cls=HostileEnemy,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=3, 
@@ -1603,7 +1628,7 @@ bandit = Actor(
     color=(66,13,77),
     name="bandit",
     ai_cls=HostileEnemyPlus,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=5, 
@@ -1627,7 +1652,7 @@ cultist = Actor(
     color=(160, 0, 160),
     name="Cultist",
     ai_cls=HostileEnemyPlus,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=18,
         base_defense=3,
@@ -1654,7 +1679,7 @@ sentinel = Actor(
     color=(180,80,110),
     name="Sentinel",
     ai_cls=SentinelEnemy,
-    equipment=Equipment(has_head_slot=True),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=24, 
         base_defense=1, 

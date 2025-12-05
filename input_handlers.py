@@ -144,6 +144,24 @@ class PopupMessage(BaseEventHandler):
         self.parent = parent_handler
         self.text = text
 
+    def _wrap_lines(self, console: tcod.Console) -> list[str]:
+        """Wrap text preserving explicit newlines and returning individual lines."""
+        width = console.width - 10
+        wrapped_lines: list[str] = []
+        for paragraph in self.text.splitlines():
+            if not paragraph:
+                wrapped_lines.append("")
+                continue
+            wrapped = textwrap.wrap(
+                paragraph,
+                width=width,
+                replace_whitespace=False,
+                drop_whitespace=False,
+                break_long_words=False,
+            )
+            wrapped_lines.extend(wrapped or [""])
+        return wrapped_lines
+
     def on_render(self, console: tcod.Console) -> None:
         """Render the parent and dim the result, then print the message on top."""
         self.parent.on_render(console)
@@ -151,17 +169,51 @@ class PopupMessage(BaseEventHandler):
         console.rgb["fg"] //= 60 # Nivel de opacidad/oscurecimiento de los caracteres del fondo. Con 255 el texto se vuelve blanco. Con 0, negro. Default: 8.
         console.rgb["bg"] //= 8 # Nivel de opacidad/oscurecimiento del fondo de los caracteres del fondo. 255 es blanco. 0, negro. Default: 8.
 
-        # Wrap the text to fit within the console width, leaving some margin
-        wrapped_text = textwrap.fill(self.text, width=console.width - 10)
+        lines = self._wrap_lines(console)
+        center_x = console.width // 2
+        start_y = console.height // 2 - len(lines) // 2
 
-        console.print(
-            console.width // 2,
-            console.height // 2,
-            wrapped_text,
-            fg=color.white, # Color de los caracteres de fondo (su alfa se configura arriba)
-            bg=color.black, # Color del fondo de los caracteres del fondo (su alfa se configura arriba)
-            alignment=libtcodpy.CENTER,
-        )
+        for i, line in enumerate(lines):
+            y = start_y + i
+            stripped = line.strip()
+            if ":" in stripped and stripped:
+                label, value = stripped.split(":", 1)
+                label = label.strip()
+                value_text = value.strip()
+                x = center_x - len(stripped) // 2
+                console.print(
+                    x,
+                    y,
+                    label,
+                    fg=color.white,
+                    bg=color.black,
+                    alignment=libtcodpy.LEFT,
+                )
+                console.print(
+                    x + len(label),
+                    y,
+                    ": ",
+                    fg=color.white,
+                    bg=color.black,
+                    alignment=libtcodpy.LEFT,
+                )
+                console.print(
+                    x + len(label) + 2,
+                    y,
+                    value_text,
+                    fg=color.orange,
+                    bg=color.black,
+                    alignment=libtcodpy.LEFT,
+                )
+                continue
+            console.print(
+                center_x,
+                y,
+                line,
+                fg=color.white, # Color de los caracteres de fondo (su alfa se configura arriba)
+                bg=color.black, # Color del fondo de los caracteres del fondo (su alfa se configura arriba)
+                alignment=libtcodpy.CENTER,
+            )
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         """Any key returns to the parent handler."""
@@ -174,7 +226,7 @@ class ConfirmQuitHandler(PopupMessage):
     def __init__(self, parent_handler: BaseEventHandler):
         super().__init__(
             parent_handler,
-            _("Save game and exit? Press 'y' to confirm or ESC to keep playing."),
+            _("Save game and exit? \n\nPress 'y' to confirm or ESC to keep playing."),
         )
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
@@ -1047,7 +1099,7 @@ class InventoryExamineHandler(InventoryEventHandler):
     TITLE = "Select an item to examine"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
-        return PopupMessage(self, f"{item.info}")
+        return PopupMessage(self, f"{item.full_info()}")
         
 
 class InventoryDropHandler(InventoryEventHandler):
@@ -1555,6 +1607,7 @@ class HistoryViewer(EventHandler):
             log_console.width - 2,
             log_console.height - 2,
             self.engine.message_log.messages[: self.cursor + 1],
+            name_colors=self.engine._get_message_name_colors(),
         )
         log_console.blit(console, 3, 3)
 

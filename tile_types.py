@@ -50,7 +50,7 @@ SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 # https://www.reddit.com/r/roguelikedev/comments/141w1a0/following_the_tcod_tutorial_2020_doors/
 
 closed_door = new_tile(
-    walkable=True, # CUIDADO! Si se pone True, no se pueden abrir las puertas. No sé por qué.
+    walkable=True, # Se ha rediseñado la lógica para que walkable pueda ser True. De otro modo el pathfinding da muchos problemas.
     transparent=False,
     dark=(ord("+"), (15, 15, 15), (0, 0, 0)),
     light=(ord("+"), (93, 59, 0), (0, 0, 0)),

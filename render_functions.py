@@ -115,6 +115,8 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
                     equipped_items.append(entity.equipment.weapon.name)
                 if entity.equipment.armor:
                     equipped_items.append(entity.equipment.armor.name)
+                if entity.equipment.cloak:
+                    equipped_items.append(entity.equipment.cloak.name)
                 if entity.equipment.artifact:
                     equipped_items.append(entity.equipment.artifact.name)
                 if equipped_items:

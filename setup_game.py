@@ -44,6 +44,7 @@ _EQUIPMENT_SLOT_NAMES = {
     EquipmentType.WEAPON: "weapon",
     EquipmentType.ARMOR: "armor",
     EquipmentType.HEADARMOR: "head_armor",
+    EquipmentType.CLOAK: "cloak",
     EquipmentType.ARTIFACT: "artifact",
     EquipmentType.RING: "ring",
 }

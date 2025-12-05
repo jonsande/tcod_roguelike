@@ -8,7 +8,7 @@ import time
 
 import lzma
 import pickle
-from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Tuple
 
 import tcod
 import tcod.event
@@ -726,6 +726,31 @@ class Engine:
         formatted_message = message_down.format(name=getattr(actor, "name", "The creature"))
         self.message_log.add_message(formatted_message, end_color)
 
+    def _get_message_name_colors(self) -> Dict[str, Tuple[int, int, int]]:
+        """Collect per-name colors for the message log."""
+        name_colors: Dict[str, Tuple[int, int, int]] = {}
+
+        # Para que el nombre del jugador se imprima siempre de un color
+        # determinado:
+        # player_name = getattr(self.player, "name", None)
+        # if isinstance(player_name, str):
+        #     name_colors[player_name] = color.blue
+
+        # Highlight any other visible actors in orange.
+        game_map = getattr(self, "game_map", None)
+        if game_map:
+            for entity in getattr(game_map, "entities", []):
+                if not isinstance(entity, Actor):
+                    continue
+                if entity is self.player:
+                    continue
+                entity_name = getattr(entity, "name", None)
+                if not isinstance(entity_name, str):
+                    continue
+                name_colors.setdefault(entity_name, color.orange)
+
+        return name_colors
+
 
     #def simple_spawn():
     #    pass
@@ -749,7 +774,14 @@ class Engine:
         )
 
         # Log de mensajes que se imprimen en pantalla
-        self.message_log.render(console=console, x=1, y=39, width=60, height=4)
+        self.message_log.render(
+            console=console,
+            x=1,
+            y=39,
+            width=60,
+            height=4,
+            name_colors=self._get_message_name_colors(),
+        )
 
         # Indicador del nivel de la mazmorra
         if self.game_world.current_floor == 1:
