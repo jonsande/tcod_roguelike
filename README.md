@@ -1,6 +1,8 @@
 
 # The Seeker - Roguelike
 
+![til](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/teaser.gifg)
+
 ![alt text](https://github.com/jonsande/tcod_roguelike/blob/main/data/graphics/YetAnotherRoguelike_gameplay.png?raw=true)
 
 A traditional roguelike currently in development.
