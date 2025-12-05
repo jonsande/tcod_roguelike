@@ -117,6 +117,7 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
+- [! Cascos! Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
 - [ ] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
 - [ ] Bastones mágicos!
 - [ ] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
@@ -188,6 +189,7 @@ La fixed dungeon de mitad de descenso se escogerá entre una batería de posible
     - [ ] Capilla de los centinelas (los centinelas guardando tres puertas, y solo detrás de una de ellas están las escaleras. Estaría bien que hubiera alguna pista en las plantas anteriores indicando cuál es la puerta. O que algún adventurer le contara un rumor al respecto).
     - [ ] Biblioteca. Inspirada en la librería de Indiana Jones: las escaleras de bajada estarán escondidas. En la librería habrá un juego de pistas que te dira cuál es la casilla correcta en la que se encuentran las escaleras de bajada. Habrá que excavar en esa casilla para poder seguir bajando. Para ello hará falta tener un pico o una pala.
     - [ ] Catacumbas (bajo la biblioteca).
+    - [ ] Mazmorras (cárceles). Una planta con celdas. En algunas bichos dentro. En alguna otra un personaje único.
     - [ ] Otros.
 
 COMBATE

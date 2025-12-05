@@ -164,6 +164,7 @@ PLAYER_STARTING_INVENTORY = [
 PLAYER_STARTING_EQUIP_LIMITS = {
     "weapon": 2,
     "armor": 2,
+    "head_armor": 1,
     "artifact": 1,
     "ring": 2,
 }
@@ -297,6 +298,10 @@ ALL_ITEMS = [
     ("prodigious_memory_scroll", 1),
     ("chain_mail", 1),
     ("leather_armor", 1),
+    ("leather_cap", 1),
+    ("scout_hood", 1),
+    ("iron_helmet", 1),
+    ("orcish_war_helm", 1),
     ("dagger", 1),
     ("short_sword", 1),
     ("short_sword_plus", 1),
@@ -366,6 +371,7 @@ CHEST_ITEM_COUNT_BY_FLOOR = [
 
 OLD_MAN_CHEST = [
     "leather_armor",
+    "leather_cap",
 ]
 
 # Cantidad (min, max) de ítems aleatorios que se añaden al cofre del Viejo.
@@ -373,13 +379,14 @@ OLD_MAN_RANDOM_ITEM_COUNT = (1, 2)
 
 # Objetos candidatos para el botín adicional del cofre del Viejo.
 # Cada entrada sigue el formato ("id_del_objeto", peso_relativo).
-OLD_MAN_RANDOM_ITEM_POOL = [
-    ("banana", 4),
-    ("triple_ration", 3),
-    ("strength_potion", 1),
-    ("life_potion", 1),
-    ("identify_scroll", 1),
-]
+# OLD_MAN_RANDOM_ITEM_POOL = [
+#     ("banana", 4),
+#     ("triple_ration", 3),
+#     ("strength_potion", 1),
+#     ("life_potion", 1),
+#     ("identify_scroll", 1),
+# ]
+OLD_MAN_RANDOM_ITEM_POOL = ALL_ITEMS
 
 # Tablas de botín por nivel mínimo: lista de (id_objeto, peso relativo).
 # TODO: averiguar qué pasa en los niveles que no tengan aquí una configuración asignada.
@@ -444,7 +451,7 @@ CHEST_LOOT_TABLES = {
         ("increase_max_stamina", 2), 
         ("life_potion", 2), 
         ("infra_vision_potion", 2), 
-        ("antidote", 1), 
+        ("antidote", 1),
         ("health_potion", 1), 
         ("poison_potion", 1), 
         ("power_potion", 1), 
@@ -465,6 +472,10 @@ CHEST_LOOT_TABLES = {
         ("teleport_scroll", 1),
         ("prodigious_memory_scroll", 1),
         ("remove_curse_scroll", 1),
+        ("leather_cap", 1),
+        ("scout_hood", 1),
+        ("iron_helmet", 1),
+        ("orcish_war_helm", 1),
     ],
 }
 
@@ -765,6 +776,11 @@ ITEM_SPAWN_RULES = {
     # ARMOR
     "chain_mail": {"min_floor": 5, "weight_progression": [(5, 5)]},
     "leather_armor": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    # HEADARMOR
+    "leather_cap": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    "scout_hood": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    "iron_helmet": {"min_floor": 2, "weight_progression": [(2, 5)]},
+    "orcish_war_helm": {"min_floor": 3, "weight_progression": [(2, 5)]},
     # RINGS
     "accuracy_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "plain_ring": {"min_floor": 4, "max_instances": 8, "weight_progression": [(4, 2), (6, 5)]},
@@ -822,10 +838,9 @@ ENEMY_SPAWN_RULES = {
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
-    "cave_bat": {"min_floor": 2, "weight_progression": [(1, 25), (3, 18), (5, 10), (6, 3)]},
-    "goblin": {"min_floor": 2, "weight_progression": [(1, 10), (2, 40), (4, 50), (6, 20), (10, 15)]},
-    "monkey": {"min_floor": 2, "weight_progression": [(1, 8), (2, 10), (4, 0)]},
-    "slime": {"min_floor": 2, "weight_progression": [(2, 100), (3, 15), (5, 10)]},
+    "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
+    "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
+    "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 3, "weight_progression": [(3, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},

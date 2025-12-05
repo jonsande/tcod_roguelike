@@ -602,11 +602,16 @@ class BlindnessConsumable(Consumable):
             "{name} gropes blindly!",
             color.status_effect_applied,
         )
+        end_message = (
+            "Shapes slowly emerge again around you."
+            if consumer is self.engine.player
+            else "Shapes slowly emerge again around {name}."
+        )
         consumer.fighter.gain_temporal_bonus(
             duration,
             self.amount,
             "fov",
-            "Shapes slowly emerge again around you.",
+            end_message,
         )
         self.consume()
         self.parent.identify()
@@ -627,11 +632,16 @@ class TemporalFOVConsumable(Consumable):
             "{name} scans the surroundings with sharp senses!",
             color.status_effect_applied,
         )
+        end_message = (
+            "Your sight returns to normal."
+            if consumer is self.engine.player
+            else "There's something different about the {name}'s gaze."
+        )
         consumer.fighter.gain_temporal_bonus(
             duration,
             self.amount,
             "fov",
-            "Your sight returns to normal.",
+            end_message,
         )
         self.consume()
         self.parent.identify()

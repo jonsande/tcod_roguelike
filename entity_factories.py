@@ -623,7 +623,7 @@ old_man = Actor(
     # name="El viejo",
     name="The old man",
     ai_cls=OldManAI,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=40,
         base_defense=0,
@@ -763,6 +763,8 @@ def _setup_adventurer_equipment(entity: Actor) -> None:
         return
     _equip_first_item_of_type(entity, EquipmentType.WEAPON)
     _equip_first_item_of_type(entity, EquipmentType.ARMOR)
+    if getattr(entity.equipment, "has_head_slot", False):
+        _equip_first_item_of_type(entity, EquipmentType.HEADARMOR)
 
 def _setup_creature_equipment(entity: Actor) -> None:
     #import ipdb;ipdb.set_trace()
@@ -773,6 +775,8 @@ def _setup_creature_equipment(entity: Actor) -> None:
         return
     _equip_first_item_of_type(entity, EquipmentType.WEAPON)
     _equip_first_item_of_type(entity, EquipmentType.ARMOR)
+    if getattr(entity.equipment, "has_head_slot", False):
+        _equip_first_item_of_type(entity, EquipmentType.HEADARMOR)
 
 short_sword_plus = Item(
     char="/", 
@@ -837,6 +841,46 @@ chain_mail = Item(
     equippable=equippable.ChainMail()
 )
 loot_tables.register_loot_item("chain_mail", chain_mail)
+
+leather_cap = Item(
+    char="]",
+    color=(160, 82, 45),
+    name="Leather cap",
+    id_name="Leather cap",
+    equippable=equippable.LeatherCap(),
+    info="A supple cap that shields the skull without getting in the way.",
+)
+loot_tables.register_loot_item("leather_cap", leather_cap)
+
+scout_hood = Item(
+    char="]",
+    color=(34, 139, 34),
+    name="Scout hood",
+    id_name="Scout hood",
+    equippable=equippable.ScoutHood(),
+    info="A light hood favored by quick scouts. Improves aim and stealth.",
+)
+loot_tables.register_loot_item("scout_hood", scout_hood)
+
+iron_helmet = Item(
+    char="]",
+    color=(190, 190, 190),
+    name="Iron helmet",
+    id_name="Iron helmet",
+    equippable=equippable.IronHelmet(),
+    info="Forged iron helm that protects the head at the expense of comfort.",
+)
+loot_tables.register_loot_item("iron_helmet", iron_helmet)
+
+orcish_war_helm = Item(
+    char="]",
+    color=(139, 0, 0),
+    name="Orcish war helm",
+    id_name="Orcish war helm",
+    equippable=equippable.OrcishWarHelm(),
+    info="Spiked helm used by warbands. Heavy but empowering.",
+)
+loot_tables.register_loot_item("orcish_war_helm", orcish_war_helm)
 
 # RINGS
 
@@ -1145,7 +1189,7 @@ player = Actor(
     color=(255, 255, 255),
     name="Player",
     ai_cls=HostileEnemy,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=player_hp,
         base_defense=1,
@@ -1178,7 +1222,7 @@ adventurer = Actor(
     name="Adventurer",
     ai_cls=AdventurerAI,
     #ai_cls=Neutral, # Con esta IA van directos a las escaleras de bajada.
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=3,
@@ -1341,7 +1385,7 @@ goblin = Actor(
     name="Goblin",
     ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
     #ai_cls=HostileEnemyV2,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=8,
         base_defense=3,
@@ -1375,7 +1419,7 @@ monkey = Actor(
     name="Monkey",
     ai_cls=random.choice([SleepingEnemy, Scout]),
     #ai_cls=Scout,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=8, 
         base_defense=3, 
@@ -1401,7 +1445,7 @@ orc = Actor(
     color=(63, 127, 63),
     name="Orc",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=12, 
         base_defense=4, 
@@ -1429,7 +1473,7 @@ true_orc = Actor(
     color=(63, 220, 63),
     name="True Orc",
     ai_cls=random.choice([SleepingEnemy, HostileEnemy, Scout]),
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=4, 
@@ -1456,7 +1500,7 @@ skeleton = Actor(
     color=(180, 180, 180),
     name="Skeleton",
     ai_cls=HostileEnemy,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=16,
         base_defense=4,
@@ -1510,7 +1554,7 @@ sauron = Actor(
     color=(233,176,96),
     name="Sauron",
     ai_cls=HostileEnemy,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=3, 
@@ -1559,7 +1603,7 @@ bandit = Actor(
     color=(66,13,77),
     name="bandit",
     ai_cls=HostileEnemyPlus,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=32, 
         base_defense=5, 
@@ -1583,7 +1627,7 @@ cultist = Actor(
     color=(160, 0, 160),
     name="Cultist",
     ai_cls=HostileEnemyPlus,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=18,
         base_defense=3,
@@ -1610,7 +1654,7 @@ sentinel = Actor(
     color=(180,80,110),
     name="Sentinel",
     ai_cls=SentinelEnemy,
-    equipment=Equipment(),
+    equipment=Equipment(has_head_slot=True),
     fighter=Fighter(
         hp=24, 
         base_defense=1, 

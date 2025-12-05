@@ -210,6 +210,51 @@ class ChainMail(Equippable):
             to_hit_penalty=2,
             )
 
+
+class LeatherCap(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.HEADARMOR,
+            armor_value_bonus=1,
+            defense_bonus=0,
+            stealth_penalty=1,
+        )
+
+
+class ScoutHood(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.HEADARMOR,
+            stealth_bonus=1,
+            defense_bonus=0,
+            to_hit_bonus=1,
+        )
+
+
+class IronHelmet(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.HEADARMOR,
+            armor_value_bonus=2,
+            defense_bonus=0,
+            fov_bonus=-1,
+            to_hit_penalty=0,
+            stealth_penalty=2,
+        )
+
+
+class OrcishWarHelm(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.HEADARMOR,
+            armor_value_bonus=3,
+            defense_bonus=0,
+            strength_bonus=0,
+            fov_bonus=-1,
+            to_hit_penalty=1,
+            stealth_penalty=2,
+        )
+
 class Grial(Equippable):
     def __init__(self) -> None:
         super().__init__(

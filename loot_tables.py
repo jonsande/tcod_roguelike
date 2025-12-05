@@ -34,18 +34,19 @@ MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
     "Adventurer": (
         "short_sword",
         "leather_armor",
+        "scout_hood",
         "stamina_potion",
     ),
     "Giant rat": ("meat",),
-    "Monkey": ("banana", "dagger", "strength_potion", "increase_max_stamina", "life_potion", "infra_vision_potion", "antidote", "health_potion", "poison_potion", "power_potion", "stamina_potion", "temporal_infra_vision_potion", "blindness_potion","confusion_potion", "paralysis_potion", "petrification_potion", "precission_potion"),
-    "Goblin": ("meat", "dagger"),
-    "Orc": ("short_sword", "power_potion", "leather_armor", "poison_potion"),
-    "True Orc": ("long_sword", "spear", "short_sword", "leather_armor", "chain_mail"),
-    "Bandit": ("short_sword", "precission_potion", "stamina_potion", "poison_potion", "dagger"),
+    "Monkey": ("banana", "dagger", "scout_hood", "strength_potion", "increase_max_stamina", "life_potion", "infra_vision_potion", "antidote", "health_potion", "poison_potion", "power_potion", "stamina_potion", "temporal_infra_vision_potion", "blindness_potion","confusion_potion", "paralysis_potion", "petrification_potion", "precission_potion"),
+    "Goblin": ("meat", "dagger", "leather_cap"),
+    "Orc": ("short_sword", "power_potion", "leather_armor", "iron_helmet", "poison_potion"),
+    "True Orc": ("long_sword", "spear", "short_sword", "leather_armor", "chain_mail", "orcish_war_helm"),
+    "Bandit": ("short_sword", "scout_hood", "precission_potion", "stamina_potion", "poison_potion", "dagger"),
     "Sentinel": ("long_sword"),
     "Cave bat": (),
-    "Skeleton": ("short_sword", "spear", "health_potion"),
-    "Cultist": ("dagger", "poison_potion", "confusion_scroll"),
+    "Skeleton": ("short_sword", "spear", "health_potion", "iron_helmet"),
+    "Cultist": ("dagger", "poison_potion", "confusion_scroll", "leather_cap"),
 }
 
 # Configurable tables for special drops outside the creature inventory.

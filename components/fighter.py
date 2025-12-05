@@ -881,7 +881,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         if attacker:
             equipment = getattr(attacker, "equipment", None)
             if equipment:
-                for slot in ("weapon", "armor", "artifact", "ring_left", "ring_right"):
+                for slot in ("weapon", "armor", "head_armor", "artifact", "ring_left", "ring_right"):
                     if getattr(equipment, slot, None) is attack_item:
                         setattr(equipment, slot, None)
             attacker_inventory = getattr(attacker, "inventory", None)
