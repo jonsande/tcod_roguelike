@@ -15,7 +15,6 @@ import random
 from settings import DEBUG_MODE
 from audio import (
     play_player_footstep,
-    play_door_open_sound,
     play_door_close_sound,
     play_item_pickup_sound,
     play_stair_descend_sound,
@@ -649,6 +648,9 @@ class ThrowItemAction(Action):
         return getattr(item, "char", None) == "!" and item.consumable is not None
 
     def _handle_potion_throw(self, target: Optional[Actor], dest_x: int, dest_y: int) -> None:
+        if self._slime_absorb_potion(target):
+            return
+
         self.engine.message_log.add_message(
             f"You throw the {self.item.name}. The vial shatters on impact!",
             color.orange,
@@ -657,6 +659,42 @@ class ThrowItemAction(Action):
             self._apply_potion_effect(target)
         else:
             self.item.consumable.consume()
+
+    def _slime_absorb_potion(self, target: Optional[Actor]) -> bool:
+        if not target:
+            return False
+        fighter = getattr(target, "fighter", None)
+        if not fighter or not getattr(fighter, "is_slime", False):
+            return False
+        inventory = getattr(target, "inventory", None)
+        if not inventory or len(inventory.items) >= inventory.capacity:
+            return False
+
+        previous_container = getattr(self.item, "parent", None)
+        if hasattr(previous_container, "items") and self.item in previous_container.items:
+            previous_container.items.remove(self.item)
+        else:
+            try:
+                gamemap = self.item.gamemap
+            except Exception:
+                gamemap = None
+            if gamemap:
+                gamemap.entities.discard(self.item)
+
+        self.item.parent = inventory
+        inventory.items.append(self.item)
+
+        message = None
+        message_color = color.orange
+        if self.entity is self.engine.player:
+            message = f"Your {self.item.name} is absorbed by the slime!"
+        elif self.engine.game_map.visible[target.x, target.y]:
+            message = f"The {target.name} absorbs the {self.item.name}!"
+            message_color = color.status_effect_applied
+        if message:
+            self.engine.message_log.add_message(message, message_color)
+
+        return True
 
     def _apply_potion_effect(self, target: Actor) -> None:
         consumable = self.item.consumable
@@ -1279,7 +1317,6 @@ class MovementAction(ActionWithDirection):
         if door_opened:
             if self.entity is self.engine.player:
                 self.engine.message_log.add_message("You open the door.", color.white)
-                play_door_open_sound()
         else:
             # Si en MELEE
             if self.entity.fighter.is_in_melee:
@@ -1389,7 +1426,6 @@ class OpenDoorAction(ActionWithDirection):
         fighter.set_open(True)
         if self.entity is self.engine.player:
             self.engine.message_log.add_message("You open the door.", color.white)
-            play_door_open_sound()
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
 
 

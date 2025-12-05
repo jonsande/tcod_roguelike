@@ -9,7 +9,7 @@ from render_order import RenderOrder
 import tile_types
 import entity_factories
 import settings
-from audio import ambient_sound
+from audio import ambient_sound, play_door_open_sound
 import exceptions
 import color
 import copy
@@ -26,6 +26,29 @@ OPEN_DOOR_CHAR = tile_types.open_door["dark"]["ch"]
 
 
 KeyLocation = Union[Tuple[int, int], str]
+
+
+def _maybe_play_door_open_sound(
+    game_map: Union["GameMapTown", "GameMap"],
+    actor: Optional[Actor],
+    x: int,
+    y: int,
+) -> None:
+    """Play the door open sound when the tile is visible or the player opened it."""
+    try:
+        player = game_map.engine.player
+    except Exception:
+        player = None
+    if player is not None and actor is player:
+        play_door_open_sound()
+        return
+    visible = getattr(game_map, "visible", None)
+    if visible is None:
+        return
+    if not game_map.in_bounds(x, y):
+        return
+    if bool(visible[x, y]):
+        play_door_open_sound()
 
 
 class GameMapTown:
@@ -135,6 +158,7 @@ class GameMapTown:
                 pass
         else:
             self.tiles[x, y] = tile_types.open_door
+        _maybe_play_door_open_sound(self, actor, x, y)
         return True
 
     def try_open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:
@@ -398,6 +422,7 @@ class GameMap:
                 pass
         else:
             self.tiles[x, y] = tile_types.open_door
+        _maybe_play_door_open_sound(self, actor, x, y)
         return True
 
     def try_open_door(self, x: int, y: int, actor: Optional[Actor] = None) -> bool:

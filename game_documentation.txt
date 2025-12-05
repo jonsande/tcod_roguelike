@@ -1,4 +1,13 @@
-1. EL COMBATE
+1. MECÁNICAS GENERALES
+
+
+
+2. MECÁNICAS ESPECIALES
+
+- Es posible escuchar a través de las puertas. Espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
+- Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
+
+3. EL COMBATE
 
 - ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos básicos para sobrevivir: 
   - todo enemigo ha de tomarse en serio. 
@@ -11,7 +20,7 @@
 - ¿Cómo se ataca? Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará (hay algunas excepciones, que el jugador deberá descubrir por sí mismo).
 
 
-1.1. EL MODO COMBATE (MODO MELEE)
+3.1. EL MODO COMBATE (MODO MELEE)
 
 - Si el PJ y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
 
@@ -56,7 +65,7 @@ Redibir daño:                 -     |  reset   |  reset          x
 
 
 
-1.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
+3.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
 
 - Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
 
@@ -65,14 +74,14 @@ Redibir daño:                 -     |  reset   |  reset          x
 - Se considera que tiene lugar el impacto en caso de que el resultado sea MAYOR que la defensa del objetivo.
 
 
-1.3. CÁLCULO DE DAÑO
+3.3. CÁLCULO DE DAÑO
 
 - Si un ataque impacta, se calcula el daño según la siguiente fórmula:
 
         (FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
 
 
-1.4. TABLAS DE REFERENCIA (incompletas)
+3.4. TABLAS DE REFERENCIA (incompletas)
 
  TO-HIT   |   RESULTADO MÍN  |  RESULTADO MAX
    0                1                6
@@ -95,7 +104,7 @@ Redibir daño:                 -     |  reset   |  reset          x
    Bandit                 5
 
 
-1.5. CONSEJOS
+3.5. CONSEJOS
 
 - En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
 - Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.

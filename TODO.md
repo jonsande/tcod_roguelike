@@ -6,6 +6,9 @@ AÚN SIN CATALOGAR
 RENDIMIENTO
 - [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo. P.D.: es el cálculo de pathfinding, parece.
 
+TILES
+- [ ] Nuevo tipo de tile. Chasm (abismo). Bloquea el movimiento, su sprite es totalmente negro. 
+
 ARMAS
 - [x] Criaturas que combaten desarmadas tienen que tener algún bonificador de daño por garras o pueños o lo que sea.
 - [x] Añadir en una casilla la distancia a la que se puede lanzar una daga. [P.D. Esto depende de la fuerza y pericia del jugador]
@@ -199,6 +202,7 @@ COMBATE
 - [-] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
+- [ ] - Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 - [x] Revisar las mecánicas de sigilo y la ia al respecto.
 - Sistema de puertas con llave:
     - [x] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.

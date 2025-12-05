@@ -22,11 +22,17 @@ if GRAPHIC_MODE == "pseudo_ascii":
 
 if GRAPHIC_MODE == "ascii":
     tileset_cod = "ascii"
-    #tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
+
+    # STANDARD
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
     
+    # CUSTOM
+    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin_bob.ttf", 128, 128)
+
+    # OTHER
+    #tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 64, 64)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 60, 58)
-    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/Terminus.ttf", 64, 64)
     #tileset = tcod.tileset.set_truetype_font("data/graphics/Terminus.ttf", 128, 128)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/square.ttf", 64, 64)
@@ -812,7 +818,7 @@ ENEMY_SPAWN_RULES = {
             (16, 0),
         ],
     },
-    "slime": {"min_floor": 2, "weight_progression": [(2, 100), (3, 15), (5, 10)]},
+    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
