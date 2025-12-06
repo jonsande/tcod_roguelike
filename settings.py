@@ -24,10 +24,10 @@ if GRAPHIC_MODE == "ascii":
     tileset_cod = "ascii"
 
     # STANDARD
-    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
     
     # CUSTOM
-    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin_bob.ttf", 128, 128)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin_bob.ttf", 128, 128)
 
     # OTHER
     #tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
@@ -372,8 +372,6 @@ CHEST_ITEM_COUNT_BY_FLOOR = [
 
 OLD_MAN_CHEST = [
     "leather_armor",
-    "leather_cap",
-    "cloak",
 ]
 
 # Cantidad (min, max) de ítems aleatorios que se añaden al cofre del Viejo.

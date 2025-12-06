@@ -54,7 +54,15 @@ def _ensure_mixer_initialized(*, allow_when_disabled: bool = False) -> bool:
         _mixer_attempted = True
         return False
 
+    mixer_kwargs = {
+        "frequency": int(getattr(audio_cfg, "MIXER_FREQUENCY", 44100)),
+        "size": int(getattr(audio_cfg, "MIXER_SIZE", -16)),
+        "channels": int(getattr(audio_cfg, "MIXER_CHANNELS", 2)),
+        "buffer": int(getattr(audio_cfg, "MIXER_BUFFER", 2048)),
+    }
+
     try:
+        pygame.mixer.pre_init(**mixer_kwargs)
         pygame.mixer.init()
     except Exception as exc:  # pragma: no cover - runtime environment issue
         if settings.DEBUG_MODE:

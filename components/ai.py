@@ -319,7 +319,8 @@ class HostileEnemyPlus(BaseAI):
                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
                 else:
                     if settings.DEBUG_MODE:
-                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+                        print(f"DEBUG: {self.entity.name} is aggravated!")
+                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -339,7 +340,8 @@ class HostileEnemyPlus(BaseAI):
                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
                 else:
                     if settings.DEBUG_MODE:
-                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+                        print(f"DEBUG: {self.entity.name} is aggravated!")
+                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
  
             # Si se queda sin estamina:
             if self.entity.fighter.stamina == 0:
@@ -501,7 +503,8 @@ class HostileEnemy(BaseAI):
                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
                 else:
                     if settings.DEBUG_MODE:
-                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+                        print(f"DEBUG: {self.entity.name} is aggravated!")
+                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
@@ -752,7 +755,8 @@ class HostileEnemyV2(BaseAI):
                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
                 else:
                     if settings.DEBUG_MODE:
-                        self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+                        print(f"DEBUG: {self.entity.name} is aggravated!")
+                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
 
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y

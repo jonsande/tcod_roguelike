@@ -968,11 +968,12 @@ class MeleeAction(ActionWithDirection):
                 damage_color = color.red
 
             if stealth_attack:
-
-                self.engine.message_log.add_message(
-                        f"{self.entity.name} BACKSTABS {target.name}!", 
-                        damage_color
-                        )
+                
+                if target_visible or attacker_visible:
+                    self.engine.message_log.add_message(
+                            f"{self.entity.name} BACKSTABS {target.name}!", 
+                            damage_color
+                            )
                 if self.engine.debug == True:
                     print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 

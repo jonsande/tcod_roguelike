@@ -1,5 +1,12 @@
 """Audio-related configuration."""
 
+# Mixer configuration -------------------------------------------------------
+# Valores altos en buffer reducen crujidos a costa de algo de latencia.
+MIXER_FREQUENCY = 44100
+MIXER_SIZE = -16
+MIXER_CHANNELS = 2
+MIXER_BUFFER = 2048
+
 # Ambient loops --------------------------------------------------------------
 AMBIENT_SOUND_ENABLED = True
 AMBIENT_SOUND_VOLUME = 1.0  # 0.0 - 1.0
@@ -129,7 +136,7 @@ STAIR_DESCEND_VOLUME = 0.1
 
 # Melee weapon attacks ------------------------------------------------------
 MELEE_ATTACK_SOUND_ENABLED = True
-MELEE_ATTACK_DEFAULT_VOLUME = 0.55
+MELEE_ATTACK_DEFAULT_VOLUME = 0.35
 
 # Esto sólo es la plantilla, para usar más abajo
 def _empty_melee_sound_entry():
@@ -217,7 +224,7 @@ MELEE_DUMMY_SOUNDS = {
 
 # Pain reactions ------------------------------------------------------------
 PAIN_SOUND_ENABLED = True
-PAIN_SOUND_DEFAULT_VOLUME = 0.4
+PAIN_SOUND_DEFAULT_VOLUME = 0.25
 PAIN_SOUNDS = {
     "player": {"tracks": [
         "data/audio/sfx/combat/hurt/player/hurt_6.ogg",
@@ -229,14 +236,14 @@ PAIN_SOUNDS = {
         "data/audio/sfx/combat/hurt/player/male_grunt05.wav",
     ], 
     "track": None, 
-    "volume": 0.5
+    "volume": 0.25
     },
     "default": {"tracks": [], "track": None, "volume": None},
 }
 
 # Death reactions -----------------------------------------------------------
 DEATH_SOUND_ENABLED = True
-DEATH_SOUND_DEFAULT_VOLUME = 0.7
+DEATH_SOUND_DEFAULT_VOLUME = 0.6
 DEATH_SOUNDS = {
     "player": {"tracks": [], "track": None, "volume": None},
     "goblin": {"tracks": [], "track": "data/audio/sfx/combat/death/goblin/goblin-scream-87564.mp3", "volume": None},
@@ -249,7 +256,7 @@ PLAYER_STAMINA_DEPLETED_SOUNDS = ["data/audio/sfx/combat/no_stamina/player/fatig
                                   "data/audio/sfx/combat/no_stamina/player/fatigue_low.ogg",
                                   "data/audio/sfx/combat/no_stamina/player/fatigue_med.ogg"]
 PLAYER_STAMINA_DEPLETED_SOUND = None
-PLAYER_STAMINA_DEPLETED_VOLUME = 0.9
+PLAYER_STAMINA_DEPLETED_VOLUME = 0.8
 
 # Environment destruction ---------------------------------------------------
 BREAKABLE_WALL_DESTROY_SOUND_ENABLED = True
