@@ -29,7 +29,7 @@ from i18n import _
 
 if TYPE_CHECKING:
     from engine import Engine
-    from entity import Item
+    from entity import Actor, Item
 
 from components.ai import Dummy
 from components.fighter import BreakableWallFighter
@@ -450,6 +450,104 @@ class AskUserEventHandler(EventHandler):
         By default this returns to the main event handler.
         """
         return MainGameEventHandler(self.engine)
+
+
+class ConfirmAdventurerAttackHandler(AskUserEventHandler):
+    """Ask the player to confirm attacking a neutral adventurer."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        parent_handler: BaseEventHandler,
+        attacker: Actor,
+        target: Actor,
+        dx: int,
+        dy: int,
+    ):
+        super().__init__(engine)
+        self.parent = parent_handler
+        self.attacker = attacker
+        self.target = target
+        self.dx = dx
+        self.dy = dy
+        self.text = _(
+            "Attack {target}? This will turn them hostile. \n\nPress 'y' to confirm or ESC to cancel."
+        ).format(target=self.target.name)
+
+    def _wrap_lines(self, console: tcod.Console) -> list[str]:
+        """Wrap text preserving explicit newlines and returning individual lines."""
+        width = console.width - 10
+        wrapped_lines: list[str] = []
+        for paragraph in self.text.splitlines():
+            if not paragraph:
+                wrapped_lines.append("")
+                continue
+            wrapped = textwrap.wrap(
+                paragraph,
+                width=width,
+                replace_whitespace=False,
+                drop_whitespace=False,
+                break_long_words=False,
+            )
+            wrapped_lines.extend(wrapped or [""])
+        return wrapped_lines
+
+    def on_render(self, console: tcod.Console) -> None:
+        """Render the parent and dim the result, then print the message on top."""
+        self.parent.on_render(console)
+        console.rgb["fg"] //= 60
+        console.rgb["bg"] //= 8
+
+        lines = self._wrap_lines(console)
+        center_x = console.width // 2
+        start_y = console.height // 2 - len(lines) // 2
+
+        for i, line in enumerate(lines):
+            y = start_y + i
+            console.print(
+                center_x,
+                y,
+                line,
+                fg=color.white,
+                bg=color.black,
+                alignment=libtcodpy.CENTER,
+            )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        """Only proceed on explicit confirmation."""
+        if event.sym == tcod.event.KeySym.ESCAPE:
+            return self.parent
+        if event.sym in (
+            tcod.event.KeySym.y,
+            getattr(tcod.event.KeySym, "Y", tcod.event.KeySym.y),
+            tcod.event.KeySym.RETURN,
+            tcod.event.KeySym.KP_ENTER,
+        ):
+            if self._should_attack():
+                return BumpAction(self.attacker, self.dx, self.dy)
+            return self.parent
+        return None
+
+    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
+        """Left click confirms a selection."""
+        if event.button == tcod.event.MouseButton.LEFT and self._should_attack():
+            return BumpAction(self.attacker, self.dx, self.dy)
+        return self.parent
+
+    def _should_attack(self) -> bool:
+        """Ensure the target is still valid before confirming the attack."""
+        if getattr(self.attacker, "gamemap", None) is not self.engine.game_map:
+            return False
+        fighter = getattr(self.target, "fighter", None)
+        if not fighter or getattr(fighter, "hp", 0) <= 0:
+            return False
+        dest_x = self.attacker.x + self.dx
+        dest_y = self.attacker.y + self.dy
+        if (self.target.x, self.target.y) != (dest_x, dest_y):
+            return False
+        if getattr(self.target, "gamemap", None) is not self.engine.game_map:
+            return False
+        return True
 
 
 class CombatControlHandler(AskUserEventHandler):
@@ -1466,6 +1564,9 @@ class MainGameEventHandler(EventHandler):
             chest_handler = self._maybe_open_chest(player, dx, dy)
             if chest_handler:
                 return chest_handler
+            confirm_handler = self._maybe_confirm_adventurer_attack(player, dx, dy)
+            if confirm_handler:
+                return confirm_handler
             action = BumpAction(player, dx, dy)
         # Bajar escaleras
         elif key == tcod.event.KeySym.SPACE:
@@ -1543,6 +1644,21 @@ class MainGameEventHandler(EventHandler):
                     return ipdb.set_trace()
 
         return action
+
+    def _maybe_confirm_adventurer_attack(
+        self, player: Actor, dx: int, dy: int
+    ) -> Optional[ActionOrHandler]:
+        dest_x = player.x + dx
+        dest_y = player.y + dy
+        target = self.engine.game_map.get_actor_at_location(dest_x, dest_y)
+        if not target:
+            return None
+        if getattr(target, "name", "").lower() != "adventurer":
+            return None
+        fighter = getattr(target, "fighter", None)
+        if fighter and getattr(fighter, "aggravated", False):
+            return None
+        return ConfirmAdventurerAttackHandler(self.engine, self, player, target, dx, dy)
 
     def _maybe_open_chest(self, player, dx: int, dy: int) -> Optional[ActionOrHandler]:
         dest_x = player.x + dx

@@ -678,7 +678,7 @@ class GameWorld:
         from generators import (
             THE_LIBRARY_TEMPLATE,
             THREE_DOORS_TEMPLATE,
-            generate_dungeon,
+            #generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,

@@ -3,6 +3,7 @@
   "THE SEEKER": "THE SEEKER",
   "Game saved.": "Game saved.",
   "Save game and exit? \n\nPress 'y' to confirm or ESC to keep playing.": "Save game and exit? \n\nPress 'y' to confirm or ESC to keep playing.",
+  "Attack {target}? This will turn them hostile. \n\nPress 'y' to confirm or ESC to cancel.": "Attack {target}? This will turn them hostile. \n\nPress 'y' to confirm or ESC to cancel.",
   "[N] Play a new game": "[N] Play a new game",
   "[C] Continue last game": "[C] Continue last game",
   "[Q] Quit": "[Q] Quit",
@@ -17,5 +18,7 @@
   "You try to listen through the door.": "You try to listen through the door.",
   "You hear something on the other side.": "You hear something on the other side.",
   "You don't hear nothing.": "You don't hear nothing.",
-  "You throw a handful of sand at the creature's face.": "You throw a handful of sand at the creature's face."
+  "You throw a handful of sand at the creature's face.": "You throw a handful of sand at the creature's face.",
+  "The old man says: Legend has it that the labyrinth houses the fifteen magic rings of the southern centaurs.": "The old man says: Legend has it that the labyrinth houses the fifteen magic rings of the southern centaurs.",
+  "The old man says: It is written in the temple: countless children will return to the primordial night.": "It is written in the temple: countless children will return to the primordial night."
 }

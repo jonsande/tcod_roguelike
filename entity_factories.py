@@ -214,75 +214,102 @@ sand_bag = Item(
 )
 loot_tables.register_loot_item("sand_bag", sand_bag)
 
+confusion_scroll_name = scroll_name_roulette()
 confusion_scroll = Item(
     char="~",
     color=color_roulette(),
-    name=scroll_name_roulette(),
+    name=confusion_scroll_name,
     id_name = "Confusion scroll",
+    info=f"A {confusion_scroll_name}.",
+    id_info="Twists a creature's mind, leaving it confused for several turns.",
     consumable=consumable.TargetedConfusionConsumable(number_of_turns=10),
 )
 loot_tables.register_loot_item("confusion_scroll", confusion_scroll)
 
+paralisis_scroll_name = scroll_name_roulette()
 paralisis_scroll = Item(
     char="~",
     color=color_roulette(),
-    name=scroll_name_roulette(),
+    name=paralisis_scroll_name,
     id_name = "Paralisis scroll",
+    info=f"A {paralisis_scroll_name}.",
+    id_info="Locks a target in place, paralyzing it for a short time.",
     consumable=consumable.ParalisisConsumable(number_of_turns=10),
 )
 
+lightning_scroll_name = scroll_name_roulette()
 lightning_scroll = Item(
     char="~",
     color=color_roulette(),
-    name=scroll_name_roulette(),
+    name=lightning_scroll_name,
     id_name = "Lightning scroll",
+    info=f"A {lightning_scroll_name}.",
+    id_info="Calls a lightning bolt to smite the nearest foe for heavy damage.",
     consumable=consumable.LightningDamageConsumable(),
 )
 
+fireball_scroll_name = scroll_name_roulette()
 fireball_scroll = Item(
     char="~",
     color=color_roulette(),
-    name=scroll_name_roulette(),
+    name=fireball_scroll_name,
     id_name = "Fireball scroll",
+    info=f"A {fireball_scroll_name}.",
+    id_info="Detonates a fireball with a small radius at a chosen spot.",
     consumable=consumable.FireballDamageConsumable(damage=12, radius=2),
 )
+descend_scroll_name = scroll_name_roulette()
 descend_scroll = Item(
     char="~",
     color=(166, 0, 255),
-    name=scroll_name_roulette(),
+    name=descend_scroll_name,
     id_name="Descend scroll",
+    info=f"A {descend_scroll_name}.",
+    id_info="Opens a rune-lined vortex that drops you to the next floor.",
     consumable=consumable.DescendScrollConsumable(),
 )
 loot_tables.register_loot_item("descend_scroll", descend_scroll)
+teleport_scroll_name = scroll_name_roulette()
 teleport_scroll = Item(
     char="~",
     color=(0, 255, 255),
-    name=scroll_name_roulette(),
+    name=teleport_scroll_name,
     id_name="Teleport scroll",
+    info=f"A {teleport_scroll_name}.",
+    id_info="Warps you to a random free tile on this floor.",
     consumable=consumable.TeleportScrollConsumable(),
 )
 loot_tables.register_loot_item("teleport_scroll", teleport_scroll)
+prodigious_memory_scroll_name = scroll_name_roulette()
 prodigious_memory_scroll = Item(
     char="~",
     color=(120, 200, 255),
-    name=scroll_name_roulette(),
+    name=prodigious_memory_scroll_name,
     id_name="Prodigious memory scroll",
+    info=f"A {prodigious_memory_scroll_name}.",
+    id_info="Brands the dungeon's layout into your mind permanently.",
     consumable=consumable.ProdigiousMemoryConsumable(),
 )
 loot_tables.register_loot_item("prodigious_memory_scroll", prodigious_memory_scroll)
+identify_scroll_name = scroll_name_roulette()
 identify_scroll = Item(
     char="~",
     color=color_roulette(),
-    name=scroll_name_roulette(),
+    name=identify_scroll_name,
     id_name="Identify scroll",
+    info=f"A {identify_scroll_name}.",
+    id_info="Reveals the true nature of an item you carry.",
     consumable=consumable.IdentificationScrollConsumable(),
 )
 loot_tables.register_loot_item("identify_scroll", identify_scroll)
+remove_curse_scroll_name = scroll_name_roulette()
 remove_curse_scroll = Item(
     char="~",
     color=(180, 120, 255),
-    name=scroll_name_roulette(),
+    name=remove_curse_scroll_name,
     id_name="Remove curse scroll",
+    info=f"A {remove_curse_scroll_name}.",
+    id_info="Breaks the curse on a chosen equippable item.",
     consumable=consumable.RemoveCurseConsumable(),
 )
 loot_tables.register_loot_item("remove_curse_scroll", remove_curse_scroll)
@@ -387,8 +414,10 @@ health_potion = Item(
     char="!",
     color=(200, 200, 200),
     #name="Suspicious purple brew",
-    name=potion_name_roulette(),
+    name=(health_potion_name := potion_name_roulette()),
     id_name = "Health potion",
+    info=f"A {health_potion_name}.",
+    id_info="Restores a decent amount of health and clears any lingering confusion.",
     consumable=consumable.HealingConsumable(amount=random.randint(6, 12) + 4),
     throwable=True,
 )
@@ -397,8 +426,10 @@ loot_tables.register_loot_item("health_potion", health_potion)
 strength_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(strength_potion_name := potion_name_roulette()),
     id_name = "Strength potion",
+    info=f"A {strength_potion_name}.",
+    id_info="Permanently bolsters your strength.",
     consumable=consumable.StrenghtConsumable(amount=1),
     throwable=True,
 )
@@ -406,8 +437,10 @@ strength_potion = Item(
 poison_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(poison_potion_name := potion_name_roulette()),
     id_name = "Poison potion",
+    info=f"A {poison_potion_name}.",
+    id_info="Unknown use poisons the drinker; once identified it can coat your weapon to poison enemies.",
     #consumable=consumable.PoisonConsumable(amount=1, counter=random.randint(6,10)),
     consumable=consumable.PoisonConsumable(amount=1, counter=15),
     throwable=True,
@@ -417,8 +450,10 @@ loot_tables.register_loot_item("poison_potion", poison_potion)
 antidote = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(antidote_name := potion_name_roulette()),
     id_name = "Antidote",
+    info=f"A {antidote_name}.",
+    id_info="Neutralizes poison or otherwise has no effect.",
     consumable=consumable.AntidoteConsumable(),
     throwable=True,
 )
@@ -441,8 +476,10 @@ antidote = Item(
 power_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(power_potion_name := potion_name_roulette()),
     id_name = "Power brew",
+    info=f"A {power_potion_name}.",
+    id_info="Temporarily surges your strength for several turns.",
     consumable=consumable.TemporalEffectConsumable(
         20,
         5,
@@ -454,8 +491,10 @@ loot_tables.register_loot_item("power_potion", power_potion)
 precission_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(precission_potion_name := potion_name_roulette()),
     id_name = "Amphetamine brew",
+    info=f"A {precission_potion_name}.",
+    id_info="Heightens focus, granting a temporary boost to accuracy.",
     consumable=consumable.TemporalEffectConsumable(
         20,
         5,
@@ -467,8 +506,10 @@ loot_tables.register_loot_item("precission_potion", precission_potion)
 stamina_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(stamina_potion_name := potion_name_roulette()),
     id_name = "Restore stamina Potion",
+    info=f"A {stamina_potion_name}.",
+    id_info="Restores your stamina to full.",
     consumable=consumable.RestoreStaminaConsumable(),
     throwable=True,
 )
@@ -476,16 +517,20 @@ loot_tables.register_loot_item("stamina_potion", stamina_potion)
 increase_max_stamina = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(increase_max_stamina_name := potion_name_roulette()),
     id_name = "Potion of Lasting Vigor",
+    info=f"A {increase_max_stamina_name}.",
+    id_info="Permanently increases your maximum stamina.",
     consumable=consumable.IncreaseMaxStaminaConsumable(amount=1),
     throwable=True,
 )
 life_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(life_potion_name := potion_name_roulette()),
     id_name = "Life potion",
+    info=f"A {life_potion_name}.",
+    id_info="Permanently increases your maximum HP and heals you fully.",
     consumable=consumable.IncreaseMaxHPConsumable(amount=8),
     throwable=True,
 )
@@ -493,8 +538,10 @@ life_potion = Item(
 infra_vision_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(infra_vision_potion_name := potion_name_roulette()),
     id_name="Potion of True Sight",
+    info=f"A {infra_vision_potion_name}.",
+    id_info="Permanently sharpens your vision, widening your field of view.",
     consumable=consumable.IncreaseFOVConsumable(amount=2),
     throwable=True,
 )
@@ -502,16 +549,20 @@ infra_vision_potion = Item(
 temporal_infra_vision_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(temporal_infra_vision_potion_name := potion_name_roulette()),
     id_name="Potion of Flash Sight",
+    info=f"A {temporal_infra_vision_potion_name}.",
+    id_info="Temporarily expands your field of view dramatically.",
     consumable=consumable.TemporalFOVConsumable(min_turns=12, max_turns=32, amount=6),
     throwable=True,
 )
 blindness_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(blindness_potion_name := potion_name_roulette()),
     id_name="Potion of Blinding Darkness",
+    info=f"A {blindness_potion_name}.",
+    id_info="Blinds the drinker, drastically shrinking sight.",
     consumable=consumable.BlindnessConsumable(amount=-32),
     throwable=True,
 )
@@ -519,24 +570,30 @@ blindness_potion = Item(
 confusion_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(confusion_potion_name := potion_name_roulette()),
     id_name = "Confusion potion",
+    info=f"A {confusion_potion_name}.",
+    id_info="Leaves the drinker confused for a while.",
     consumable=consumable.ConfusionConsumable(random.randint(12, 32)),
     throwable=True,
 )
 paralysis_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(paralysis_potion_name := potion_name_roulette()),
     id_name = "Paralysis potion",
+    info=f"A {paralysis_potion_name}.",
+    id_info="Paralyzes the drinker for several turns.",
     consumable=consumable.ParalysisConsumable(min_turns=12, max_turns=32),
     throwable=True,
 )
 petrification_potion = Item(
     char="!",
     color=(200, 200, 200),
-    name=potion_name_roulette(),
+    name=(petrification_potion_name := potion_name_roulette()),
     id_name="Petrification potion",
+    info=f"A {petrification_potion_name}.",
+    id_info="Turns the drinker to stone, freezing them in place indefinitely.",
     consumable=consumable.PetrifyConsumable(),
     throwable=True,
 )
@@ -912,7 +969,8 @@ plain_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Plain ring",
     equippable=equippable.PlainRing(),
-    info="An unadorned band; perhaps it will resonate with subtle power.",
+    info="I don't feel anything special about this ring",
+    id_info="An unadorned band; perhaps it will resonate with subtle power.",
 )
 loot_tables.register_loot_item("plain_ring", plain_ring)
 
@@ -922,7 +980,8 @@ accuracy_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Accuracy",
     equippable=equippable.AccuracyRing(),
-    info="This precise band sharpens the instincts of any fighter who wears it.",
+    info="There's something strange about this ring",
+    id_info="This precise band sharpens the instincts of any fighter who wears it.",
 )
 loot_tables.register_loot_item("accuracy_ring", accuracy_ring)
 
@@ -932,7 +991,8 @@ strength_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Strength",
     equippable=equippable.StrengthRing(),
-    info="A heavy band that lends its wearer raw brawn.",
+    info="There's something strange about this ring",
+    id_info="A heavy band that lends its wearer raw brawn.",
 )
 loot_tables.register_loot_item("strength_ring", strength_ring)
 
@@ -942,7 +1002,8 @@ farsight_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Far Sight",
     equippable=equippable.FarSightRing(),
-    info="A bright band that widens the horizon of your vision.",
+    info="There's something strange about this ring",
+    id_info="A bright band that widens the horizon of your vision.",
 )
 loot_tables.register_loot_item("farsight_ring", farsight_ring)
 
@@ -952,7 +1013,8 @@ vigor_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Vigor",
     equippable=equippable.VigorRing(),
-    info="A band warm to the touch that bolsters lasting stamina.",
+    info="There's something strange about this ring",
+    id_info="A band warm to the touch that bolsters lasting stamina.",
 )
 loot_tables.register_loot_item("vigor_ring", vigor_ring)
 
@@ -962,7 +1024,8 @@ antidote_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Antivenom",
     equippable=equippable.AntidoteRing(),
-    info="Its surface is cool and clean, warding off toxins.",
+    info="There's something strange about this ring",
+    id_info="Its surface is cool and clean, warding off toxins.",
 )
 loot_tables.register_loot_item("antidote_ring", antidote_ring)
 
@@ -972,7 +1035,8 @@ memory_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Memory",
     equippable=equippable.MemoryRing(),
-    info="A slender loop etched with sigils that refuse to be forgotten.",
+    info="There's something strange about this ring",
+    id_info="A slender loop etched with sigils that refuse to be forgotten.",
 )
 loot_tables.register_loot_item("memory_ring", memory_ring)
 
@@ -982,7 +1046,8 @@ recovery_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Recovery",
     equippable=equippable.RecoveryRing(),
-    info="A cool band that quickens the pace of healing.",
+    info="There's something strange about this ring",
+    id_info="A cool band that quickens the pace of healing.",
 )
 loot_tables.register_loot_item("recovery_ring", recovery_ring)
 
@@ -992,7 +1057,8 @@ guard_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Guarding",
     equippable=equippable.GuardRing(),
-    info="A thick ring set with a shard of mail, lending steady defense.",
+    info="There's something strange about this ring",
+    id_info="A thick ring set with a shard of mail, lending steady defense.",
 )
 loot_tables.register_loot_item("guard_ring", guard_ring)
 
@@ -1002,7 +1068,8 @@ fortune_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Ring of Fortune",
     equippable=equippable.FortuneRing(),
-    info="Its inner edge hums faintly, tilting fate in your favor.",
+    info="There's something strange about this ring",
+    id_info="Its inner edge hums faintly, tilting fate in your favor.",
 )
 loot_tables.register_loot_item("fortune_ring", fortune_ring)
 
@@ -1012,7 +1079,8 @@ cursed_weakness_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Weakness",
     equippable=equippable.CursedWeaknessRing(),
-    info="This ring saps your might and refuses to be removed.",
+    info="There's something strange about this ring",
+    id_info="This ring saps your might and refuses to be removed.",
 )
 loot_tables.register_loot_item("cursed_weakness_ring", cursed_weakness_ring)
 
@@ -1022,7 +1090,8 @@ cursed_myopia_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Myopia",
     equippable=equippable.CursedMyopiaRing(),
-    info="Wearing it narrows your world to a few paces—and it clings to you.",
+    info="There's something strange about this ring",
+    id_info="Wearing it narrows your world to a few paces—and it clings to you.",
 )
 loot_tables.register_loot_item("cursed_myopia_ring", cursed_myopia_ring)
 
@@ -1032,7 +1101,8 @@ cursed_fatigue_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Fatigue",
     equippable=equippable.CursedFatigueRing(),
-    info="A dull band that drains your stamina and binds itself to you.",
+    info="There's something strange about this ring",
+    id_info="A dull band that drains your stamina and binds itself to you.",
 )
 loot_tables.register_loot_item("cursed_fatigue_ring", cursed_fatigue_ring)
 
@@ -1042,7 +1112,8 @@ cursed_lethargy_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Lethargy",
     equippable=equippable.CursedLethargyRing(),
-    info="Its chill slows recovery, and it will not let go.",
+    info="There's something strange about this ring",
+    id_info="Its chill slows recovery, and it will not let go.",
 )
 loot_tables.register_loot_item("cursed_lethargy_ring", cursed_lethargy_ring)
 
@@ -1052,7 +1123,8 @@ cursed_vulnerability_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Vulnerability",
     equippable=equippable.CursedVulnerabilityRing(),
-    info="You feel exposed—and trapped—as soon as you wear it.",
+    info="There's something strange about this ring",
+    id_info="You feel exposed—and trapped—as soon as you wear it.",
 )
 loot_tables.register_loot_item("cursed_vulnerability_ring", cursed_vulnerability_ring)
 
@@ -1062,7 +1134,8 @@ cursed_misfortune_ring = Item(
     name=ring_appearance_roulette(),
     id_name="Cursed Ring of Misfortune",
     equippable=equippable.CursedMisfortuneRing(),
-    info="Luck withers under its touch, and it clings like a shackle.",
+    info="There's something strange about this ring",
+    id_info="Luck withers under its touch, and it clings like a shackle.",
 )
 loot_tables.register_loot_item("cursed_misfortune_ring", cursed_misfortune_ring)
 

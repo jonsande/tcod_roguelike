@@ -175,7 +175,8 @@ class Item(Entity):
         uses: int = 1,
         max_uses: Optional[int] = None,
         stackable: bool = True,
-        info: str = "NO INFO"
+        id_info: Optional[str] = None,
+        info: str = "NO INFO",
     ):
         super().__init__(
             x=x,
@@ -204,6 +205,7 @@ class Item(Entity):
         self.uses = uses
         self.max_uses = uses if max_uses is None else max_uses
         self.stackable = stackable
+        self.id_info = id_info
         self.info = info
 
     def identify(self):
@@ -239,13 +241,23 @@ class Item(Entity):
         if not equippable:
             return ""
         summary = equippable.describe_modifiers()
-        return f"\n\nEffects when equipped:\n{summary}" if summary else ""
+        if not summary:
+            return ""
+        return f"Effects when equipped:\n{summary.lstrip('\\n')}"
 
     def full_info(self) -> str:
         """Return base info plus a generated summary of equippable effects."""
-        base = self.info or "NO INFO"
-        suffix = self._equippable_suffix()
-        return f"{base}{suffix}"
+        parts = []
+        if self.info:
+            parts.append(self.info)
+        show_identified_details = self.identified or not getattr(self, "id_info", None)
+        if show_identified_details:
+            if getattr(self, "id_info", None):
+                parts.append(self.id_info)
+            suffix = self._equippable_suffix()
+            if suffix:
+                parts.append(suffix)
+        return "\n\n".join(parts) if parts else "NO INFO"
 
 class Book(Item):
     """Consumables or notes that simply reveal their info text when read."""

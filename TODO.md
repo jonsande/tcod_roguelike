@@ -205,7 +205,10 @@ COMBATE
 - [-] El sistema de fortificar (fortify). Si te queda algún punto de stamina y pasas turno con un enemigo a tu lado adoptas posición defensiva. Gasta un punto de estamina pero aumenta tu valor defensivo. PARECE QUE ESTOY YA FUNCIONA!! LO ÚNICO QUE HACE FALTA ES QUE APAREZCA UN INDICADOR DE QUE SE ESTÁ FORTIFICANDO.
 
 MECÁNICAS
-- [ ] - Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
+- [ ] Mejorar el sistema de agraviar criaturas. Su cálculo no debería atravesar paredes. Pero cuidado con el deterioro del rendimiento!
+- [ ] Estado de invisibilidad.
+- [ ] Estado de oculto en las sombras.
+- [ ] Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 - [x] Revisar las mecánicas de sigilo y la ia al respecto.
 - Sistema de puertas con llave:
     - [x] Si las llaves de color se van a consumir, deben generarse tantas como puertas de ese color. Quizá lo complica todo mucho. Mejor que las llaves no se consuman.

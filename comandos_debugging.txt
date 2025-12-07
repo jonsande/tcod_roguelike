@@ -1,0 +1,202 @@
+DEBUGGING COMMANDS
+
+ÍNDICE
+- Cómo saber la posición de las casillas/tiles que forman parte de una habitación.
+- Cómo saber la posición de las casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual)
+- Cómo saber qué casillas son accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean).
+- Centros de habitación más cercanos ordenados por distancia Manhattan
+- Dibujar y obtener el hot_path (step_by_step)
+- Obtener array del hot_path (sólo rooms)
+- Dibujar la green zone
+- Saber qué actor se encuentra en una casilla en concreto
+- Localización de las llaves
+- Localización de El Artefacto
+- Listado de todos los monstruos e items generados (organizados por planta)
+- Cómo abrir una consola python con el save de una partida guardada
+
+
+=== Cómo saber la posición de las casillas/tiles que forman parte de una habitación ===
+
+Desde la consola de depuración (presiona BACKSPACE en cualquier momento del juego):
+
+self.engine.game_map.get_room_tiles(center)
+
+Donde 'center' es el centro de la habitación por la que se consulta.
+
+Nota: las coordenadas del centro de la habitación tienen que ir entre paréntesis. Por ejemplo: si el centro de la habitación en cuestión es (21, 35), entonces el comando qudaría así:
+
+self.engine.game_map.room_tiles((21, 35))
+
+Recordatorio: los centros de las habitaciones de un nivel se pueden obtener así:
+
+self.engine.game_map.center_rooms
+
+
+=== Cómo saber la posición de las casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual) ===
+
+self.engine.game_world.get_room_tiles(floor, center)
+
+
+
+=== Cómo saber qué casillas son accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean): ===
+
+self.engine.game_map.walkable_tiles_from_position(center)
+
+Donde 'center' es el centro (las coordenadas x e y, entre paréntesis) de la habitación por la que se consulta. Es decir:
+
+self.engine.game_map.walkable_tiles_from_position((x, y))
+
+
+
+=== Centros de habitación más cercanos ordenados por distancia Manhattan ===
+
+self.engine.game_map.nearest_rooms_from(x, y)
+
+Donde x e y son las coordenadas del centro de la habitación por la que se consulta.
+
+
+
+=== Dibujar y/o obtener el hot_path (step_by_step) ===
+
+Advertencia: no es perfecto. Aún hay veces que prefiere atravesar un muro instransitable a pasar por un muro rompible, pero la mayoría de las veces funciona bastante bien.
+
+PD. PARECE QUE YA FUNCIONA PERFECTAMENTE! Ha habido que cambiar la lógica de los tiles para que las puertas cerradas se consideren walkable=True, y lo mismo con los breakablewall, pero parece que funciona.
+
+Para dibujarlo:
+En el settings hay una opción:
+
+DEBUG_DRAW_HOT_PATH = False
+
+Para que tenga efecto el DEBUG_MODE y el GOD_MOD deben estar ambos en True.
+
+Para obtener el array:
+
+self.engine.game_map.step_by_step_hot_path
+
+Se puede también generar el step_by_step_hot_path sin que esté la bandera DEBUG_DRAW_HOT_PATH activada en el settings, es decir, en mitad de una partida ya creada:
+
+import procgen
+gm = self.engine.game_map
+gm.step_by_step_hot_path = procgen.build_step_by_step_hot_path(gm)
+
+Y si queremos dibujarlo en el mapa:
+
+procgen._draw_hot_path(gm, gm.step_by_step_hot_path)
+
+Esto funciona aunque DEBUG_DRAW_HOT_PATH sea False; solo necesitas que el mapa tenga rooms_hot_path (se guarda al generar). Si prefieres recalcular desde otra posición/objetivo, pasa start= y goal= a build_step_by_step_hot_path.
+
+
+
+=== Obtener array del hot_path (sólo centro de rooms) ===
+
+Funciona correctamente.
+
+self.engine.game_map.rooms_hot_path
+
+
+
+=== Saber qué actor se encuentra en una casilla en concreto ===
+
+self.engine.game_map.get_actor_at_location(x, y)
+
+Si no hay ninguno devuelve None
+
+
+
+=== Dibujar la green zone ===
+
+Advertencia: el cálculo de la green zone no está funcionando del todo bien.
+
+Advertencia: La green zone se ve más claramente con la configuración pseudo_ascii
+
+Ir a consola con BACKSPACE en mitad del juego
+
+Escribir:
+from procgen import green_zone
+from procgen import _draw_green_zone
+
+
+origin=self.engine.game_map.hot_path[0] # por ejemplo, la primera sala del hot path
+_draw_green_zone(self.engine.game_map, origin)
+
+Y continuar juego.
+
+También se puede:
+reachable = green_zone(engine.game_map, origin)
+print(reachable)  # lista de centros de las salas accesibles sin llaves.
+
+
+
+=== Localización de las llaves ===
+
+self.engine.game_world.debug_print_key_locations()
+
+
+=== Localización de El Artefacto ===
+
+import uniques
+
+uniques.debug_print_artifact_location()
+
+
+=== Listado de todos los monstruos e items generados (organizados por planta) ===
+
+Durante una partida activa, abre la consola de depuración que uses (REPL embebido, shell de Python, debugger con breakpoints, etc.) [si el DEBUG_MODE está en True, para hacer esto darle a BACKSPACE, y ir a la consola]. Allí:
+
+import procgen
+print(procgen.report_generation_stats())
+
+Si sólo te interesa una categoría, pasa "monsters" o "items" como argumento: print(procgen.report_generation_stats("items")).
+Reiniciar los contadores
+
+(Ahora se ejecuta automáticamente reset_generation_stats() al iniciar una partida nueva, lo cual borra el historial interno del GenerationTracker: deja a cero los totales y las cuentas por nivel).
+
+
+Ir a consola con BACKSPACE en mitad del juego
+
+Escribir:
+from procgen import green_zone
+from procgen import _draw_green_zone
+
+origin=self.engine.game_map.hot_path[0] # por ejemplo, la primera sala del hot path
+_draw_green_zone(self.engine.game_map, origin)
+
+Y continuar juego.
+
+También se puede:
+reachable = green_zone(engine.game_map, origin)
+print(reachable)  # lista de centros de las salas accesibles sin llaves.
+
+
+
+=== Cómo abrir una consola python con el save de una partida guardada ===
+
+Puedes hacerlo desde la línea de comandos usando el propio intérprete con el entorno virtual. Pasos:
+
+Abre una terminal en la carpeta del juego (/home/jon/prog/tcod/myrogue).
+Lanza Python usando el entorno del proyecto:
+../myrogue_venv/bin/python
+Dentro de la consola que se abre, carga el save y deja el motor en una variable:
+import setup_game, procgen
+engine = setup_game.load_game("savegame.sav")
+
+Ahora ya tienes acceso a engine. Puedes, por ejemplo, forzar la corrección:
+
+procgen.guarantee_downstairs_access(
+    engine.game_map,
+    engine.game_map.upstairs_location,
+    engine.game_map.downstairs_location,
+)
+
+engine.save_as("savegame.sav")
+
+
+Durante una sesión, ejecuta print(procgen.report_generation_stats()) (o pasa "items"/"monsters") para ver los contadores por nivel y verifica que los límites se respetan; usa procgen.reset_generation_stats() antes de empezar otra run si quieres datos limpios.
+
+
+Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
+
+
+
+
+

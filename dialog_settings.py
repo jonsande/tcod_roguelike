@@ -1,3 +1,5 @@
+from i18n import _
+
 """Standalone configuration for NPC dialog and greetings."""
 
 # Adventurer greetings -------------------------------------------------------
@@ -5,8 +7,8 @@
 ADVENTURER_GREETING_MESSAGES = [
     "Adventurer says: ¡Joder! ¡¿Has visto de lo que son capaces esas babas viscosas vivientes?!",
     "Adventurer says: Creo que la mejor forma de saber qué hace una poción es lanzársela a la cara a un goblin.",
-    "Adventurer says: Aunque tengas sed, cuídate de beber sustancias que no sabes lo que son. Podrían matarte.",
-    "Adventurer says: Algunos muros ocultan pasadizos o puertas secretas.",
+    "Adventurer says: Aunque tengas sed, cuídate de beber sustancias que no sabes lo que son.",
+    "Adventurer says: Algunos muros ocultan pasadizos.",
     "Adventurer says: El miedo quita el hambre. Pero es necesario comer.",
     "Adventurer says: ¿Lo has oído? Esa risa me pone los pelos de punta.",
     "Adventurer says: Ayúdame a inspeccionar las paredes de las cámaras. Debe de haber algún pasadizo secreto por aquí.",
@@ -44,7 +46,8 @@ ADVENTURER_MAX_RELEVANT_GREETING_MESSAGES = 2
 # Old man dialog -------------------------------------------------------------
 
 OLD_MAN_DIALOG_MESSAGES = [
-    "The old man says: The town is only a memory of the dungeon dreaming of sunlight.",
+    _("The old man says: Legend has it that the labyrinth houses the fifteen magic rings of the southern centaurs."),
+    "The old man says: The desert is only a memory of the labytinth dreaming of sunlight.",
     "The old man says: Count the steps between breaths; when the number changes, turn back.",
     "The old man says: Ash that refuses to cool hides names of those who left.",
     "The old man says: Feed your doubts to the fog before it learns your scent.",
@@ -57,4 +60,4 @@ OLD_MAN_DIALOG_MESSAGES = [
 ]
 
 OLD_MAN_MAX_DIALOG_MESSAGES = 2
-OLD_MAN_REPEAT_MESSAGE = "Está escrito en el templo: «...e incontables niños retornarán a la noche primigenia»."
+OLD_MAN_REPEAT_MESSAGE = _("The old man says: It is written in the temple: countless children will return to the primordial night.")

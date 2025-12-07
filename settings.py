@@ -719,7 +719,7 @@ CAMPFIRE_CACHE_ITEM_IDS = [
 CAMPFIRE_SCROLL_DROP_CHANCE = 0.02
 
 # -- Adventurers behavior -----------------------------------------------------
-ADVENTURER_COLOR = (150, 150, 150)
+ADVENTURER_COLOR = (120, 120, 120)
 ADVENTURER_CORPSE_CHAR = "%"
 ADVENTURER_CORPSE_COLOR = (100, 100, 100)
 ADVENTURER_CORPSE_NAME = "Remains of an adventurer"
