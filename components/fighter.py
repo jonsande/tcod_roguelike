@@ -609,7 +609,12 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     @property
     def stealth(self) -> int:
-        return self.base_stealth + self.stealth_bonus - self.stealth_penalty
+        return (
+            self.base_stealth
+            + self.stealth_bonus
+            - self.stealth_penalty
+            + self._environmental_stealth_bonus()
+        )
     
     @property
     def to_hit(self) -> int:
@@ -642,6 +647,24 @@ class Fighter(FireStatusMixin, BaseComponent):
             return self.parent.equipment.stealth_penalty
         else:
             return 0
+
+    def _environmental_stealth_bonus(self) -> int:
+        """Situational stealth bonus when the player hugs a wall orthogonally."""
+        engine = getattr(self, "engine", None)
+        parent = getattr(self, "parent", None)
+        if not engine or parent is not getattr(engine, "player", None):
+            return 0
+        gamemap = getattr(engine, "game_map", None)
+        if not gamemap:
+            return 0
+        deltas = [(0, -1), (-1, 0), (1, 0), (0, 1)]
+        for dx, dy in deltas:
+            nx, ny = parent.x + dx, parent.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                return 1
+        return 0
         
     @property
     def to_hit_bonus(self) -> int:
@@ -1265,6 +1288,24 @@ class Door(FireStatusMixin, BaseComponent):
             return self.parent.equipment.armor_value_bonus
         else:
             return 0
+
+    def _environmental_stealth_bonus(self) -> int:
+        """Situational stealth bonus when the player hugs a wall orthogonally."""
+        engine = getattr(self, "engine", None)
+        parent = getattr(self, "parent", None)
+        if not engine or parent is not getattr(engine, "player", None):
+            return 0
+        gamemap = getattr(engine, "game_map", None)
+        if not gamemap:
+            return 0
+        deltas = [(0, -1), (-1, 0), (1, 0), (0, 1)]
+        for dx, dy in deltas:
+            nx, ny = parent.x + dx, parent.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                return 1
+        return 0
         
     @property
     def to_hit_bonus(self) -> int:

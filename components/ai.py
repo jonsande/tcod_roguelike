@@ -648,6 +648,7 @@ class HostileEnemyV3(BaseAI):
         except Exception:
             return 0
 
+
     def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Optional[int]:
         '''Cálculo del rango que dispara el agravio'''
         if base_range is None:
