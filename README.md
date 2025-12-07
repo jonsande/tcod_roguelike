@@ -18,6 +18,7 @@ Main features:
 - Diverse and challenging enemy AI.
 - Atmospheric sound effects and select visual enhancements.
 - Raycasting-based field of view.
+- Field of hearing, for more complex and interesting stealth mechanics.
 - Potions, scrolls, magical items, unique artifacts...
 - And much more to come.
 

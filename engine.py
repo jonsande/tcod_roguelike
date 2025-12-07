@@ -111,6 +111,7 @@ class Engine:
             "player": None,
             "mouse": None,
         }
+        self._noise_events: Dict[Actor, Tuple[int, int]] = {}
 
     def reset_listen_state(self) -> None:
         """Limpia el estado del contador de escuchar puertas."""
@@ -190,6 +191,7 @@ class Engine:
         """
 
         self.turn += 1
+        self._prune_noise_events()
         """
         # TIME SYSTEM
 
@@ -209,6 +211,34 @@ class Engine:
     def what_time_it_is(self):
         return self.turn
     
+    def register_noise(self, source: Actor, level: int = 1, duration: int = 2) -> None:
+        """Stores a temporary noise event for `source` so AIs can detect it via hearing."""
+        if level <= 0 or duration <= 0:
+            return
+        expires = self.turn + duration
+        current = self._noise_events.get(source)
+        if current:
+            prev_level, prev_exp = current
+            level = max(level, prev_level)
+            expires = max(expires, prev_exp)
+        self._noise_events[source] = (level, expires)
+
+    def noise_level(self, source: Actor) -> int:
+        """Returns the active noise level for an actor, pruning expired events."""
+        if source not in self._noise_events:
+            return 0
+        level, expires = self._noise_events[source]
+        if self.turn > expires:
+            self._noise_events.pop(source, None)
+            return 0
+        return level
+
+    def _prune_noise_events(self) -> None:
+        """Remove expired noise entries based on current turn."""
+        expired = [actor for actor, (_, exp) in self._noise_events.items() if self.turn > exp]
+        for actor in expired:
+            self._noise_events.pop(actor, None)
+
 
     def restore_time_pts(self):
         print(f"\n{color.bcolors.WARNING}End turn fase{color.bcolors.ENDC}")

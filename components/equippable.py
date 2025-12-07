@@ -266,7 +266,7 @@ class ScoutHood(Equippable):
             equipment_type=EquipmentType.HEADARMOR,
             stealth_bonus=1,
             defense_bonus=0,
-            to_hit_bonus=1,
+            to_hit_bonus=0,
         )
 
 

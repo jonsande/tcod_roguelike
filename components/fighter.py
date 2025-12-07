@@ -226,6 +226,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         recover_rate: int = 50,
         recover_amount: int = 1,
         fov: int = 0,
+        foh: int = 6,
         weapon_proficiency: float = 1.0,
         base_stealth: int = 0,
         aggressivity: int = 0,
@@ -277,6 +278,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self._base_recover_amount = max(0, recover_amount)
         self._recover_counter = self._recover_interval
         self._base_fov = fov
+        self._base_foh = foh
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
@@ -430,6 +432,14 @@ class Fighter(FireStatusMixin, BaseComponent):
     @fov.setter
     def fov(self, value: int) -> None:
         self._base_fov = value - self.fov_bonus
+
+    @property
+    def foh(self) -> int:
+        return getattr(self, "_base_foh", 0)
+
+    @foh.setter
+    def foh(self, value: int) -> None:
+        self._base_foh = value
 
     @property
     def effective_fov(self) -> int:
@@ -1482,6 +1492,12 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.engine.message_log.add_message(death_message, color.enemy_die)
         #play_death_sound(self.parent)
         play_breakable_wall_destroy_sound()
+        # Extra noise on wall destruction so nearby foes can hear it.
+        if getattr(self.engine, "register_noise", None):
+            try:
+                self.engine.register_noise(self.engine.player, level=3, duration=3)
+            except Exception:
+                pass
         gamemap.tiles[x, y] = tile_types.floor
         self.parent.ai = None
         self.parent.blocks_movement = False

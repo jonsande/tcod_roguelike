@@ -158,7 +158,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    # {"item": "sand_bag", "quantity": 2},
+    #{"item": "sand_bag", "quantity": 2},
+    #{"item": "scout_hood", "quantity": 1},
+    #{"item": "cloak", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -299,6 +301,7 @@ ALL_ITEMS = [
     ("prodigious_memory_scroll", 1),
     ("chain_mail", 1),
     ("leather_armor", 1),
+    ("cloak", 1),
     ("leather_cap", 1),
     ("scout_hood", 1),
     ("iron_helmet", 1),

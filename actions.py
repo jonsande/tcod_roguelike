@@ -916,6 +916,10 @@ class MeleeAction(ActionWithDirection):
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
         
+        # Attacking is noisy: mark a short-lived noise burst so hostiles can hear it.
+        if getattr(self.engine, "register_noise", None) and self.entity is self.engine.player:
+            self.engine.register_noise(self.entity, level=2, duration=2)
+
         # Stamina check
         if self.entity.fighter.stamina <= 0:
             if target_visible or attacker_visible:
@@ -1318,6 +1322,9 @@ class MovementAction(ActionWithDirection):
         if door_opened:
             if self.entity is self.engine.player:
                 self.engine.message_log.add_message("You open the door.", color.white)
+                # Opening a door creates noise that can be heard for a couple of turns.
+                if getattr(self.engine, "register_noise", None):
+                    self.engine.register_noise(self.entity, level=1, duration=2)
         else:
             # Si en MELEE
             if self.entity.fighter.is_in_melee:

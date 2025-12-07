@@ -571,6 +571,209 @@ class HostileEnemy(BaseAI):
         Mirar en esta misma página el final de la classe ConfusedEnemy
         """
 
+class HostileEnemyV3(BaseAI):
+    """Hostile enemy that can engage via sight or hearing."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self.path: List[Tuple[int, int]] = []
+        self.path2: List[Tuple[int, int]] = []
+
+    def _can_see_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, getattr(fighter, "fov", 0))
+        if radius <= 0:
+            return False
+
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+
+        visible = compute_fov(
+            transparent,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        return bool(visible[actor.x, actor.y])
+
+    def _sound_transparency_map(self, gamemap) -> np.ndarray:
+        try:
+            base = gamemap.get_transparency_map()
+        except AttributeError:
+            base = gamemap.tiles["transparent"]
+        sound_map = base.astype(float)
+        wall_opacity = 0.5  # Walls are semi-transparent for sound; tweak here if needed.
+        sound_map = np.where(sound_map, sound_map, wall_opacity)
+        try:
+            closed_ch = tile_types.closed_door["dark"]["ch"]
+            door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
+            sound_map[door_mask] = 0.5  # Closed doors are semi-transparent for sound; tweak here.
+        except Exception:
+            pass
+        return sound_map
+
+    def _can_hear_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        hearing_radius = getattr(fighter, "foh", 0)
+        if hearing_radius <= 0:
+            return False
+        gamemap = self.engine.game_map
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        sound_map = self._sound_transparency_map(gamemap)
+        audible = compute_fov(
+            sound_map,
+            (self.entity.x, self.entity.y),
+            hearing_radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        return bool(audible[actor.x, actor.y])
+
+    def _noise_bonus(self, actor: Actor) -> int:
+        """Noise made by the target (e.g. attacking or opening doors) reduces stealth for hearing checks."""
+        engine = getattr(self, "engine", None)
+        if not engine or not hasattr(engine, "noise_level"):
+            return 0
+        try:
+            return max(0, engine.noise_level(actor))
+        except Exception:
+            return 0
+
+    def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Optional[int]:
+        '''Cálculo del rango que dispara el agravio'''
+        if base_range is None:
+            return None
+        if self.entity.fighter.aggravated is False:
+            return random.randint(0, 3) + base_range - target_stealth - random.randint(0, target_luck)
+        return random.randint(0, 3) + base_range
+
+    def perform(self) -> None:
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
+        dx = target.x - self.entity.x
+        dy = target.y - self.entity.y
+        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+            self_invisible = True
+            self_visible = False
+        else:
+            self_invisible = False
+            self_visible = True
+
+        self.path = self.get_path_to(target.x, target.y)
+
+        target_stealth = getattr(target.fighter, "stealth", 0)
+        target_luck = getattr(target.fighter, "luck", 0)
+        noise_bonus = self._noise_bonus(target)
+        # Noise makes the target easier to detect by hearing: it reduces effective stealth for engage checks.
+        if noise_bonus:
+            target_stealth = max(0, target_stealth - noise_bonus)
+
+        can_see = self._can_see_actor(target)
+        can_hear = False
+        detection_base: Optional[int] = None
+        if can_see:
+            detection_base = getattr(self.entity.fighter, "fov", 0)
+        else:
+            can_hear = self._can_hear_actor(target)
+            if can_hear:
+                detection_base = getattr(self.entity.fighter, "foh", 0)
+            elif noise_bonus > 0:
+                # If the target is noisy but not yet in audible map, we still rely on hearing range.
+                detection_base = getattr(self.entity.fighter, "foh", 0)
+
+        if detection_base is None and self.entity.fighter.aggravated:
+            detection_base = max(
+                getattr(self.entity.fighter, "fov", 0),
+                getattr(self.entity.fighter, "foh", 0),
+                1,
+            )
+
+        # Estar dentro del FOV o el FOH de una criatura no agravia inmediatamente.
+        # Para el agravio entran en juego el stealth y el luck del target.
+        engage_rng = self._engage_range(detection_base, target_stealth, target_luck)
+        if engage_rng is None:
+            engage_rng = -1
+
+        # if settings.DEBUG_MODE:
+        #     debug_msg = (
+        #         f"[DEBUG] {self.entity.name}: vision={can_see}, hearing={can_hear}, "
+        #         f"noise_bonus={noise_bonus}, engage_rng={engage_rng}, dist={distance}"
+        #     )
+        #     try:
+        #         self.engine.message_log.add_message(debug_msg, color.white)
+        #     except Exception:
+        #         if getattr(self.engine, "debug", False):
+        #             print(debug_msg)
+
+        if engage_rng >= 0 and distance > 1 and distance <= engage_rng:
+            if self.entity.fighter.aggravated == False:
+                self.entity.fighter.aggravated = True
+                if self_visible:
+                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+                else:
+                    if settings.DEBUG_MODE:
+                        print(f"DEBUG: {self.entity.name} is aggravated!")
+
+            if not self.path:
+                return WaitAction(self.entity).perform()
+            else:
+                dest_x, dest_y = self.path.pop(0)
+                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+        elif engage_rng >= 0 and distance <= 1:
+            if self.entity.fighter.aggravated == False:
+                # Stealth check en contacto melee: el atacante intenta no agravar todavía.
+                stealth_roll = random.randint(1, 4) + target_stealth + random.randint(0, target_luck)
+                awareness = random.randint(0, 3) + max(getattr(self.entity.fighter, "fov", 0), getattr(self.entity.fighter, "foh", 0))
+                if settings.DEBUG_MODE:
+                    dbg = f"[DEBUG] {self.entity.name} melee stealth check: roll={stealth_roll} vs dc={awareness}"
+                    try:
+                        self.engine.message_log.add_message(dbg, color.white)
+                    except Exception:
+                        if getattr(self.engine, "debug", False):
+                            print(dbg)
+                if stealth_roll > awareness:
+                    # Supera el chequeo: no se agrava aún, permitiendo un posible stealth attack.
+                    return WaitAction(self.entity).perform()
+                self.entity.fighter.aggravated = True
+                return WaitAction(self.entity).perform()
+            else:
+                if self.entity.fighter.stamina == 0:
+                    if self_visible:
+                        self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+                    return WaitAction(self.entity).perform()
+                else:
+                    return MeleeAction(self.entity, dx, dy).perform()
+
+        elif distance > engage_rng:
+            self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+            if not self.path2:
+                return WaitAction(self.entity).perform()
+            else:
+                if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
+                    self.entity.fighter.wait_counter += 1
+                    return WaitAction(self.entity).perform()
+                else:
+                    self.entity.fighter.wait_counter -= 1
+                    dest_x, dest_y = self.path2.pop(0)
+                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+        # Default fallback
+        return WaitAction(self.entity).perform()
+
 class HostileEnemyV2(BaseAI):
 
     _NEIGHBOR_DELTAS = [
