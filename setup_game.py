@@ -37,7 +37,8 @@ if TYPE_CHECKING:
 
 
 # Load the background image and remove the alpha channel.
-background_image = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
+#background_image = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
+background_image = tcod.image.load("data/graphics/menu.png")[:, :, :3]
 
 
 _EQUIPMENT_SLOT_NAMES = {
@@ -219,9 +220,11 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         console.print(
             console.width // 2,
-            console.height // 2 - 4,
-            _("THE SEEKER"),
-            fg=color.menu_title,
+            console.height // 2 - 8,
+            _("=== the roguelike ==="),
+            #fg=color.menu_title,
+            #fg=(155, 155, 33),
+            fg=color.orange,
             #alignment=tcod.CENTER,   # DEPRECATED
             alignment=libtcodpy.CENTER,
         )
@@ -229,7 +232,8 @@ class MainMenu(input_handlers.BaseEventHandler):
             console.width // 2,
             console.height - 2,
             "By Letchug",
-            fg=color.menu_title,
+            #fg=color.menu_title,
+            fg=(25,25,25),
             #alignment=tcod.CENTER,   # DEPRECATED
             alignment=libtcodpy.CENTER,
         )

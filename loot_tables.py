@@ -18,8 +18,8 @@ from entity import Item
 #   esa criatura. Pero es fácil hacer que se dropeen todos:
 #   loot_tables.build_monster_inventory escoge aleatoriamente objetos de la lista 
 #   MONSTER_LOOT_TABLES pero sin duplicados. Ahora bien, si el "amount" (atributo
-#   del build_monster_inventory establecido en su Inventory) excede el número de opciones disponibles simplemente devuelve 
-#   todas las opciones en un orden aleatorio.
+#   del build_monster_inventory establecido en su Inventory) excede el número de 
+#   opciones disponibles simplemente devuelve todas las opciones en un orden aleatorio.
 # - Si se quiere estableces su inventario manualmente, se puede hacer así:
 #   inventory=Inventory(capacity=2, items=[short_sword, leather_armor])
 # - Además, puede tener configurado un “drop especial” independiente:

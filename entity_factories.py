@@ -1518,6 +1518,42 @@ goblin = Actor(
 #goblin.on_spawn = _setup_creature_equipment
 goblin.on_spawn = _goblin_on_spawn
 
+grey_goblin = Actor(
+    char="g",
+    color=(60,89,33),
+    name="Goblin",
+    #ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
+    ai_cls=HostileEnemyV3,
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
+    fighter=Fighter(
+        hp=8,
+        base_defense=3,
+        base_to_hit=0,
+        strength=0,
+        recover_rate=50,
+        recover_amount=1,
+        fov=5,
+        foh=6,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
+        aggressivity=4,
+        stamina=random.randint(2,4),
+        max_stamina=3,
+        poison_resistance=6,
+        action_time_cost=7,
+        #woke_ai_cls=HostileEnemyV2,
+        woke_ai_cls=HostileEnemyV3,
+        can_open_doors=True,
+        natural_weapon=NaturalWeapon(name="Goblin claws", min_dmg=1, max_dmg=4, dmg_bonus=0),
+    ),
+    #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
+    #inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", 3)),
+    #inventory=Inventory(capacity=1, items=[dagger]),
+    inventory=Inventory(capacity=3, loot_table_key="Goblin", loot_amount=1),
+    level=Level(xp_given=3),
+)
+#goblin.on_spawn = _setup_creature_equipment
+goblin.on_spawn = _goblin_on_spawn
+
 monkey = Actor(
     char="y",
     color=(110,4,4),

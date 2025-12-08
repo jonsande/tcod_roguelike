@@ -1,7 +1,7 @@
 import tcod
 from random import randint
 
-LANGUAGE = "es"  # Idioma activo de la interfaz.
+LANGUAGE = "es"  # Idioma activo de la interfaz. Opciones: en, es.
 FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
 
 # -- GRAPHICS ------------------------------------------------
@@ -25,11 +25,14 @@ if GRAPHIC_MODE == "ascii":
 
     # STANDARD
     tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
-    
+
     # CUSTOM
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin_bob.ttf", 128, 128)
 
     # OTHER
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/AppleII.ttf", 128, 128)
+
+    ##tileset = tcod.tileset.load_truetype_font("data/graphics/Fix15Mono-Bold.ttf", 16, 16)
     #tileset = tcod.tileset.load_tilesheet("data/graphics/bob20x20.png", 16, 16, tcod.tileset.CHARMAP_CP437)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 64, 64)
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 60, 58)
@@ -158,9 +161,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    {"item": "sand_bag", "quantity": 2},
-    {"item": "scout_hood", "quantity": 1},
-    {"item": "cloak", "quantity": 1},
+    #{"item": "sand_bag", "quantity": 2},
+    #{"item": "scout_hood", "quantity": 1},
+    #{"item": "cloak", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {

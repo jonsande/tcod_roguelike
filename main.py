@@ -39,10 +39,11 @@ def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
 
 def main() -> None:
 
-    #screen_width = 95
-    #screen_heigth = 51
     screen_width = 80
     screen_heigth = 44
+    
+    #screen_width = 95
+    #screen_heigth = 51
     #screen_width = 70
     #screen_heigth = 45
 
