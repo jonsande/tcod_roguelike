@@ -366,9 +366,9 @@ BOOKSHELF_SPAWN_CHANCES = [
 # ser que se sobre escriba.
 CHEST_ITEM_COUNT_BY_FLOOR = [
     (1, (2, 2)), # En el nivel 1 (Town) se genera siempre un cofre junto a El Viejo.
-    (2, (1, 3)),
-    (4, (1, 4)),
-    (6, (2, 4)),
+    (2, (1, 2)),
+    (4, (1, 3)),
+    (6, (1, 3)),
     (8, (3, 4)),
     (10, (3, 4)),
     (12, (3, 5)),
@@ -483,6 +483,7 @@ CHEST_LOOT_TABLES = {
         ("iron_helmet", 1),
         ("orcish_war_helm", 1),
     ],
+    9: ALL_ITEMS,
 }
 
 # Botín de mesas: cantidades y tablas por nivel.
@@ -593,7 +594,7 @@ DUNGEON_MAP_VARIANTS = [
         "weight": 0.5,
         "max_rooms": 20,
         "room_min_size": 3,
-        "room_max_size": 12,
+        "room_max_size": 13,
     },
 ]
 
@@ -636,6 +637,7 @@ CAVERN_MONSTER_COUNT_BY_FLOOR = [(1, (5, 9))]
 CAVERN_MONSTER_SPAWN_RULES = {
     "snake": {"min_floor": 2, "weight_progression": [(2, 15), (7, 2)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 10), (3, 20), (5, 15)]},
+    "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
     "orc": {"min_floor": 4, "weight_progression": [(4, 12), (6, 25), (9, 10)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
     "skeleton": {"min_floor": 6, "weight_progression": [(5, 5), (7, 10)]},
@@ -847,6 +849,7 @@ ENEMY_SPAWN_RULES = {
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
+    "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 3, "weight_progression": [(4, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
