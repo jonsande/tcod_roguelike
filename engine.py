@@ -112,6 +112,7 @@ class Engine:
             "mouse": None,
         }
         self._noise_events: Dict[Actor, Tuple[int, int]] = {}
+        self._noise_notified: set[Actor] = set()
 
     def reset_listen_state(self) -> None:
         """Limpia el estado del contador de escuchar puertas."""
@@ -211,23 +212,26 @@ class Engine:
     def what_time_it_is(self):
         return self.turn
     
-    def register_noise(self, source: Actor, level: int = 1, duration: int = 2) -> None:
-        """Stores a temporary noise event for `source` so AIs can detect it via hearing."""
+    def register_noise(self, source: Actor, level: int = 1, duration: int = 2, tag: str = "") -> None:
+        """Stores a temporary noise event for `source` so AIs (and the player) can detect it via hearing."""
         if level <= 0 or duration <= 0:
             return
+        # Always allow a fresh notification for this noise event.
+        self._noise_notified.discard(source)
         expires = self.turn + duration
         current = self._noise_events.get(source)
         if current:
-            prev_level, prev_exp = current
+            prev_level, prev_exp, prev_tag = current
             level = max(level, prev_level)
             expires = max(expires, prev_exp)
-        self._noise_events[source] = (level, expires)
+            tag = tag or prev_tag
+        self._noise_events[source] = (level, expires, tag)
 
     def noise_level(self, source: Actor) -> int:
         """Returns the active noise level for an actor, pruning expired events."""
         if source not in self._noise_events:
             return 0
-        level, expires = self._noise_events[source]
+        level, expires, _ = self._noise_events[source]
         if self.turn > expires:
             self._noise_events.pop(source, None)
             return 0
@@ -235,9 +239,106 @@ class Engine:
 
     def _prune_noise_events(self) -> None:
         """Remove expired noise entries based on current turn."""
-        expired = [actor for actor, (_, exp) in self._noise_events.items() if self.turn > exp]
+        expired = [actor for actor, (_, exp, _) in self._noise_events.items() if self.turn > exp]
         for actor in expired:
             self._noise_events.pop(actor, None)
+            self._noise_notified.discard(actor)
+
+    def _sound_transparency_map(self) -> np.ndarray:
+        gamemap = self.game_map
+        try:
+            base = gamemap.get_transparency_map()
+        except AttributeError:
+            base = gamemap.tiles["transparent"]
+        sound_map = base.astype(float)
+        wall_opacity = 0.5
+        sound_map = np.where(sound_map, sound_map, wall_opacity)
+        try:
+            closed_ch = tile_types.closed_door["dark"]["ch"]
+            door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
+            sound_map[door_mask] = 0.5
+        except Exception:
+            pass
+        return sound_map
+
+    def _player_can_hear(self, source: Actor, level: int) -> bool:
+        """Return True if the player can hear `source` based on their foh and noise level."""
+        if level <= 0:
+            return False
+        fighter = getattr(self.player, "fighter", None)
+        if not fighter:
+            return False
+        radius = getattr(fighter, "foh", 0)
+        if radius <= 0:
+            return False
+        if getattr(source, "gamemap", None) is not self.game_map:
+            return False
+        if not self.game_map.in_bounds(source.x, source.y):
+            return False
+        audible = compute_fov(
+            self._sound_transparency_map(),
+            (self.player.x, self.player.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        return bool(audible[source.x, source.y])
+
+    def _describe_noise_direction(self, source: Actor) -> str:
+        dx = source.x - self.player.x
+        dy = source.y - self.player.y
+        horiz = ""
+        vert = ""
+        if dy < 0:
+            vert = "north"
+        elif dy > 0:
+            vert = "south"
+        if dx < 0:
+            horiz = "west"
+        elif dx > 0:
+            horiz = "east"
+        if vert and horiz:
+            return f"{vert}-{horiz}"
+        return vert or horiz or "nearby"
+
+    def _notify_player_hearing(self) -> None:
+        """Send a one-time message for each audible noise event."""
+        if not self._noise_events:
+            self._noise_notified.clear()
+            return
+        for actor, (level, expires, tag) in list(self._noise_events.items()):
+            if actor is self.player:
+                continue
+            if expires < self.turn:
+                continue
+            if actor in self._noise_notified:
+                continue
+            if not self._player_can_hear(actor, level):
+                continue
+            # If the source is visible to the player, skip the descriptive noise message.
+            if getattr(self.game_map, "visible", None) is not None:
+                try:
+                    if self.game_map.visible[actor.x, actor.y]:
+                        continue
+                except Exception:
+                    pass
+            direction = self._describe_noise_direction(actor)
+            # Pick text based on tag
+            if tag == "footsteps":
+                text = "You hear footsteps"
+            elif tag == "door":
+                text = "You hear a door opening"
+            elif tag == "combat_hit":
+                text = "You hear shouts"
+            elif tag == "combat_miss":
+                text = "You hear sounds of fighting"
+            elif tag == "wall_break":
+                text = "You hear blows" if level <= 3 else "You hear a rumble"
+            elif tag == "wall_hit":
+                text = "You hear blows"
+            else:
+                text = "You hear something"
+            self.message_log.add_message(f"{text} to the {direction}.", color.white)
+            self._noise_notified.add(actor)
 
 
     def restore_time_pts(self):
@@ -311,6 +412,7 @@ class Engine:
                         entity.ai.perform()
                     except exceptions.Impossible:
                         pass  # Ignore impossible action exceptions from AI.
+        self._notify_player_hearing()
 
 
     def update_fov(self) -> None:

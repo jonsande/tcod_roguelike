@@ -1295,8 +1295,9 @@ player = Actor(
         base_defense=1,
         strength=1,
         recover_rate=50,
-        recover_amount=1, 
-        fov=1,
+        recover_amount=1,
+        fov=2,
+        foh=7,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=0,
@@ -1474,7 +1475,8 @@ cave_bat = Actor(
 )
 
 def _randomize_goblin_stats(entity: Actor) -> None:
-    entity.fighter.hp = random.randint(7, 10)
+    entity.fighter.max_hp = random.randint(7, 10)
+    entity.fighter.hp = entity.fighter.max_hp
     entity.fighter.base_defense = random.randint(2, 3)
     entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
     entity.fighter.woke_ai_cls = random.choice([HostileEnemyV3, ScoutV3])
@@ -1521,10 +1523,24 @@ goblin = Actor(
 #goblin.on_spawn = _setup_creature_equipment
 goblin.on_spawn = _goblin_on_spawn
 
+
+def _randomize_grey_goblin_stats(entity: Actor) -> None:
+    entity.fighter.max_hp = random.randint(8, 10)
+    entity.fighter.hp = entity.fighter.max_hp
+    entity.fighter.base_defense = random.randint(3, 4)
+    entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
+    entity.fighter.woke_ai_cls = random.choice([HostileEnemyV3, ScoutV3])
+    # etc.
+
+def _grey_goblin_on_spawn(entity: Actor) -> None:
+    """Configure grey goblins when they spawn so the engine can pickle the factory."""
+    _setup_creature_equipment(entity)
+    _randomize_grey_goblin_stats(entity)
+
 grey_goblin = Actor(
     char="g",
     color=(73,144,84),
-    name="Goblin",
+    name="Grey goblin",
     #ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
     ai_cls=HostileEnemyV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
@@ -1547,10 +1563,10 @@ grey_goblin = Actor(
         can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Goblin claws", min_dmg=1, max_dmg=4, dmg_bonus=1),
     ),
-    inventory=Inventory(capacity=3, loot_table_key="Goblin", loot_amount=1),
+    inventory=Inventory(capacity=3, loot_table_key="Grey goblin", loot_amount=1),
     level=Level(xp_given=3),
 )
-grey_goblin.on_spawn = _goblin_on_spawn
+grey_goblin.on_spawn = _grey_goblin_on_spawn
 
 monkey = Actor(
     char="y",

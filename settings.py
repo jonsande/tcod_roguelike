@@ -161,9 +161,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    #{"item": "sand_bag", "quantity": 2},
-    #{"item": "scout_hood", "quantity": 1},
-    #{"item": "cloak", "quantity": 1},
+    {"item": "sand_bag", "quantity": 2},
+    {"item": "scout_hood", "quantity": 1},
+    {"item": "cloak", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -848,7 +848,7 @@ ENEMY_SPAWN_RULES = {
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
-    "goblin": {"min_floor": 2, "weight_progression": [(2, 100), (4, 50), (6, 20), (10, 15)]},
+    "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
     "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 3, "weight_progression": [(4, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},

@@ -1063,6 +1063,12 @@ class Fighter(FireStatusMixin, BaseComponent):
             return
 
         self.hp -= amount
+        # Being hit generates noise so the player hears blows on the wall.
+        if getattr(self.engine, "register_noise", None):
+            try:
+                self.engine.register_noise(attacker or self.parent, level=3, duration=1, tag="wall_hit")
+            except Exception:
+                pass
    
     def gain_temporal_bonus(self, turns, amount, attribute, message_down):
 
@@ -1533,10 +1539,10 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.engine.message_log.add_message(death_message, color.enemy_die)
         #play_death_sound(self.parent)
         play_breakable_wall_destroy_sound()
-        # Extra noise on wall destruction so nearby foes can hear it.
+        # Extra noise on wall destruction so nearby foes (and the player) can hear it.
         if getattr(self.engine, "register_noise", None):
             try:
-                self.engine.register_noise(self.engine.player, level=3, duration=3)
+                self.engine.register_noise(self.parent, level=4, duration=3, tag="wall_break")
             except Exception:
                 pass
         gamemap.tiles[x, y] = tile_types.floor

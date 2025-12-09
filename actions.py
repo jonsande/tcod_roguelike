@@ -584,9 +584,9 @@ class ThrowItemAction(Action):
                     if attacker_visible or target_visible:
                         print(f"{attack_desc} for {damage} dmg points.")
                         self.engine.message_log.add_message(f"{attack_desc} for {damage} dmg points.", damage_color)
-                    else:
-                        print(f"You hear sounds of fighting.")
-                        self.engine.message_log.add_message(f"You hear sounds of fighting.")
+                    # else:
+                    #     print(f"You hear sounds of fighting.")
+                    #     self.engine.message_log.add_message(f"You hear sounds of fighting.")
 
                     target.fighter.take_damage(
                         damage,
@@ -600,9 +600,9 @@ class ThrowItemAction(Action):
                     if attacker_visible or target_visible:
                         print(f"{attack_desc} but does no damage.")
                         self.engine.message_log.add_message("{attack_desc} but does no damage.", damage_color)
-                    else:
-                        print(f"You hear sounds of fighting.")
-                        self.engine.message_log.add_message(f"You hear sounds of fighting.")
+                    # else:
+                    #     print(f"You hear sounds of fighting.")
+                    #     self.engine.message_log.add_message(f"You hear sounds of fighting.")
             
             # Si no impacta:
             else:
@@ -916,9 +916,8 @@ class MeleeAction(ActionWithDirection):
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
         
-        # Attacking is noisy: mark a short-lived noise burst so hostiles can hear it.
-        if getattr(self.engine, "register_noise", None) and self.entity is self.engine.player:
-            self.engine.register_noise(self.entity, level=2, duration=2)
+        # Attacking is noisy: mark a short-lived noise burst so others can hear it.
+        attack_noise_tag = "combat_miss"
 
         # Stamina check
         if self.entity.fighter.stamina <= 0:
@@ -1109,6 +1108,7 @@ class MeleeAction(ActionWithDirection):
             if damage > 0:
                 
                 does_damage = True
+                attack_noise_tag = "combat_hit"
 
                 # PENALIZACIÓN por SER DAÑADO
                 if not target_is_dummy:
@@ -1263,6 +1263,10 @@ class MeleeAction(ActionWithDirection):
         #hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit
         # El cálculo de imparto es una tirada de 1d6 + (to_hit * weapon_proficiency) vs defensa del objetivo
 
+        # Register final attack noise (hit or miss).
+        if getattr(self.engine, "register_noise", None):
+            self.engine.register_noise(self.entity, level=2, duration=2, tag=attack_noise_tag)
+
         # TIME SYSTEM
         # Con cada ataque gastamos el coste de puntos de tiempo por acción de cada luchador 
         #self.entity.fighter.current_energy_points -= 10
@@ -1322,9 +1326,9 @@ class MovementAction(ActionWithDirection):
         if door_opened:
             if self.entity is self.engine.player:
                 self.engine.message_log.add_message("You open the door.", color.white)
-                # Opening a door creates noise that can be heard for a couple of turns.
-                if getattr(self.engine, "register_noise", None):
-                    self.engine.register_noise(self.entity, level=1, duration=2)
+            # Opening a door creates noise that can be heard for a couple of turns.
+            if getattr(self.engine, "register_noise", None):
+                self.engine.register_noise(self.entity, level=2, duration=2, tag="door")
         else:
             # Si en MELEE
             if self.entity.fighter.is_in_melee:
@@ -1387,6 +1391,9 @@ class MovementAction(ActionWithDirection):
             self.entity.fighter.stamina += 1
             #print(f"{self.entity.name}: stamina: {self.entity.fighter.stamina}")
 
+        if player_moved:
+            if getattr(self.engine, "register_noise", None):
+                self.engine.register_noise(self.entity, level=1, duration=1, tag="footsteps")
         if player_moved and self.entity is self.engine.player:
             play_player_footstep()
         # Especial de slimes
@@ -1483,6 +1490,9 @@ class CloseDoorAction(Action):
         if self.entity is self.engine.player:
             self.engine.message_log.add_message("You close the door.", color.descend)
             play_door_close_sound()
+        # Closing a door also makes noise.
+        if getattr(self.engine, "register_noise", None):
+            self.engine.register_noise(self.entity, level=2, duration=2, tag="door")
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
 
 

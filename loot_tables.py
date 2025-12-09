@@ -41,6 +41,7 @@ MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
     "Giant rat": ("meat",),
     "Monkey": ("banana", "dagger", "scout_hood", "strength_potion", "increase_max_stamina", "life_potion", "infra_vision_potion", "antidote", "health_potion", "poison_potion", "power_potion", "stamina_potion", "temporal_infra_vision_potion", "blindness_potion","confusion_potion", "paralysis_potion", "petrification_potion", "precission_potion"),
     "Goblin": ("meat", "dagger", "leather_cap",),
+    "Grey goblin": ("dagger", "short_sword"),
     "Orc": ("short_sword", "power_potion", "leather_armor", "iron_helmet", "poison_potion"),
     "True Orc": ("long_sword", "spear", "short_sword", "leather_armor", "chain_mail", "orcish_war_helm", "cloak"),
     "Bandit": ("short_sword", "scout_hood", "precission_potion", "stamina_potion", "poison_potion", "dagger", "cloak"),
