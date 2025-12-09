@@ -309,6 +309,10 @@ class EventHandler(BaseEventHandler):
         except exceptions.Impossible as exc:
             self.engine.message_log.add_message(exc.args[0], color.impossible)
             return False  # Skip enemy turn on exceptions.
+
+        fighter = getattr(actor, "fighter", None)
+        if fighter:
+            fighter.handle_post_action(is_wait_action, action.__class__.__name__)
         
         self.engine.extra_turn_manager()
 

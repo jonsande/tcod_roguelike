@@ -5,6 +5,8 @@ import copy
 import random
 import numpy as np
 from i18n import _
+from tcod import constants
+from tcod.map import compute_fov
 
 import color
 from components.base_component import BaseComponent
@@ -311,6 +313,8 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.slime_generation = slime_generation
         self.can_pass_closed_doors = can_pass_closed_doors
         self.can_open_doors = can_open_doors
+        self.is_hidden = False
+        self._hidden_wait_turns = 0
 
         #self.energy_points = energy_points
         #self.current_energy_points = current_energy_points
@@ -648,23 +652,187 @@ class Fighter(FireStatusMixin, BaseComponent):
         else:
             return 0
 
+    def has_cloak_equipped(self) -> bool:
+        equipment = getattr(self.parent, "equipment", None)
+        if not equipment:
+            return False
+        return bool(getattr(equipment, "cloak", None))
+
+    def _orthogonal_wall_adjacent(self) -> bool:
+        """Return True if the actor is orthogonally adjacent to a non-walkable tile."""
+        engine = getattr(self, "engine", None)
+        actor = getattr(self, "parent", None)
+        if not engine or not actor:
+            return False
+        gamemap = engine.game_map
+        deltas = [(0, -1), (-1, 0), (1, 0), (0, 1)]
+        for dx, dy in deltas:
+            nx, ny = actor.x + dx, actor.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                return True
+        return False
+
+    def _transparency_map(self):
+        engine = getattr(self, "engine", None)
+        if not engine:
+            return None
+        gamemap = engine.game_map
+        try:
+            return gamemap.get_transparency_map()
+        except Exception:
+            return gamemap.tiles["transparent"]
+
+    def is_in_other_creature_fov(self) -> bool:
+        """Check if this actor is inside the FOV of any other living actor."""
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not actor or not engine:
+            return False
+        gamemap = engine.game_map
+        transparency = self._transparency_map()
+        if transparency is None:
+            return False
+        for other in gamemap.actors:
+            if other is actor or not getattr(other, "is_alive", False):
+                continue
+            other_fighter = getattr(other, "fighter", None)
+            if not other_fighter:
+                continue
+            radius = getattr(other_fighter, "fov", 0)
+            if radius <= 0:
+                continue
+            visible = compute_fov(
+                transparency,
+                (other.x, other.y),
+                radius,
+                algorithm=constants.FOV_SHADOW,
+            )
+            if bool(visible[actor.x, actor.y]):
+                return True
+        return False
+
+    def _actor_visible_to_player(self) -> bool:
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not actor or not engine:
+            return False
+        if actor is engine.player:
+            return True
+        try:
+            return bool(engine.game_map.visible[actor.x, actor.y])
+        except Exception:
+            return False
+
+    def _notify_hidden(self) -> None:
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not actor or not engine:
+            return
+        if actor is engine.player:
+            engine.message_log.add_message("You are now hidden.", color.status_effect_applied)
+        elif self._actor_visible_to_player():
+            engine.message_log.add_message(f"{actor.name} slips into hiding.", color.status_effect_applied)
+
+    def break_hide(self, reason: str = "", revealer: Optional["Actor"] = None) -> None:
+        """Remove hidden state and notify the player if appropriate."""
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        self._hidden_wait_turns = 0
+        if not getattr(self, "is_hidden", False):
+            return
+        self.is_hidden = False
+        if not actor or not engine:
+            return
+
+        if actor is engine.player:
+            if reason == "collision" and revealer:
+                engine.message_log.add_message(
+                    f"You are revealed as {revealer.name} bumps into you!",
+                    color.descend,
+                )
+            elif reason == "action":
+                engine.message_log.add_message("You leave your hiding spot.", color.descend)
+            else:
+                engine.message_log.add_message("You are no longer hidden.", color.descend)
+            return
+
+        if not self._actor_visible_to_player():
+            return
+
+        if reason == "collision" and revealer:
+            engine.message_log.add_message(
+                f"{actor.name} is revealed when {revealer.name} bumps into them!",
+                color.descend,
+            )
+        elif reason == "action":
+            engine.message_log.add_message(f"{actor.name} steps out of hiding.", color.descend)
+        else:
+            engine.message_log.add_message(f"{actor.name} is revealed.", color.descend)
+
+    def _can_attempt_hide(self) -> bool:
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not actor or not engine or actor is not engine.player:
+            return False
+
+        if getattr(self, "is_in_melee", False):
+            return False
+
+        gamemap = engine.game_map
+        for other in gamemap.actors:
+            if other is actor or not getattr(other, "is_alive", False):
+                continue
+            if max(abs(other.x - actor.x), abs(other.y - actor.y)) <= 1:
+                return False
+
+        return (
+            self.has_cloak_equipped()
+            and not getattr(self, "lamp_on", False)
+            and self._orthogonal_wall_adjacent()
+            and not self.is_in_other_creature_fov()
+        )
+
+    def handle_post_action(self, is_wait_action: bool, action_name: str = "") -> None:
+        """Manage hide/unhide transitions after an action finishes."""
+        actor = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if not actor or not engine:
+            self.is_hidden = False
+            self._hidden_wait_turns = 0
+            return
+
+        if actor is not engine.player:
+            self.is_hidden = False
+            self._hidden_wait_turns = 0
+            return
+
+        if is_wait_action:
+            if not self._can_attempt_hide():
+                self._hidden_wait_turns = 0
+                if self.is_hidden:
+                    self.break_hide(reason="conditions")
+                return
+
+            self._hidden_wait_turns += 1
+            if self._hidden_wait_turns >= 4 and not self.is_hidden:
+                self.is_hidden = True
+                self._hidden_wait_turns = 0
+                self._notify_hidden()
+            return
+
+        self._hidden_wait_turns = 0
+        if self.is_hidden:
+            self.break_hide(reason="action")
+
     def _environmental_stealth_bonus(self) -> int:
         """Situational stealth bonus when the player hugs a wall orthogonally."""
         engine = getattr(self, "engine", None)
         parent = getattr(self, "parent", None)
         if not engine or parent is not getattr(engine, "player", None):
             return 0
-        gamemap = getattr(engine, "game_map", None)
-        if not gamemap:
-            return 0
-        deltas = [(0, -1), (-1, 0), (1, 0), (0, 1)]
-        for dx, dy in deltas:
-            nx, ny = parent.x + dx, parent.y + dy
-            if not gamemap.in_bounds(nx, ny):
-                continue
-            if not gamemap.tiles["walkable"][nx, ny]:
-                return 1
-        return 0
+        return 1 if self._orthogonal_wall_adjacent() else 0
         
     @property
     def to_hit_bonus(self) -> int:

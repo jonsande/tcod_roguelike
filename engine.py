@@ -335,6 +335,8 @@ class Engine:
                 text = "You hear blows" if level <= 3 else "You hear a rumble"
             elif tag == "wall_hit":
                 text = "You hear blows"
+            elif tag == "flutter":
+                text = "You hear wings beating"
             else:
                 text = "You hear something"
             self.message_log.add_message(f"{text} to the {direction}.", color.white)
@@ -438,6 +440,8 @@ class Engine:
             # por defecto de su clase
             # if self.player.fighter.lamp_on == True:
                 #radius = random.randint(0, 1) + self.player.fighter.fov
+            if self.player.fighter.lamp_on == False:
+                radius = base_radius
 
         """Recompute the visible area based on the players point of view."""
         transparent = self.game_map.get_transparency_map()

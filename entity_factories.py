@@ -1297,7 +1297,7 @@ player = Actor(
         recover_rate=50,
         recover_amount=1,
         fov=2,
-        foh=7,
+        foh=6,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=0,
@@ -1473,6 +1473,8 @@ cave_bat = Actor(
     inventory=Inventory(capacity=0),
     level=Level(xp_given=1),
 )
+cave_bat.is_flying = True
+cave_bat.fighter.is_flying = True
 
 def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_hp = random.randint(7, 10)

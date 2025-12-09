@@ -409,12 +409,14 @@ class ThrowItemAction(Action):
         # CÁLCULO DE IMPACTOS
         hits = False
         stealth_attack = False
+        attacking_from_hide = getattr(self.entity.fighter, "is_hidden", False)
 
         # Contra objetivos vivientes
         if not target_is_dummy:
             
             # Ataque sorpresa backstab/stealth/sigilo con bonificador al impacto (beta)
-            if target.fighter.aggravated == False:
+            stealth_allowed = attacking_from_hide or target.fighter.aggravated == False
+            if stealth_allowed:
     
                 hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
                 hit_dice = round(hit_dice) + self.entity.fighter.luck
@@ -890,6 +892,7 @@ class MeleeAction(ActionWithDirection):
         does_damage = False
         does_a_hit = False
         stealth_attack = False
+        attacking_from_hide = getattr(getattr(self.entity, "fighter", None), "is_hidden", False)
 
         # Comprobar si atacante y/o objetivo son visibles para el jugador
         # Útil para impresión de mensajes y más.
@@ -912,6 +915,25 @@ class MeleeAction(ActionWithDirection):
         target_ai = getattr(target, "ai", None)
         target_is_dummy = self.is_dummy_object(target_ai)
         target_fighter = getattr(target, "fighter", None)
+        if target_fighter and getattr(target_fighter, "is_hidden", False):
+            target_fighter.break_hide(reason="collision", revealer=self.entity)
+            if self.entity is self.engine.player:
+                self.engine.message_log.add_message(
+                    f"You reveal {target.name} as you attack!",
+                    color.descend,
+                )
+            elif target is self.engine.player:
+                # Player notified inside break_hide.
+                pass
+            elif self.engine.game_map.visible[target.x, target.y]:
+                self.engine.message_log.add_message(
+                    f"{self.entity.name} reveals {target.name} before they can strike.",
+                    color.descend,
+                )
+            self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+            if self.entity is not self.engine.player:
+                self.entity.fighter.handle_post_action(False, self.__class__.__name__)
+            return
         was_aggravated = getattr(target_fighter, "aggravated", False)
         if target_ai and hasattr(target_ai, "on_attacked"):
             target_ai.on_attacked(self.entity)
@@ -944,9 +966,10 @@ class MeleeAction(ActionWithDirection):
         # MECÁNICA BACKSTAB/STEALTH/SIGILO (beta)
         
         # Bonificador al impacto
+        stealth_allowed = attacking_from_hide or was_aggravated == False
         if target_is_dummy == False:
 
-            if was_aggravated == False:
+            if stealth_allowed:
                 #import ipdb;ipdb.set_trace()
                 #hit_dice = hit_dice + self.entity.fighter.luck + self.entity.fighter.base_stealth
                 hit_dice = random.randint(1, 6) + self.entity.fighter.stealth + self.entity.fighter.to_hit + self.entity.fighter.luck
@@ -1062,11 +1085,11 @@ class MeleeAction(ActionWithDirection):
 
             # Mecánica backstab/stealth/sigilo (beta)
             # Bonificador al daño
-            if stealth_attack:
+            if stealth_attack and stealth_allowed:
 
                 if isinstance(target, Actor):
                     if not target_is_dummy:
-                        if was_aggravated == False:
+                        if was_aggravated == False or attacking_from_hide:
 
                             # Cálculo de daño Backstab
                             second_weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
@@ -1253,6 +1276,9 @@ class MeleeAction(ActionWithDirection):
         #     self.entity.fighter.base_defense -= 1
         #     self.entity.fighter.to_defense_counter -= 1
 
+        if self.entity is not self.engine.player:
+            self.entity.fighter.handle_post_action(False, self.__class__.__name__)
+
         ## ...o reducimos a 0 el defense bonus acumulado
         ##if self.entity.fighter.to_defense_counter >= 1:
         ##    self.entity.fighter.base_defense -= self.entity.fighter.to_defense_counter
@@ -1287,6 +1313,11 @@ class MovementAction(ActionWithDirection):
         can_open_doors = getattr(self.entity.fighter, "can_open_doors", False)
         is_closed_door = game_map.is_closed_door(dest_x, dest_y)
 
+        def _finalize_non_player_action() -> None:
+            fighter = getattr(self.entity, "fighter", None)
+            if fighter and self.entity is not self.engine.player:
+                fighter.handle_post_action(False, self.__class__.__name__)
+
         if not game_map.in_bounds(dest_x, dest_y):
             if self.engine.game_world.current_floor == 1:
                 if (
@@ -1309,11 +1340,30 @@ class MovementAction(ActionWithDirection):
                 raise exceptions.Impossible("That way is blocked.")
         elif blocked_tile and not (is_closed_door and can_pass_closed_doors):
             # Otros tiles no walkable (o puertas si no se puede pasar ni abrir).
-            raise exceptions.Impossible("That way is blocked.")
+                raise exceptions.Impossible("That way is blocked.")
 
         # Comprobar entidad bloqueante.
         blocking_entity = game_map.get_blocking_entity_at_location(dest_x, dest_y)
         if blocking_entity:
+            hidden_fighter = getattr(blocking_entity, "fighter", None)
+            if hidden_fighter and getattr(hidden_fighter, "is_hidden", False):
+                hidden_fighter.break_hide(reason="collision", revealer=self.entity)
+                if self.entity is self.engine.player:
+                    self.engine.message_log.add_message(
+                        f"You bump into {blocking_entity.name} and reveal them!",
+                        color.descend,
+                    )
+                elif blocking_entity is self.engine.player:
+                    # Player gets notified via break_hide; no extra message needed.
+                    pass
+                elif self.engine.game_map.visible[blocking_entity.x, blocking_entity.y]:
+                    self.engine.message_log.add_message(
+                        f"{self.entity.name} bumps into {blocking_entity.name}, revealing them.",
+                        color.descend,
+                    )
+                self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+                _finalize_non_player_action()
+                return
             if is_closed_door and can_pass_closed_doors:
                 pass
             elif door_opened:
@@ -1393,7 +1443,9 @@ class MovementAction(ActionWithDirection):
 
         if player_moved:
             if getattr(self.engine, "register_noise", None):
-                self.engine.register_noise(self.entity, level=1, duration=1, tag="footsteps")
+                is_flying = getattr(self.entity, "is_flying", False) or getattr(getattr(self.entity, "fighter", None), "is_flying", False)
+                tag = "flutter" if is_flying else "footsteps"
+                self.engine.register_noise(self.entity, level=1, duration=1, tag=tag)
         if player_moved and self.entity is self.engine.player:
             play_player_footstep()
         # Especial de slimes
@@ -1416,6 +1468,7 @@ class MovementAction(ActionWithDirection):
                             f"The slime absorved the {item.name}!", color.orange
                         )
 
+        _finalize_non_player_action()
         # TIME SYSTEM
         #self.entity.fighter.current_energy_points -= 10
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
@@ -1622,6 +1675,11 @@ class WaitAction(Action):
         if self.entity is self.engine.player:
             self._handle_listen_through_door()
 
+        # Hidden/stealth maintenance for non-player actors (players handled in input_handlers).
+        fighter = getattr(self.entity, "fighter", None)
+        if fighter and self.entity is not self.engine.player:
+            fighter.handle_post_action(True, self.__class__.__name__)
+
         # TIME SYSTEM
         self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
         if DEBUG_MODE:
@@ -1749,6 +1807,27 @@ class BumpAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.target_actor
         if target:
+            target_fighter = getattr(target, "fighter", None)
+            if target_fighter and getattr(target_fighter, "is_hidden", False):
+                target_fighter.break_hide(reason="collision", revealer=self.entity)
+                if self.entity is self.engine.player:
+                    self.engine.message_log.add_message(
+                        f"You bump into {target.name} and reveal them!",
+                        color.descend,
+                    )
+                elif target is self.engine.player:
+                    # Player notified inside break_hide.
+                    pass
+                elif self.engine.game_map.visible[target.x, target.y]:
+                    self.engine.message_log.add_message(
+                        f"{self.entity.name} bumps into {target.name}, revealing them.",
+                        color.descend,
+                    )
+                # Spend the turn even though no attack occurs.
+                self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+                if self.entity is not self.engine.player:
+                    self.entity.fighter.handle_post_action(False, self.__class__.__name__)
+                return
             self_name = getattr(self.entity, "name", "").lower()
             target_name = getattr(target, "name", "").lower()
             if self_name == "adventurer" and target_name == "adventurer":

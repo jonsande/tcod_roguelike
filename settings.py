@@ -122,7 +122,7 @@ else:
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = True
+GOD_MODE = False
 GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
@@ -161,9 +161,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    {"item": "sand_bag", "quantity": 2},
-    {"item": "scout_hood", "quantity": 1},
-    {"item": "cloak", "quantity": 1},
+    #{"item": "sand_bag", "quantity": 2},
+    #{"item": "scout_hood", "quantity": 1},
+    #{"item": "cloak", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {

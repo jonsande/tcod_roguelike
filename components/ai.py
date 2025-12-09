@@ -45,7 +45,7 @@ class BaseAI(Action):
         player = getattr(engine, "player", None)
         if player and player is not self.entity:
             fighter = getattr(player, "fighter", None)
-            if fighter and getattr(fighter, "hp", 0) > 0:
+            if fighter and getattr(fighter, "hp", 0) > 0 and not getattr(fighter, "is_hidden", False):
                 targets.append(player)
 
         if self._is_adventurer(self.entity):
@@ -64,7 +64,7 @@ class BaseAI(Action):
             ):
                 continue
             fighter = getattr(actor, "fighter", None)
-            if fighter and getattr(fighter, "hp", 0) > 0:
+            if fighter and getattr(fighter, "hp", 0) > 0 and not getattr(fighter, "is_hidden", False):
                 targets.append(actor)
         return targets
 
@@ -609,12 +609,13 @@ class HostileEnemyV3(BaseAI):
         except AttributeError:
             base = gamemap.tiles["transparent"]
         sound_map = base.astype(float)
+        # Opacidad sonora de muros y puertas
         wall_opacity = 0.8  # Walls are semi-transparent for sound; tweak here if needed.
         sound_map = np.where(sound_map, sound_map, wall_opacity)
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
             door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
-            sound_map[door_mask] = 0.3  # Closed doors are semi-transparent for sound; tweak here.
+            sound_map[door_mask] = 0.5  # Closed doors are semi-transparent for sound; tweak here.
         except Exception:
             pass
         return sound_map
