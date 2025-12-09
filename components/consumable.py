@@ -346,9 +346,13 @@ class PetrifyConsumable(Consumable):
             "{name} turns to stone and cannot move anymore.",
             color.status_effect_applied,
         )
-        consumer.ai = components.ai.ParalizeEnemy(
-            entity=consumer, previous_ai=consumer.ai, turns_remaining=999999,
-        )
+        if consumer is self.engine.player:
+            # Remove the player's AI to mark them as no longer alive, triggering game over.
+            consumer.ai = None
+        else:
+            consumer.ai = components.ai.ParalizeEnemy(
+                entity=consumer, previous_ai=consumer.ai, turns_remaining=999999,
+            )
         self.consume()
         self.parent.identify()
 

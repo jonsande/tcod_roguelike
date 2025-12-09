@@ -63,6 +63,22 @@ class Equipment(BaseComponent):
     def _sum_bonus(self, attribute: str) -> int:
         return sum(getattr(eq, attribute, 0) for eq in self._equipped_equippables())
 
+    def equipped_items(self):
+        """Return a list of all currently equipped item instances."""
+        return [
+            item
+            for item in (
+                self.weapon,
+                self.armor,
+                self.head_armor,
+                self.cloak,
+                self.artifact,
+                self.ring_left,
+                self.ring_right,
+            )
+            if item is not None
+        ]
+
     def _is_cursed(self, item: Optional[Item]) -> bool:
         eq = getattr(item, "equippable", None)
         return bool(eq and getattr(eq, "cursed", False))

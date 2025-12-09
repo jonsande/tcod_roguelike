@@ -7,6 +7,7 @@ from components.ai import (
     HostileEnemy,
     HostileEnemyV2,
     HostileEnemyV3,
+    ScoutV3,
     Neutral,
     Dummy,
     ConfusedEnemy,
@@ -1475,6 +1476,8 @@ cave_bat = Actor(
 def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.hp = random.randint(7, 10)
     entity.fighter.base_defense = random.randint(2, 3)
+    entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
+    entity.fighter.woke_ai_cls = random.choice([HostileEnemyV3, ScoutV3])
     # etc.
 
 def _goblin_on_spawn(entity: Actor) -> None:
@@ -1487,7 +1490,7 @@ goblin = Actor(
     color=(60,89,33),
     name="Goblin",
     #ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
-    ai_cls=HostileEnemyV3,
+    ai_cls=SleepingEnemy,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,

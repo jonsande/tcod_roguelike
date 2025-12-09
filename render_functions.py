@@ -110,20 +110,14 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
                 # Entities like vanished foes clear their name; skip them on hover.
                 continue
             if isinstance(entity, Actor):
-                equipped_items = []
-                if entity.equipment.weapon:
-                    equipped_items.append(entity.equipment.weapon.name)
-                if entity.equipment.armor:
-                    equipped_items.append(entity.equipment.armor.name)
-                if entity.equipment.cloak:
-                    equipped_items.append(entity.equipment.cloak.name)
-                if entity.equipment.artifact:
-                    equipped_items.append(entity.equipment.artifact.name)
-                if equipped_items:
-                    if len(equipped_items) == 1:
-                        name += f" (with {equipped_items[0]})"
-                    else:
-                        name += f" (with {', '.join(equipped_items[:-1])} and {equipped_items[-1]})"
+                equipped = []
+                if getattr(entity, "equipment", None):
+                    for item in entity.equipment.equipped_items():
+                        item_name = getattr(item, "name", None)
+                        if item_name:
+                            equipped.append(item_name)
+                if equipped:
+                    name += f" (with {_format_list_with_and(equipped)})"
                 slime_suffix = _slime_inside_description(entity)
                 if slime_suffix:
                     name += slime_suffix

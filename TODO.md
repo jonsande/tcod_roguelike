@@ -90,12 +90,12 @@ POCIONES
 
 ANILLOS
 - [ ] Anillo stealth.
+- [ ] Anillo de invisibilidad
+- [ ] Anilos mixtos, con propiedades mágicas buenas y también malas.
 - [x] Anillos malditos.
 - [x] Anillo de fuerza +1
-- [ ] Anillo de invisibilidad
 - [x] Anillo de estamina.
 - [x] Anillo de infravisión.
-- [ ] Anilos mixtos, con propiedades mágicas buenas y también malas.
 
 COLGANTES Y AMULETOS
 
@@ -120,6 +120,7 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 OBJETOS VARIOS
 - [ ] Guantes! Alguno mágico, que te suba el to-hit, o la suerte.
 - [ ] Botas!
+- [ ] Mushroms!
 - [x] Cascos! Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
 - [ ] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
 - [ ] Bastones mágicos!
@@ -132,6 +133,7 @@ ARTEFACTOS
 - [ ] Crear artefacto revolver. Es un objeto único. Se tiene en el inventario, y al activarlo, permite disparar. El revolver tiene 6 balas (y no se puede recargar, pues no existirán más balas en toda la mazmorra). Cuando se dispara el revolver, el jugador escoge el objetivo. Son objetivos válidos las criaturas que sean visibles y que se encuentren en un radio de 25 casillas o menos. La probabilidad de impactar será como sigue: 100% a la distancia de una casilla.... El daño será variable.
 
 HUD - USER INTERFACE - ETC
+- [ ] Si una criatura está dormida, debe indicarse en la descripción de inspección. Si está despierta pero ignorando al jugador, estaría bien que lo dijera también.
 - [ ] Posibilidad de fuentes diferentes en el panel inferior de mensajes, en las ventanas popup, etc. Ver tema fuentes en cogmind: https://www.gridsagegames.com/blog/2014/09/cogmind-fonts/
 - [ ] Tras morir, mensaje de confirmación y fundido a negro. Ir a una pantalla con algún arte (una lápida o restos de huesos o lo que sea).
 - [ ] Intro. Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen). Texto útil:

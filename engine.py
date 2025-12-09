@@ -63,11 +63,11 @@ class Engine:
     _CAMPFIRE_CHAR: str = "*"
     _CAMPFIRE_SCROLL_CHANCE: float = settings.CAMPFIRE_SCROLL_DROP_CHANCE
     _ADVENTURER_FLICKER_COLORS: Tuple[Tuple[int, int, int], ...] = (
-        (255, 255, 200),
-        (240, 220, 160),
-        (255, 245, 180),
-        (230, 200, 150),
-        (255, 255, 230),
+        (155, 155, 200),
+        (140, 120, 160),
+        (155, 145, 180),
+        (130, 100, 150),
+        (155, 155, 130),
     )
 
     def __init__(self, player: Actor, debug: bool = False):
