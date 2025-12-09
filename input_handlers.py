@@ -304,9 +304,15 @@ class EventHandler(BaseEventHandler):
         if actor is self.engine.player and not is_wait_action:
             self.engine.reset_listen_state()
 
+        profiler = getattr(self.engine, "profiler", None)
+
+        if profiler:
+            profiler.start_phase("player_action")
         try:
             action.perform()
         except exceptions.Impossible as exc:
+            if profiler:
+                profiler.end_phase("player_action")
             self.engine.message_log.add_message(exc.args[0], color.impossible)
             return False  # Skip enemy turn on exceptions.
 
@@ -320,6 +326,9 @@ class EventHandler(BaseEventHandler):
             self.engine.player.fighter.advance_player_confusion()
             self.engine.player.fighter.advance_player_paralysis()
 
+        if profiler:
+            profiler.end_phase("player_action")
+
         # Move THE CLOCK
         self.engine.clock()
 
@@ -329,11 +338,21 @@ class EventHandler(BaseEventHandler):
         now = self.engine.what_time_it_is()
         print(f"\n{color.bcolors.BOLD}{color.bcolors.WARNING}=============== Turn: {now} ==============={color.bcolors.ENDC}\n")
 
+        if profiler:
+            profiler.start_phase("enemy_turns")
         self.engine.handle_enemy_turns()
+        if profiler:
+            profiler.end_phase("enemy_turns")
 
+        if profiler:
+            profiler.start_phase("fov")
         self.engine.update_fov()
+        if profiler:
+            profiler.end_phase("fov")
 
         # Autoheal, Hunger, Poison
+        if profiler:
+            profiler.start_phase("upkeep")
         self.engine.autohealmonsters()
         self.engine.update_hunger()
         self.engine.update_poison()
@@ -364,6 +383,10 @@ class EventHandler(BaseEventHandler):
         # Colocar escaleras para que no queden ocultas por la debris
         self.engine.bugfix_downstairs()
         self.engine.bugfix_upstairs()
+
+        if profiler:
+            profiler.end_phase("upkeep")
+            profiler.end_turn(self.engine.turn)
 
         return True
 

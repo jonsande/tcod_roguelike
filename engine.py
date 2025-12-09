@@ -8,6 +8,7 @@ import time
 
 import lzma
 import pickle
+from collections import deque
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Tuple
 
 import tcod
@@ -44,8 +45,85 @@ AnimationFrame = Tuple[List[AnimationGlyph], float]
 TileInfoContext = Tuple[str, Tuple[int, int], str]
 
 
-# Calendario:
-#calendar = {}
+class TurnProfiler:
+    """Pequeño profiler por fases de turno para detectar bajones en caliente."""
+
+    def __init__(
+        self,
+        *,
+        enabled: bool,
+        report_interval: int = 50,
+        window: int = 200,
+        emitter: Optional[Callable[[str], None]] = None,
+    ):
+        self.enabled = enabled
+        self.report_interval = max(1, int(report_interval)) if enabled else 0
+        self.history: Dict[str, deque[float]] = {}
+        self._starts: Dict[str, float] = {}
+        self._current: Dict[str, float] = {}
+        self._emit = emitter
+        self._window = window
+
+    def start_phase(self, name: str) -> None:
+        if not self.enabled:
+            return
+        self._starts[name] = time.perf_counter()
+
+    def end_phase(self, name: str) -> None:
+        if not self.enabled:
+            return
+        start = self._starts.pop(name, None)
+        if start is None:
+            return
+        duration = time.perf_counter() - start
+        self._current[name] = self._current.get(name, 0.0) + duration
+
+    def end_turn(self, turn_number: int) -> None:
+        if not self.enabled:
+            return
+        for name, duration in self._current.items():
+            buffer = self.history.get(name)
+            if buffer is None:
+                buffer = deque(maxlen=self._window)
+                self.history[name] = buffer
+            buffer.append(duration)
+        self._current.clear()
+        self._starts.clear()
+        if self.report_interval and turn_number % self.report_interval == 0:
+            self._emit_report(turn_number)
+
+    @staticmethod
+    def _percentile(values: List[float], fraction: float) -> float:
+        if not values:
+            return 0.0
+        sorted_vals = sorted(values)
+        k = (len(sorted_vals) - 1) * fraction
+        lower = int(k)
+        upper = min(lower + 1, len(sorted_vals) - 1)
+        weight = k - lower
+        return sorted_vals[lower] + (sorted_vals[upper] - sorted_vals[lower]) * weight
+
+    def _emit_report(self, turn_number: int) -> None:
+        if not self._emit or not self.history:
+            return
+        parts: List[str] = []
+        for name in sorted(self.history.keys()):
+            samples = list(self.history.get(name, ()))
+            avg_ms = (sum(samples) / len(samples)) * 1000.0 if samples else 0.0
+            p95_ms = self._percentile(samples, 0.95) * 1000.0 if samples else 0.0
+            parts.append(f"{name} {avg_ms:.1f}ms avg / {p95_ms:.1f}ms p95")
+        if parts:
+            self._emit(f"Perf t={turn_number}: " + " | ".join(parts))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Los callables locales no son picklables; se reconfigura al restaurar.
+        state["_emit"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._emit = None
 
 
 class Engine:
@@ -113,6 +191,11 @@ class Engine:
         }
         self._noise_events: Dict[Actor, Tuple[int, int]] = {}
         self._noise_notified: set[Actor] = set()
+        self.profiler = TurnProfiler(
+            enabled=getattr(settings, "PERF_PROFILER_ENABLED", False),
+            report_interval=getattr(settings, "PERF_PROFILER_REPORT_INTERVAL", 50),
+        )
+        self._configure_profiler()
 
     def reset_listen_state(self) -> None:
         """Limpia el estado del contador de escuchar puertas."""
@@ -339,7 +422,7 @@ class Engine:
                 text = "You hear wings beating"
             else:
                 text = "You hear something"
-            self.message_log.add_message(f"{text} to the {direction}.", color.white)
+            self.message_log.add_message(f"{text} to the {direction}.", color.orange)
             self._noise_notified.add(actor)
 
 
@@ -1029,12 +1112,29 @@ class Engine:
         state = self.__dict__.copy()
         state["_active_context"] = None
         state["_root_console"] = None
+        # El profiler lleva un callable no picklable; se reconfigura al restaurar.
+        profiler = state.get("profiler")
+        if profiler:
+            try:
+                profiler._emit = None
+            except Exception:
+                pass
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
         self._active_context = None
         self._root_console = None
+        self._configure_profiler()
+
+    def _configure_profiler(self) -> None:
+        profiler = getattr(self, "profiler", None)
+        if not profiler:
+            return
+        enabled = getattr(settings, "PERF_PROFILER_ENABLED", False)
+        profiler.enabled = enabled
+        profiler.report_interval = max(1, int(getattr(settings, "PERF_PROFILER_REPORT_INTERVAL", 50))) if enabled else 0
+        profiler._emit = lambda msg: self.message_log.add_message(msg, color.white)
 
     def schedule_intro(self, slides: Sequence[dict]) -> None:
         """Configura las pantallas de introducción que se reproducirán al iniciar partida."""

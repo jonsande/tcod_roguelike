@@ -1,10 +1,11 @@
 import re
-from typing import Dict, Iterable, List, Optional, Reversible, Tuple
 import textwrap
+from typing import Dict, Iterable, List, Optional, Reversible, Tuple
 
 import tcod
 
 import color
+import settings
 
 
 class Message:
@@ -35,8 +36,17 @@ class MessageLog:
         """
         if stack and self.messages and text == self.messages[-1].plain_text:
             self.messages[-1].count += 1
+            message = self.messages[-1]
         else:
-            self.messages.append(Message(text, fg))
+            message = Message(text, fg)
+            self.messages.append(message)
+
+        if getattr(settings, "LOG_ECHO_TO_STDOUT", False):
+            try:
+                print(message.full_text)
+            except Exception:
+                # No bloquees el juego si stdout falla por alguna razón.
+                pass
 
     def render(
         #self, console: tcod.Console, x: int, y: int, width: int, height: int,   # DEPRECATED
