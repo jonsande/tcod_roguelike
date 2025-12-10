@@ -122,7 +122,7 @@ else:
 
 # -- Development helpers ------------------------------------------------------
 # Si está activo, el jugador lo ve todo (FOV enorme) y los muros no bloquean la visión.
-GOD_MODE = False
+GOD_MODE = True
 GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
@@ -137,6 +137,17 @@ LOG_ECHO_TO_STDOUT = True
 AI_PATH_RECALC_INTERVAL = 4
 # Radio (Chebyshev) hasta el que se usa un BFS barato; más lejos se usa A*.
 AI_PATH_BFS_RADIUS = 10
+# Intentos de ruta fallida antes de rendirse temporalmente.
+AI_PATH_FAILURE_LIMIT = 8
+# Distancia máxima (Chebyshev) de persecución antes de perder el agro.
+AI_MAX_PURSUIT_RANGE = 25
+# Turnos consecutivos sin ver/oír al objetivo antes de perder agro; se suma a la agresividad de la criatura.
+AI_AGGRO_LOSS_BASE = 3
+# Flag temporal para desactivar el sistema de ocultación del jugador.
+# Advertencia: mantener desactivado. Entra en conflicto con ScoutV3 y, por lo demás,
+# actualmente no es necesaria esta mecánica, ya que es posible hacer un backstab posicionándose
+# a la vuelta de una puerta o esquina si se tiene el stealth suficiente.
+STEALTH_DISABLED = True
 
 # -- Game settings ------------------------------------------------------
 
@@ -172,9 +183,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "antidote_ring", "quantity": 1},
     # {"item": "infra_vision_potion", "quantity": 5},
     # {"item": "remove_curse_scroll", "quantity": 3},
-    #{"item": "sand_bag", "quantity": 2},
-    #{"item": "scout_hood", "quantity": 1},
-    #{"item": "cloak", "quantity": 1},
+    {"item": "sand_bag", "quantity": 2},
+    {"item": "scout_hood", "quantity": 1},
+    {"item": "cloak", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -832,42 +843,42 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
-    "adventurer": {
-        "min_floor": 2, 
-        "weight_progression": [
-            (1, 0),
-            (2, 2),
-            (3, 4),
-            (4, 6),
-            (8, 4),
-            (15, 0),
-            ],
-    },
-    # Campfires: 10% chance up to floor 12, then drop 3% per floor.
-    "campfire": {
-        "min_floor": 2,
-        "weight_progression": [
-            (2, 10),
-            (13, 7),
-            (14, 4),
-            (15, 1),
-            (16, 0),
-        ],
-    },
-    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
-    "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
-    "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
-    "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
-    "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
+    # "adventurer": {
+    #     "min_floor": 2, 
+    #     "weight_progression": [
+    #         (1, 0),
+    #         (2, 2),
+    #         (3, 4),
+    #         (4, 6),
+    #         (8, 4),
+    #         (15, 0),
+    #         ],
+    # },
+    # # Campfires: 10% chance up to floor 12, then drop 3% per floor.
+    # "campfire": {
+    #     "min_floor": 2,
+    #     "weight_progression": [
+    #         (2, 10),
+    #         (13, 7),
+    #         (14, 4),
+    #         (15, 1),
+    #         (16, 0),
+    #     ],
+    # },
+    #"slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
+    #"snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
+    #"rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
+    #"swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
+    #"cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
-    "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
-    "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
-    "orc": {"min_floor": 3, "weight_progression": [(4, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
-    "true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
-    "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
-    "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
-    "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
-    "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
+    #"grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
+    #"monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
+    #"orc": {"min_floor": 3, "weight_progression": [(4, 10), (4, 15), (5, 25), (6, 35), (9, 0)]},
+    #"true_orc": {"min_floor": 6, "weight_progression": [(6, 5), (8, 20), (10, 0)]},
+    #"skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
+    #"troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
+    #"bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
+    #"cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
 }
 
 PROFICIENCY_LEVELS = {

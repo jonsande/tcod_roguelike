@@ -13,6 +13,7 @@ from components.base_component import BaseComponent
 from render_order import RenderOrder
 import tile_types
 import loot_tables
+import settings
 from settings import DEBUG_MODE, PLAYER_DEFENSE_MISS_THRESHOLD
 from audio import (
     update_campfire_audio,
@@ -229,6 +230,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         recover_amount: int = 1,
         fov: int = 0,
         foh: int = 6,
+        perception: int = 3,
         weapon_proficiency: float = 1.0,
         base_stealth: int = 0,
         aggressivity: int = 0,
@@ -281,6 +283,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self._recover_counter = self._recover_interval
         self._base_fov = fov
         self._base_foh = foh
+        self.perception = perception
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
         self.location = (0, 0)
@@ -799,6 +802,12 @@ class Fighter(FireStatusMixin, BaseComponent):
         actor = getattr(self, "parent", None)
         engine = getattr(self, "engine", None)
         if not actor or not engine:
+            self.is_hidden = False
+            self._hidden_wait_turns = 0
+            return
+
+        # Si el sigilo está desactivado globalmente, fuerza estado visible.
+        if getattr(settings, "STEALTH_DISABLED", False):
             self.is_hidden = False
             self._hidden_wait_turns = 0
             return

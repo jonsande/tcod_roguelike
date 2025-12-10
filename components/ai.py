@@ -29,6 +29,9 @@ class BaseAI(Action):
         # Se usa para no recalcular A* cada turno si el objetivo no cambia y
         # el siguiente paso sigue libre.
         self._path_cache: dict[Tuple[int, int], Tuple[int, List[Tuple[int, int]]]] = {}
+        # Contadores de persecución: pérdida de contacto y fallos de ruta.
+        self._agro_lost_turns: int = 0
+        self._path_failure_streak: int = 0
 
     def perform(self) -> None:
         raise NotImplementedError()
@@ -52,7 +55,11 @@ class BaseAI(Action):
         player = getattr(engine, "player", None)
         if player and player is not self.entity:
             fighter = getattr(player, "fighter", None)
-            if fighter and getattr(fighter, "hp", 0) > 0 and not getattr(fighter, "is_hidden", False):
+            hidden = getattr(fighter, "is_hidden", False)
+            # Si el sigilo está desactivado, ignoramos el flag is_hidden para la selección de objetivos.
+            if getattr(settings, "STEALTH_DISABLED", False):
+                hidden = False
+            if fighter and getattr(fighter, "hp", 0) > 0 and not hidden:
                 targets.append(player)
 
         if self._is_adventurer(self.entity):
@@ -71,7 +78,10 @@ class BaseAI(Action):
             ):
                 continue
             fighter = getattr(actor, "fighter", None)
-            if fighter and getattr(fighter, "hp", 0) > 0 and not getattr(fighter, "is_hidden", False):
+            hidden = getattr(fighter, "is_hidden", False)
+            if getattr(settings, "STEALTH_DISABLED", False):
+                hidden = False
+            if fighter and getattr(fighter, "hp", 0) > 0 and not hidden:
                 targets.append(actor)
         return targets
 
@@ -222,14 +232,14 @@ class BaseAI(Action):
         path_rev.reverse()
         return path_rev
 
-    def get_path_to(self, dest_x: int, dest_y: int) -> List[Tuple[int, int]]:
+    def get_path_to(self, dest_x: int, dest_y: int, *, ignore_senses: bool = False) -> List[Tuple[int, int]]:
         """Compute and return a path to the target position.
 
         If there is no valid path then returns an empty list.
         """
         engine_turn = getattr(self.engine, "turn", 0)
         # Incluir la posición actual en la clave: la ruta depende del origen tanto como del destino.
-        cache_key = (self.entity.x, self.entity.y, dest_x, dest_y)
+        cache_key = (self.entity.x, self.entity.y, dest_x, dest_y, ignore_senses)
         recalc_interval = max(1, getattr(settings, "AI_PATH_RECALC_INTERVAL", 4))
         cached_entry = self._path_cache.get(cache_key)
         if cached_entry:
@@ -255,7 +265,7 @@ class BaseAI(Action):
         can_open_doors = getattr(fighter, "can_open_doors", False)
         # No planificamos si el objetivo está fuera del sentido dominante (vista u oído)
         # y aún no está agravado: evita que enemigos “dormidos” gasten CPU calculando rutas a ciegas.
-        if fighter and getattr(fighter, "aggravated", False) is False:
+        if not ignore_senses and fighter and getattr(fighter, "aggravated", False) is False:
             fov = max(0, getattr(fighter, "fov", 0))
             foh = max(0, getattr(fighter, "foh", 0))
             use_hearing = foh > fov
@@ -607,6 +617,7 @@ class HostileEnemyPlus(BaseAI):
         Mirar en esta misma página el final de la classe ConfusedEnemy
         """
 
+# OBSOLETO
 class HostileEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
@@ -670,16 +681,9 @@ class HostileEnemy(BaseAI):
         target_stealth = getattr(target.fighter, "stealth", 0)
         target_luck = getattr(target.fighter, "luck", 0)
         if self.entity.fighter.aggravated == False:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
-            # if target_stealth < 0:
-            #     stealth_penalty = target_stealth
-            # else:
-            #     stealth_penalty = random.randint(0, target_stealth)
-            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
             engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
 
         else:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
             engage_rng = random.randint(0, 3) + self.entity.fighter.fov
         
         # Debug
@@ -818,9 +822,11 @@ class HostileEnemyV3(BaseAI):
             pass
         return sound_map
 
-    def _can_hear_actor(self, actor: Actor) -> bool:
+    def _can_hear_actor(self, actor: Actor, noise_bonus: int = 0) -> bool:
         fighter = getattr(self.entity, "fighter", None)
         if not fighter:
+            return False
+        if noise_bonus <= 0:
             return False
         hearing_radius = getattr(fighter, "foh", 0)
         if hearing_radius <= 0:
@@ -855,18 +861,26 @@ class HostileEnemyV3(BaseAI):
             return 0
 
 
-    def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Optional[int]:
-        '''Cálculo del rango que dispara el agravio'''
+    def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Tuple[Optional[int], int, int]:
+        """Cálculo del rango que dispara el agravio, devolviendo también los dados usados."""
         if base_range is None:
-            return None
+            return None, 0, 0
         if self.entity.fighter.aggravated is False:
-            return random.randint(0, 3) + base_range - target_stealth - random.randint(0, target_luck)
-        return random.randint(0, 3) + base_range
+            luck_roll = random.randint(0, target_luck)
+            engage_roll = random.randint(0, self.entity.fighter.perception)
+            engage_rng = engage_roll + base_range - target_stealth - luck_roll
+            return engage_rng, engage_roll, luck_roll
+        else:
+            luck_roll = 0
+            engage_roll = random.randint(0, 3)
+            engage_rng = engage_roll + base_range
+            return engage_rng, engage_roll, luck_roll
 
     def perform(self) -> None:
         target = self._select_target()
         if not target:
-            return WaitAction(self.entity).perform()
+            # Si no hay objetivo (p.ej. jugador oculto), sigue patrullando.
+            return self._patrol_rooms()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
@@ -880,7 +894,8 @@ class HostileEnemyV3(BaseAI):
 
         self.path = self.get_path_to(target.x, target.y)
 
-        target_stealth = getattr(target.fighter, "stealth", 0)
+        orig_target_stealth = getattr(target.fighter, "stealth", 0)
+        target_stealth = orig_target_stealth
         target_luck = getattr(target.fighter, "luck", 0)
         noise_bonus = self._noise_bonus(target)
         # Noise makes the target easier to detect by hearing: it reduces effective stealth for engage checks.
@@ -893,7 +908,7 @@ class HostileEnemyV3(BaseAI):
         if can_see:
             detection_base = getattr(self.entity.fighter, "fov", 0)
         else:
-            can_hear = self._can_hear_actor(target)
+            can_hear = self._can_hear_actor(target, noise_bonus=noise_bonus)
             if can_hear:
                 detection_base = getattr(self.entity.fighter, "foh", 0)
             elif noise_bonus > 0:
@@ -907,9 +922,36 @@ class HostileEnemyV3(BaseAI):
                 1,
             )
 
+        # Si está agravado pero sin ver/oir y sin base de detección, acumula turnos perdidos.
+        if self.entity.fighter.aggravated and detection_base is None:
+            self._agro_lost_turns += 1
+        else:
+            self._agro_lost_turns = 0
+
+        # Pérdida de agro por distancia excesiva.
+        max_pursuit = getattr(settings, "AI_MAX_PURSUIT_RANGE", 25)
+        if self.entity.fighter.aggravated and distance > max_pursuit:
+            self.entity.fighter.aggravated = False
+            self.path = []
+            self._agro_lost_turns = 0
+
+        # Pérdida de agro por demasiados turnos sin ver/oir.
+        if self.entity.fighter.aggravated and self._agro_lost_turns > 0:
+            threshold = getattr(settings, "AI_AGGRO_LOSS_BASE", 3) + getattr(self.entity.fighter, "aggressivity", 0)
+            if self._agro_lost_turns >= threshold:
+                self.entity.fighter.aggravated = False
+                self.path = []
+                self._agro_lost_turns = 0
+
         # Estar dentro del FOV o el FOH de una criatura no agravia inmediatamente.
         # Para el agravio entran en juego el stealth y el luck del target.
-        engage_rng = self._engage_range(detection_base, target_stealth, target_luck)
+        # Si no hay base de detección y no está agravado, no tiene sentido seguir este turno.
+        if detection_base is None and self.entity.fighter.aggravated is False:
+            return WaitAction(self.entity).perform()
+
+        engage_rng, engage_roll, luck_roll = self._engage_range(detection_base, target_stealth, target_luck)
+        if engage_rng is None:
+            engage_rng = -1
         if settings.DEBUG_MODE:
             noise_src = f"noise_bonus={noise_bonus}" if noise_bonus else "noise_bonus=0"
             print(
@@ -918,10 +960,9 @@ class HostileEnemyV3(BaseAI):
                 f"see={can_see} hear={can_hear} base_range={detection_base} "
                 f"target_stealth={getattr(target.fighter,'stealth',0)} "
                 f"target_luck={target_luck} {noise_src} "
-                f"adjusted_stealth={target_stealth} engage_rng={engage_rng}"
+                f"adjusted_stealth={target_stealth} "
+                f"roll_base={engage_roll} luck_roll={luck_roll} engage_rng={engage_rng}"
             )
-        if engage_rng is None:
-            engage_rng = -1
 
         # if settings.DEBUG_MODE:
         #     debug_msg = (
@@ -944,8 +985,13 @@ class HostileEnemyV3(BaseAI):
                         print(f"DEBUG: {self.entity.name} is aggravated!")
 
             if not self.path:
+                self._path_failure_streak += 1
+                if self._path_failure_streak >= getattr(settings, "AI_PATH_FAILURE_LIMIT", 3):
+                    self.entity.fighter.aggravated = False
+                    self._path_failure_streak = 0
                 return WaitAction(self.entity).perform()
             else:
+                self._path_failure_streak = 0
                 dest_x, dest_y = self.path.pop(0)
                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
 
@@ -1030,7 +1076,7 @@ class ScoutV3(BaseAI):
         while self.room_centers and attempts < len(self.room_centers):
             self._patrol_index = (self._patrol_index + 1) % len(self.room_centers)
             center = self.room_centers[self._patrol_index]
-            candidate_path = self.get_path_to(center[0], center[1])
+            candidate_path = self.get_path_to(center[0], center[1], ignore_senses=True)
             if candidate_path:
                 self._patrol_target = center
                 self.path = candidate_path
@@ -1065,7 +1111,9 @@ class ScoutV3(BaseAI):
         except exceptions.Impossible:
             # Reintentar recalculando el camino hacia el mismo objetivo; si sigue sin poder, pasa al siguiente.
             if self._patrol_target:
-                self.path = self.get_path_to(self._patrol_target[0], self._patrol_target[1])
+                #self.path = self.get_path_to(self._patrol_target[0], self._patrol_target[1])
+                # Para patrullar, ignoramos los sentidos: queremos un camino aunque el jugador esté oculto.
+                self.path = self.get_path_to(self._patrol_target[0], self._patrol_target[1], ignore_senses=True)
             if not self.path:
                 self._patrol_target = None
                 return WaitAction(self.entity).perform()
@@ -1136,7 +1184,14 @@ class ScoutV3(BaseAI):
             hearing_radius,
             algorithm=constants.FOV_SHADOW,
         )
-        return bool(audible[actor.x, actor.y])
+        can_hear = bool(audible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][HEARING] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_hear else 'cannot'} hear {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with foh={hearing_radius}"
+            )
+        return can_hear
 
     def _noise_bonus(self, actor: Actor) -> int:
         """Noise made by the target (e.g. attacking or opening doors) reduces stealth for hearing checks."""
@@ -1149,13 +1204,20 @@ class ScoutV3(BaseAI):
             return 0
 
 
-    def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Optional[int]:
-        '''Cálculo del rango que dispara el agravio'''
+    def _engage_range(self, base_range: Optional[int], target_stealth: int, target_luck: int) -> Tuple[Optional[int], int, int]:
+        """Cálculo del rango que dispara el agravio, devolviendo también los dados usados."""
         if base_range is None:
-            return None
+            return None, 0, 0
         if self.entity.fighter.aggravated is False:
-            return random.randint(0, 3) + base_range - target_stealth - random.randint(0, target_luck)
-        return random.randint(0, 3) + base_range
+            luck_roll = random.randint(0, target_luck)
+            engage_roll = random.randint(0, self.entity.fighter.perception)
+            engage_rng = engage_roll + base_range - target_stealth - luck_roll
+            return engage_rng, engage_roll, luck_roll
+        else:
+            luck_roll = 0
+            engage_roll = random.randint(0, 3)
+            engage_rng = engage_roll + base_range
+            return engage_rng, engage_roll, luck_roll
 
     def perform(self) -> None:
         target = self._select_target()
@@ -1174,7 +1236,8 @@ class ScoutV3(BaseAI):
 
         self._combat_path = self.get_path_to(target.x, target.y)
 
-        target_stealth = getattr(target.fighter, "stealth", 0)
+        orig_target_stealth = getattr(target.fighter, "stealth", 0)
+        target_stealth = orig_target_stealth
         target_luck = getattr(target.fighter, "luck", 0)
         noise_bonus = self._noise_bonus(target)
         # Noise makes the target easier to detect by hearing: it reduces effective stealth for engage checks.
@@ -1200,22 +1263,27 @@ class ScoutV3(BaseAI):
                 1,
             )
 
+        # Si no percibe al objetivo y no está agravado, ignoramos al jugador y seguimos patrullando.
+        if detection_base is None and self.entity.fighter.aggravated is False:
+            self._combat_path = []
+            return self._patrol_rooms()
+
         # Estar dentro del FOV o el FOH de una criatura no agravia inmediatamente.
         # Para el agravio entran en juego el stealth y el luck del target.
-        engage_rng = self._engage_range(detection_base, target_stealth, target_luck)
+        engage_rng, engage_roll, luck_roll = self._engage_range(detection_base, target_stealth, target_luck)
         if engage_rng is None:
             engage_rng = -1
-
-        # if settings.DEBUG_MODE:
-        #     debug_msg = (
-        #         f"[DEBUG] {self.entity.name}: vision={can_see}, hearing={can_hear}, "
-        #         f"noise_bonus={noise_bonus}, engage_rng={engage_rng}, dist={distance}"
-        #     )
-        #     try:
-        #         self.engine.message_log.add_message(debug_msg, color.white)
-        #     except Exception:
-        #         if getattr(self.engine, "debug", False):
-        #             print(debug_msg)
+        if settings.DEBUG_MODE:
+            noise_src = f"noise_bonus={noise_bonus}" if noise_bonus else "noise_bonus=0"
+            print(
+                f"[DEBUG][ENGAGE] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"target={getattr(target,'name','?')} dist={distance} "
+                f"see={can_see} hear={can_hear} base_range={detection_base} "
+                f"target_stealth={getattr(target.fighter,'stealth',0)} "
+                f"target_luck={target_luck} {noise_src} "
+                f"adjusted_stealth={target_stealth} "
+                f"roll_base={engage_roll} luck_roll={luck_roll} engage_rng={engage_rng}"
+            )
 
         if engage_rng >= 0 and distance > 1 and distance <= engage_rng:
             if self.entity.fighter.aggravated == False:
@@ -2160,110 +2228,7 @@ class SneakeEnemy(BaseAI):
                     dest_x, dest_y = self.path2.pop(0)
                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
 
-class Scout(BaseAI): # WORK IN PROGRESS
-    def __init__(self, entity: Actor):
-        super().__init__(entity)
-        self.path: List[Tuple[int, int]] = []
-        self.path2: List[Tuple[int, int]] = []
-        #self.spawn_point = (self.entity.x, self.entity.y)
-        self.checkpoint = []
 
-    def perform(self) -> None:
-
-        target = self._select_target()
-        if not target:
-            return WaitAction(self.entity).perform()
-        dx = target.x - self.entity.x
-        dy = target.y - self.entity.y
-        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
-
-        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-            self_invisible = True
-            self_visible = False
-        else:
-            self_invisible = False
-            self_visible = True
-
-        self.path = self.get_path_to(target.x, target.y)
-
-        # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
-        target_stealth = getattr(target.fighter, "stealth", 0)
-        target_luck = getattr(target.fighter, "luck", 0)
-        if self.entity.fighter.aggravated == False:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
-            # if target_stealth < 0:
-            #     stealth_penalty = target_stealth
-            # else:
-            #     stealth_penalty = random.randint(0, target_stealth)
-            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
-
-        else:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
-        
-        #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
-        #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
-
-        if distance > 1 and distance <= engage_rng:
-
-            self.entity.fighter.aggravated = True
-
-            if not self.path:
-                return WaitAction(self.entity).perform()
-            else:
-                dest_x, dest_y = self.path.pop(0)
-                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-
-        elif distance <= 1:
-
-            if self.entity.fighter.stamina == 0:
-                self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
-                return WaitAction(self.entity).perform()
-            else:
-                return MeleeAction(self.entity, dx, dy).perform()
-        
-        # SCOUTING MECHANICS
-        elif distance > engage_rng:
-            
-            if self.checkpoint:
-                dest_x, dest_y = self.checkpoint
-                #print(f"DESTINO ACTUAL DEL SCOUT: {dest_x},{dest_y}") # DEBUGG
-                self.path2 = self.get_path_to(dest_x, dest_y) # Returns array of cells to checkpoint
-                
-                if self.entity.x == dest_x and self.entity.y == dest_y:
-                    #self.checkpoint = []
-                    try:
-                        self.checkpoint = self.engine.center_room_array.pop(0) # Esto estaba dando un error IndexError
-                        return WaitAction(self.entity).perform()
-                    except IndexError:
-                        #print(f"[DEBUG] Error excepton -- IndexError: pop from empty list\nGoblin location: {self.checkpoint}")
-                        WaitAction(self.entity).perform()
-                else:
-                    if self.path2:
-                        to_x, to_y = self.path2.pop(0)
-                        
-                        #if distance > self.engine.player.fighter.fov + 2 and distance < self.engine.player.fighter.fov +15:
-                        if distance > 6 + 2 and distance < 6 + 9:
-                            #self.engine.game_map.visible
-                            self.engine.message_log.add_message(
-                                f"You hear footsteps!",
-                                color.orange
-                                )
-                            
-                        return MovementAction(self.entity, to_x - self.entity.x, to_y - self.entity.y).perform()
-                    else:
-                        return WaitAction(self.entity).perform()                   
-            else:
-                try:
-                    # TODO: Si lo estoy entendiendo bien, este código tiene un problema:
-                    # un scout va vaciando el array center_room. ¡Esto es muy chapucero!
-                    self.checkpoint = self.engine.center_room_array.pop(0)
-                    return WaitAction(self.entity).perform()
-                except IndexError:
-                    #print("IndexError: pop from empty list")
-                    WaitAction(self.entity).perform()
-                    
 class SentinelEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)

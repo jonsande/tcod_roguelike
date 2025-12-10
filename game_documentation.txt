@@ -173,11 +173,13 @@ APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los P
 
 - Pregunta frecuente: ¿Cómo funciona el rango de «engage»? Respuesta: para que una criatura sea agraviada, tiene que oir o ver al PJ dentro de su rango de «engage». Para HostileEnemyV3, el rango de «engage» se calcula así:
   
-  - Primero determina si puede ver u oír al jugador. Si lo ve, usa su fov como base; si no lo ve pero lo oye, usa su foh como base. Si no ve ni oye pero ya está agravado, toma el máximo de fov y foh como base. # TODO: creo que a la hora de determinar si la criatura pude ver u oír al jugador, deben aplicarse ya la reducción del target_stealth (con su noise_bonus) etc. Confirmar cómo está funcionando esto y decidir en consecuencia.
+  - Primero determina si puede ver u oír al jugador. Si lo ve, usa su fov como base; si no lo ve pero lo oye, usa su foh como base. Si no ve ni oye pero ya está agravado, toma el máximo de fov y foh como base. 
+  # TODO: creo que a la hora de determinar si la criatura pude ver u oír al jugador, deben aplicarse ya la reducción del target_stealth (con su noise_bonus) etc. Confirmar cómo está funcionando esto y decidir en consecuencia.
   - Ajusta el sigilo del jugador por ruido: target_stealth se reduce por el noise_bonus de engine.noise_level(target) (ruidos como abrir puertas o atacar lo hacen más fácil de detectar por oído).
   - Llama a _engage_range(base_range, target_stealth, target_luck):
-     - Si no está agraviado: engage_rng = rand(0..3) + base_range - target_stealth - rand(0..target_luck).
-     - Si ya está agraviado: engage_rng = rand(0..3) + base_range  # TODO: Quizá haya que aplicar el target_stealth y su luck aquí también.
+     - Si no está agraviado: engage_rng = random(0, fighter_perception) + base_range - target_stealth - rand(0..target_luck).
+     - Si ya está agraviado: engage_rng = random(0, fighter_perception) + base_range
+     - [NOTA: POR DIFÍCIL DE ENTENDER QUE ESTA MECÁNICA SEA, ESTÁ BIEN PENSADA Y SU RESULTADO ES MUY REALISTA. NO TOCAR!]
   - Si engage_rng es válido (>=0) y la distancia Chebyshev al jugador está entre 2 y engage_rng, agravia al enemigo (si no lo estaba) y avanza un paso por la ruta planificada hacia el jugador. Si la distancia es 1, intenta melee (con un chequeo de sigilo si aún no estaba agravado).
 
   - En resumen: el rango depende del mejor sentido disponible (vista u oído), reducido por sigilo/suerte del jugador y aumentado por ruido; una vez agravado, los ajustes de sigilo/luck ya no aplican.
@@ -190,15 +192,19 @@ APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los P
   - Dormidas o en reposo no agraviadas no planifican hasta ver/oir según su sentido fuerte.
 
 - Pregunta frecuente: ¿Cuál es el comportamiento de una criatura cuando está agraviada? Respuesta:
-- Cuando ya están agraviadas, dejan de filtrar por sentidos y entran en el bucle normal de persecución cada turno:
+  Cuando ya están agraviadas, dejan de filtrar por sentidos y entran en el bucle normal de persecución cada turno:
   - Siguen escogiendo objetivo (jugador u otros aventurers) y calculan distancia; mantienen aggravated=True (no hay un “calmado”).
   - Llaman a get_path_to sin el corte de vista/oído: usan la ruta cacheada si sigue libre, o recalculan (BFS en radio corto, A* si lejos).
   - Si la ruta existe y la distancia >1, avanzan un paso por ella; si distancia ==1, intentan MeleeAction.
   - Si la ruta está vacía o el siguiente paso se bloquea, esperan o recalculan en el siguiente turno (según la IA concreta, p.ej. HostileEnemyPlus puede retroceder).
   - Siguen oyendo/viendo para mensajes o rangos de agravio, pero el movimiento no se bloquea por perder visión: continúan persiguiendo con la ruta guardada.
   - Dormidas que se despiertan sustituyen su IA por la versión “hostil” y desde ahí se comportan como el resto.
-- En resumen: una vez agravadas, planifican y se mueven cada turno hacia el objetivo usando el pathfinding cacheado, ataquen o avancen según la distancia, sin volver a exigir ver/u oír para seguir.
-# TODO: Quizá la criatura agraviada sí deberís seguir filtrando por sentidos. Si el objetivo es visible y/o audible para la criatura, esta debería intentar ir siempre al lugar en que se encuentra el objetivo. Si no es ni visible ni audible, debería ir a la posición donde el objetivo fue visto y/o oído por última vez. Si al llegar a esa posición, en un número N de turnos (determinado por la agresividad de la criatura), sigue sin ver ni oir al objetivo, entonces la griatura debe dejar de estar agraviada.
+  - Dejan de estar agraviadas cuando:
+      - si not can_see and not can_hear, incrementa el contador agro_lost_turns: si contador agro_lost_turns > N resetea aggravated y path (N = agresividad + valor configurable desde el settings).
+      - Contador de fallos de ruta; si se bloquea más de M veces seguidas (configurable desde el settings), se rinde temporalmente.
+      - Si distance > max_pursuit_range (configurable desde el settings).
+
+- En resumen: una vez agravadas, planifican y se mueven cada turno hacia el objetivo usando el pathfinding cacheado, ataquen o avancen según la distancia, sin volver a exigir ver/u oír para seguir. Pero dejan de estar agraviadas de cumplirse las condiciones descritas.
 
 
 APÉNDICE II - GENERACIÓN DE NIVELES (parcialmente desactualizado)
