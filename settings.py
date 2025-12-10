@@ -127,11 +127,16 @@ GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
 
+# ANÁLISIS Y CONFIGURACIÓN DE RENDIMIENTO
 # Telemetría ligera de rendimiento por turno (se muestra cada N turnos).
-PERF_PROFILER_ENABLED = False
+PERF_PROFILER_ENABLED = True
 PERF_PROFILER_REPORT_INTERVAL = 30
 # Si está activo, cada mensaje del log también se imprime en stdout.
-LOG_ECHO_TO_STDOUT = False
+LOG_ECHO_TO_STDOUT = True
+# Número de turnos que se mantiene una ruta de IA antes de recalcularla si no hay bloqueos.
+AI_PATH_RECALC_INTERVAL = 4
+# Radio (Chebyshev) hasta el que se usa un BFS barato; más lejos se usa A*.
+AI_PATH_BFS_RADIUS = 10
 
 # -- Game settings ------------------------------------------------------
 

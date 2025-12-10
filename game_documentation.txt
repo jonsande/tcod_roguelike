@@ -1,49 +1,91 @@
 1. MECÁNICAS GENERALES
 
+1.1. El MOVIMIENTO
+
+[...]
+
+1.2. ABRIR/CERRAR PUERTAS
+
+[...]
+
+1.3. INSPECCIONAR ALREDEDORES
+
+[...]
+
 - No todos los muros son lo que parecen. A veces descubrir pasadizos secretos inspeccionando (tecla 'x') las paredes o golpeando contra ellas.
+
+1.4. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
+
+[...]
+
+1.5. BAJAR/SUBIER ESCALERAS
+
+[...]
+
 
 2. MECÁNICAS ESPECIALES
 
+2.1. SISTEMA DE OÍDO/ESCUCHA
+
+- En el juego todas las criaturas vivientes (el PJ incluido) tienen "oidos". Dependiendo de su Field Of Hearing (FOH) y de la capa de "opacidad" sonora del terreno circundante (los muros absorven gran parte del sonido, aunque no totalmente; las puertas absorven parte también), el PJ y los PNJ pueden oir a cierta distancia distintos eventos, como el movimiento de una criatura, puertas que se abren o se cierran, o muros que se derrumban. El jugador recibirá en la parte de abajo de la pantalla una descripción de lo que oye (y en qué dirección lo oye), si alguno de los eventos por él audibles entran dentro de su rango de escucha.
+
 - Es posible escuchar a través de las puertas. Espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
+
 - Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 
-3. EL COMBATE
+2.2. SISTEMA DE SIGILO
 
-- ¡Cuidado! ¡En este juego los combates son peligrosos! Algunos consejos básicos para sobrevivir: 
-  - todo enemigo ha de tomarse en serio. 
+[...]
+
+2.2.1. Ocultarse en las sombras
+
+- Si el PJ no está en combate, no está dentro del FOV de ninguna otra criatura, tiene equipada una capa, tiene la lámpara apagada y espera junto a un muro (en posición ortogonal) cuatro turnos seguidos (WaitAction), se considerará «oculto» (se generará un mensaje en la parte de abajo de la pantalla indicándolo). Cuando está oculto, no podrá ser atacado directamente por ninguna criatura. Si el PJ, estando oculto, lleva a cabo cualquier otra acción que no sea pasar turno (WaitAction), dejará de estar oculto inmediatamente después de llevar a cabo dicha acción. Si el PJ, estando oculto, ataca a otra criatura, ese ataque sera un ataque sigiloso (stealth attack), con sus correspondientes bonificadores, e inmediatamente después dejará de estar oculto. Por otra parte, si una criatura intenta moverse a una casilla en la que se encuentra oculto el jugador u otra criatura, la criatura que intenta moverse perderá el turno y la criatura oculta dejará de estar oculta. Siempre que el PJ se oculte o deje de estar oculto se generará un mensaje indicándolo.
+
+
+3. EL INVENTARIO
+
+[...]
+
+
+4. EL COMBATE
+
+- ¿Cómo se ataca? Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará (hay algunas excepciones).
+
+- ¡Cuidado! ¡En este los combates son peligrosos! Algunos consejos básicos para sobrevivir: 
+  
+  - Todo enemigo ha de tomarse en serio.
+  - Aprende las fortalezas y debilidades de cada tipo de enemigo y/o de su equipación o estado.
   - A veces empezar un combate no es la mejor táctica. 
   - En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). 
   - No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). 
-  - Aprende a hacer uso del entorno. A veces el sigilo es tu mejor baza. 
+  - Aprende a hacer uso del entorno. A veces el sigilo es tu mejor carta. 
   - Aprende a escapar.
+  
 
-- ¿Cómo se ataca? Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará (hay algunas excepciones, que el jugador deberá descubrir por sí mismo).
-
-
-3.1. EL MODO COMBATE (MODO MELEE)
+4.1. EL MODO COMBATE (MODO MELEE)
 
 - Si el PJ y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
 
-- En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que podemos llevar a cabo:
+- En el MODO MELEE, pueden ganarse hasta 3 puntos a To-Hit y 3 puntos a Defense, dependiendo de una serie de las MANIOBRAS DE COMBATE que podemos llevar a cabo (una vez que te familiarices un poco con ellas, te darás cuenta de que son mucho más intuitivas y fáciles de aplicar de lo que pueda parecer a primera vista):
 
 - FORTIFICAR: Si un personaje pasa turno (WaitAction) en el turno anterior a entrar MODO COMBATE, dicho personaje entrará en POSICIÓN DEFENSIVA, obteniendo los siguientes bonificadores:
 
                              TO-HIT |  DEFENSE
                               +1    |    +1
 
-- Una vez en MODO MELEE, existen tres tipos de MANIOBRAS DE COMBATE BÁSICAS, con distintos resultados para la STAMINA y el bonus-caché a TO-HIT y DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0, pero esto quizá cambien en algún momento):
+- Una vez en MODO MELEE, existen tres tipos de MANIOBRAS DE COMBATE BÁSICAS, con distintos resultados para la STAMINA y el bonus-caché a TO-HIT y DEFENSE (el límite de bonificación actualmente es 3, y el mínimo 0):
 
                             STAMINA |  TO-HIT  | DEFENSE
-Atacar (MeleeAction):         -1    |  reset   |   -1            x    
-Defenderse (WaitAction):      -1    |   +1     |   +1            x   
-Retroceder(MovementAction):   +1    |  reset   |   +1            x
+Atacar (MeleeAction):         -1    |  reset   |   -1                
+Defenderse (WaitAction):      -1    |   +1     |   +1               
+Retroceder(MovementAction):   +1    |  reset   |   +1            
 
-- Si el atacante logra un impacto y este hace daño obtiene un modificador al índice TO-HIT en el siguiente turno, hasta un máximo de 3:
+- Si el atacante logra un impacto y este hace daño obtiene, un modificador al índice TO-HIT en el siguiente turno, hasta un máximo de 3:
 
                                       TO-HIT
-                                        +1                       x
+                                        +1                       
 
-- Si el atacante no impacta pierde su bonus acumulado
+- Si el atacante no impacta, pierde su bonus acumulado
 
                             STAMINA |  TO-HIT  | DEFENSE
 Fallar impacto:               -     |  reset   |  reset                      
@@ -52,20 +94,20 @@ Fallar impacto:               -     |  reset   |  reset
 - Si el jugador se queda sin STAMINA en medio de un combate melee, puede hacer dos cosas, con sus correspondientes bonificaciones y penalizaciones asociadas:
 
                             STAMINA |  TO-HIT  | DEFENSE
-Defenderse (WaitAction):      +1    |  reset   |  reset          x
-Retroceder(MovementAction):   +1    |  reset   |   +1            x 
+Defenderse (WaitAction):      +1    |  reset   |  reset          
+Retroceder(MovementAction):   +1    |  reset   |   +1             
 
 - Si el jugador recibe un impacto y este hace daño, perderá de golpe las bonificaciones a TO-HIT y DEFENSE que hubiera acumulado:
 
                             STAMINA |  TO-HIT  | DEFENSE
-Redibir daño:                 -     |  reset   |  reset          x
+Redibir daño:                 -     |  reset   |  reset          
 
 
 - Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo.
 
 
 
-3.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
+4.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
 
 - Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
 
@@ -74,50 +116,102 @@ Redibir daño:                 -     |  reset   |  reset          x
 - Se considera que tiene lugar el impacto en caso de que el resultado sea MAYOR que la defensa del objetivo.
 
 
-3.3. CÁLCULO DE DAÑO
+4.3. CÁLCULO DE DAÑO
 
 - Si un ataque impacta, se calcula el daño según la siguiente fórmula:
 
         (FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
 
 
-3.4. TABLAS DE REFERENCIA (incompletas)
+4.4. TABLAS ORIENTATIVAS DE REFERENCIA (incompletas)
 
- TO-HIT   |   RESULTADO MÍN  |  RESULTADO MAX
-   0                1                6
-   1                2                7
-   2                3                8
-   3                4                9
-   4                5               10
-   5                6               11
+- La siguiente tabla asume el PJ To-hit base del del PJ, que es 1d6. 
 
+ TO-HIT BONUS   |   RESULTADO MÍN  |  RESULTADO MAX
+      0                   1                6
+      1                   2                7
+      2                   3                8
+      3                   4                9
+      4                   5               10
+      5                   6               11
+
+- La siguiente tabla es orientativa, ya que las criaturas pueden tener distintos modificadores a su DEFENSA dependiendo del equipo que lleven y otros factores.
 
    CRIATURA     |     DEFENSA BASE
   Giant rat               2   
   hungry rat              2
     Goblin                3         (With dagger +1)
-    Monkey                5
+    Monkey                3         (With dagger +1)
      Orc                  4         (With short sword +1)         
    True Orc               4         (With long sword +1)
+   Skeleton               4
     Troll                 2
     Snake                 3
-   Bandit                 5
+   Bandit                 5         (With dagger +1)
+  Cave bat                5
+
+- Como observará el lector, las posibilidades de atacar e impactar a un Cave bat son muy bajas si el PJ carece del equipamiento apropiado y/o no se planifica el golpe cuidadosamente. En este escenario una táctica sensata podría ser invertir uno o dos turnos buscando el golpe oportundo (WaitAction), y obtener así un bonus de +1 o +2 al To-Hit (suponiendo que en el proceso no sea dañado por el Cave bat, cosa poco probable). Con un bonus +2 al To-Hit por maniobra de combate, más un bonus +1 por portar una dagga ordinaria, el PJ lograría un impacto obteniendo 3 o más en 1d6, lo cuál es ya una probabilidad lo bastante alta como para (dados los pocos puntos de vida de un Cave bat) librarse de la criatura fácilmente.
 
 
-3.5. CONSEJOS
+4.5. CONSEJOS VARIOS
 
 - En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
 - Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.
 
 
+APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los PNJ) - Información técnica [SPOILERS!]
 
-### NOTAS
+- El ciclo de detección/persecución de un enemigo típico funciona actualmente así:
 
-GENERACIÓN DE NIVELES
-Ahora mismo en el juego existen cuatro generadores de mapas:  generate_town(), generate_fixed_dungeon(), generate_cavern() y generate_dungeon(). El generador generate_dungeon() es ahora mismo el generador estándar, es decir, el generador que se usa en la mayoría de niveles.
+  - Selección de objetivos: la IA señala al PJ y otros aventureros como posibles targets y elige el más cercano (PJ tiene prioridad).
+  - Sentidos: cada IA calcula can_see con FOV (FOV_SHADOW) y can_hear con FOH usando un mapa de sonido (paredes/puertas atenúan). El ruido del jugador (engine.noise_level) baja su sigilo para la audición.
+  - Agravio: si ve u oye al PJ dentro del rango de «engage» (fov o foh ajustado por sigilo/suerte/ruido), marca aggravated=True. Mientras no está agraviado, no planifica rutas salvo que el objetivo esté en su sentido dominante: si foh > fov, sólo planifica si es audible; si fov >= foh, sólo si es visible. Esto evita recalcular a ciegas cuando duermen o están ociosos. Para entender cómo funciona el rango de «engage», ver más abajo.
+  - Planificación de ruta (get_path_to): cache por origen/destino que se refresca cada AI_PATH_RECALC_INTERVAL turnos si el siguiente paso sigue libre. Si el destino está cerca (radio AI_PATH_BFS_RADIUS, por defecto 8), usa un algoritmo BFS acotado (menos costoso); si no, usa el A* de siempre sobre el mapa de walkability (cerrar puertas sólo si la criatura no puede abrirlas/atravesarlas).
+  - Movimiento: las IAs hostiles (HostileEnemy/Plus/V2/V3/Scout, etc.) llaman a get_path_to antes de decidir; si hay ruta y están en rango de agravio, avanzan un paso o atacan. Las dormidas (SleepingEnemy) sólo cambian a su IA “despierta” cuando les toca con las tiradas de despertar/percepción.
 
-GENERATE_DUNGEON
-generate_dungeon() es el “estándar”. Su flujo funciona así:
+- En resumen: un enemigo no planifica hasta ver/oír al jugador (según su mejor sentido), se agravia en función de esos sentidos y del sigilo/ruido, y entonces sigue rutas cacheadas (BFS cerca, A* lejos) hacia el objetivo.
+
+- Pregunta frecuente: ¿Cómo funciona el rango de «engage»? Respuesta: para que una criatura sea agraviada, tiene que oir o ver al PJ dentro de su rango de «engage». Para HostileEnemyV3, el rango de «engage» se calcula así:
+  
+  - Primero determina si puede ver u oír al jugador. Si lo ve, usa su fov como base; si no lo ve pero lo oye, usa su foh como base. Si no ve ni oye pero ya está agravado, toma el máximo de fov y foh como base. # TODO: creo que a la hora de determinar si la criatura pude ver u oír al jugador, deben aplicarse ya la reducción del target_stealth (con su noise_bonus) etc. Confirmar cómo está funcionando esto y decidir en consecuencia.
+  - Ajusta el sigilo del jugador por ruido: target_stealth se reduce por el noise_bonus de engine.noise_level(target) (ruidos como abrir puertas o atacar lo hacen más fácil de detectar por oído).
+  - Llama a _engage_range(base_range, target_stealth, target_luck):
+     - Si no está agraviado: engage_rng = rand(0..3) + base_range - target_stealth - rand(0..target_luck).
+     - Si ya está agraviado: engage_rng = rand(0..3) + base_range  # TODO: Quizá haya que aplicar el target_stealth y su luck aquí también.
+  - Si engage_rng es válido (>=0) y la distancia Chebyshev al jugador está entre 2 y engage_rng, agravia al enemigo (si no lo estaba) y avanza un paso por la ruta planificada hacia el jugador. Si la distancia es 1, intenta melee (con un chequeo de sigilo si aún no estaba agravado).
+
+  - En resumen: el rango depende del mejor sentido disponible (vista u oído), reducido por sigilo/suerte del jugador y aumentado por ruido; una vez agravado, los ajustes de sigilo/luck ya no aplican.
+
+- Pregunta frecuente: ¿Una criatura puede planificar rutas hacia el Jugador aunque no esté agraviada? Respuesta: solo si ya percibe al jugador por su sentido dominante. Ahora mismo get_path_to hace un corte temprano para no gastar CPU “a ciegas” cuando no está agravada:
+
+  - Si no está agraviada y tiene mejor vista que oído (fov ≥ foh): sólo planifica si el jugador está en su FOV; si no lo ve, devuelve ruta vacía.
+  - Si no está agraviada y tiene mejor oído (foh > fov): sólo planifica si el jugador es audible dentro de su FOH; si no lo oye, devuelve ruta vacía.
+  - Si está agraviada, siempre puede planificar (aunque no lo vea/ oiga en ese momento).
+  - Dormidas o en reposo no agraviadas no planifican hasta ver/oir según su sentido fuerte.
+
+- Pregunta frecuente: ¿Cuál es el comportamiento de una criatura cuando está agraviada? Respuesta:
+- Cuando ya están agraviadas, dejan de filtrar por sentidos y entran en el bucle normal de persecución cada turno:
+  - Siguen escogiendo objetivo (jugador u otros aventurers) y calculan distancia; mantienen aggravated=True (no hay un “calmado”).
+  - Llaman a get_path_to sin el corte de vista/oído: usan la ruta cacheada si sigue libre, o recalculan (BFS en radio corto, A* si lejos).
+  - Si la ruta existe y la distancia >1, avanzan un paso por ella; si distancia ==1, intentan MeleeAction.
+  - Si la ruta está vacía o el siguiente paso se bloquea, esperan o recalculan en el siguiente turno (según la IA concreta, p.ej. HostileEnemyPlus puede retroceder).
+  - Siguen oyendo/viendo para mensajes o rangos de agravio, pero el movimiento no se bloquea por perder visión: continúan persiguiendo con la ruta guardada.
+  - Dormidas que se despiertan sustituyen su IA por la versión “hostil” y desde ahí se comportan como el resto.
+- En resumen: una vez agravadas, planifican y se mueven cada turno hacia el objetivo usando el pathfinding cacheado, ataquen o avancen según la distancia, sin volver a exigir ver/u oír para seguir.
+# TODO: Quizá la criatura agraviada sí deberís seguir filtrando por sentidos. Si el objetivo es visible y/o audible para la criatura, esta debería intentar ir siempre al lugar en que se encuentra el objetivo. Si no es ni visible ni audible, debería ir a la posición donde el objetivo fue visto y/o oído por última vez. Si al llegar a esa posición, en un número N de turnos (determinado por la agresividad de la criatura), sigue sin ver ni oir al objetivo, entonces la griatura debe dejar de estar agraviada.
+
+
+APÉNDICE II - GENERACIÓN DE NIVELES (parcialmente desactualizado)
+
+En el juego existen cinco generadores de mapas:  generate_town(), generate_fixed_dungeon(), generate_cavern(), generate_dungeon() y generate_dungeon_v3(). El generador generate_dungeon_v3() es ahora mismo el generador estándar, es decir, el generador que se usa en la mayoría de niveles.
+
+== GENERATE_DUNGEON_V3
+
+[...]
+
+== GENERATE_DUNGEON
+
+generate_dungeon() es el generador obsoleto. Su flujo funciona así:
 
 Prepara un GameMap, reutiliza RectangularRoom para cada intento de sala (forma básica o choose_room_shape, posibles círculos/elipses/cruces) y limpia el hueco con carve_room.
 En cada iteración puede reemplazar la sala por un “fixed room” (get_fixed_room_choice, carve_fixed_room) según tablas de settings.
@@ -127,7 +221,8 @@ Las escaleras abajo se asignan al último centro válido; las de subida se fuerz
 Post-procesa: garantiza camino entre escaleras (ensure_path_between o guarantee_downstairs_access tallando muros rompibles), recoge candidatos a portas paredes (collect_door_candidates, place_doors también crea muros rompibles si sobra), asegura consistencia de muros frágiles y coloca cofres (maybe_place_chest con loot tables).
 Toda la lógica depende fuertemente de constantes tuning (settings.py: límites de puertas, decoración, spawn, etc.).
 
-GENERATE_CAVERN
+== GENERATE_CAVERN
+
 generate_cavern() se basa en autómatas celulares:
 
 Inicializa la rejilla entera como muro y genera un mapa booleano (caverns.generate_cavern_map) con ruido + varias iteraciones CA para suavizar.
@@ -136,7 +231,8 @@ Una vez asignadas las tiles “walkable/transparent”, resuelve la posición de
 Las criaturas y objetos no usan habitaciones: populate_cavern limpia todo lo anterior (menos el jugador) y hace sampling aleatorio en el mapa walkable, usando tablas especiales CAVERN_*_SPAWN_RULES. También siembra escombros sueltos.
 Igual que en mazmorras, se comprueba conectividad y se pone cofre opcional.
 
-GENERATE_FIXED_DUNGEON
+== GENERATE_FIXED_DUNGEON
+
 generate_fixed_dungeon() carga una plantilla ASCII de fixed_maps:
 
 Usa arrays precalculados (muro #, especiales, escaleras, monstruos scriptados como g, o, etc.) para pintar el mapa. Hay una lista de forbidden_cells para impedir que el relleno aleatorio coloque entidades encima de contenido fijado.
@@ -145,8 +241,9 @@ Las puertas y muros rompibles se crean explícitamente desde la plantilla (inclu
 La posición del jugador viene de la plantilla (fixed_maps.place_player), pero si place_player es falso se marca como subida.
 Se vuelve a garantizar camino entre escaleras, se colocan cofres y se valida consistencia de muros especiales.
 
-GENERATE_TOWN
-generate_town() es básicamente un mapa único de pueblo:
+== GENERATE_TOWN
+
+generate_town() es básicamente un mapa único (el desierto inicial de entrada):
 
 Usa GameMapTown y una única TownRoom (80×36) como zona principal con tile town_floor.
 Coloca directamente al jugador en el centro del “pueblo” (o reutiliza upstairs_location). Las escaleras bajan siempre en las coordenadas fijas (35, 17).

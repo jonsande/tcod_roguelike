@@ -1232,11 +1232,13 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         self.hp -= amount
         # Being hit generates noise so the player hears blows on the wall.
-        if getattr(self.engine, "register_noise", None):
-            try:
-                self.engine.register_noise(attacker or self.parent, level=3, duration=1, tag="wall_hit")
-            except Exception:
-                pass
+        # Entiendo que este ruido ya se está registrando en el MeleeAction
+        # de los fighter.py, cuando el atacante hace daño.
+        # if getattr(self.engine, "register_noise", None):
+        #     try:
+        #         self.engine.register_noise(attacker or self.parent, level=3, duration=1, tag="wall_hit")
+        #     except Exception:
+        #         pass
    
     def gain_temporal_bonus(self, turns, amount, attribute, message_down):
 
@@ -1684,6 +1686,12 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         attack_item: Optional["Item"] = None,
     ) -> None:
         self.hp -= amount
+        # Being hit generates noise so the player hears blows on the wall.
+        if getattr(self.engine, "register_noise", None):
+            try:
+                self.engine.register_noise(attacker or self.parent, level=3, duration=1, tag="wall_hit")
+            except Exception:
+                pass
 
     def drop_loot(self) -> None:
         inventory = getattr(self.parent.inventory, "items", None)

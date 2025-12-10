@@ -1476,6 +1476,9 @@ cave_bat = Actor(
 cave_bat.is_flying = True
 cave_bat.fighter.is_flying = True
 
+# TODO: poisonous_cave_bat
+# TODO: vampire_bat
+
 def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_hp = random.randint(7, 10)
     entity.fighter.hp = entity.fighter.max_hp
@@ -1543,8 +1546,8 @@ grey_goblin = Actor(
     char="g",
     color=(73,144,84),
     name="Grey goblin",
-    #ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
-    ai_cls=HostileEnemyV3,
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, Scout]),
+    #ai_cls=HostileEnemyV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,
@@ -1603,7 +1606,7 @@ orc = Actor(
     char="o",
     color=(63, 127, 63),
     name="Orc",
-    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, Scout]),
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=12, 
@@ -1612,7 +1615,7 @@ orc = Actor(
         strength=2, 
         recover_rate=50,
         recover_amount=0,
-        fov=4,
+        fov=5,
         foh=4,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=8, 
@@ -1640,7 +1643,7 @@ true_orc = Actor(
         strength=3, 
         recover_rate=50,
         recover_amount=0,
-        fov=4,
+        fov=5,
         foh=4,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         aggressivity=15, 

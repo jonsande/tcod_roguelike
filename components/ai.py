@@ -23,6 +23,13 @@ if TYPE_CHECKING:
 
 class BaseAI(Action):
 
+    def __init__(self, entity: Actor) -> None:
+        super().__init__(entity)
+        # Cache de rutas por destino: (dest_x, dest_y) -> (turno_calculado, path).
+        # Se usa para no recalcular A* cada turno si el objetivo no cambia y
+        # el siguiente paso sigue libre.
+        self._path_cache: dict[Tuple[int, int], Tuple[int, List[Tuple[int, int]]]] = {}
+
     def perform(self) -> None:
         raise NotImplementedError()
 
@@ -91,16 +98,198 @@ class BaseAI(Action):
         name = getattr(target, "name", "")
         return name or "someone"
 
+    def _sound_transparency_map(self, gamemap) -> np.ndarray:
+        """Mapa de transparencia para sonido: muros/puertas atenúan pero no bloquean del todo."""
+        try:
+            base = gamemap.get_transparency_map()
+        except AttributeError:
+            base = gamemap.tiles["transparent"]
+        sound_map = base.astype(float)
+        wall_opacity = 0.8  # Muros dejan pasar algo de sonido.
+        sound_map = np.where(sound_map, sound_map, wall_opacity)
+        try:
+            closed_ch = tile_types.closed_door["dark"]["ch"]
+            door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
+            sound_map[door_mask] = 0.5  # Las puertas cierran menos el sonido que un muro.
+        except Exception:
+            pass
+        return sound_map
+
+    def _can_hear_position(self, x: int, y: int, radius: int) -> bool:
+        """Devuelve True si (x, y) es audible para la criatura con el FOH dado."""
+        gamemap = self.entity.gamemap
+        if not gamemap.in_bounds(x, y):
+            return False
+        sound_map = self._sound_transparency_map(gamemap)
+        audible = compute_fov(
+            sound_map,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        return bool(audible[x, y])
+
+    def _neighbor_positions(self, x: int, y: int) -> List[Tuple[int, int]]:
+        """Vecinos en 8 direcciones para caminatas cortas."""
+        return [
+            (x - 1, y - 1), (x, y - 1), (x + 1, y - 1),
+            (x - 1, y),                 (x + 1, y),
+            (x - 1, y + 1), (x, y + 1), (x + 1, y + 1),
+        ]
+
+    def _is_walkable_for_ai(
+        self,
+        x: int,
+        y: int,
+        *,
+        can_pass_closed_doors: bool,
+        can_open_doors: bool,
+    ) -> bool:
+        """Comprueba si la casilla es transitable para la IA (muros, puertas, bloqueos)."""
+        gamemap = self.entity.gamemap
+        if not gamemap.in_bounds(x, y):
+            return False
+        if can_pass_closed_doors or can_open_doors:
+            closed_ch = tile_types.closed_door["dark"]["ch"]
+            if gamemap.tiles["dark"]["ch"][x, y] == closed_ch:
+                # Trata puertas cerradas como transitables para criaturas que pueden abrirlas/atravesarlas.
+                return True
+        if not gamemap.tiles["walkable"][x, y]:
+            return False
+        blocker = gamemap.get_blocking_entity_at_location(x, y)
+        if blocker and blocker is not self.entity:
+            # Puertas cuentan como bloqueadores si no pueden abrirlas; el resto siempre bloquea.
+            if can_pass_closed_doors or can_open_doors:
+                if getattr(getattr(blocker, "name", ""), "lower", lambda: "")() == "door":
+                    return True
+            return False
+        return True
+
+    def _bfs_path_limited(
+        self,
+        start: Tuple[int, int],
+        goal: Tuple[int, int],
+        *,
+        max_radius: int,
+        can_pass_closed_doors: bool,
+        can_open_doors: bool,
+    ) -> List[Tuple[int, int]]:
+        """BFS barato en radio acotado; devuelve ruta desde start a goal o []."""
+        from collections import deque
+
+        sx, sy = start
+        gx, gy = goal
+        # Chebyshev distance como heurística rápida para abortar fuera de radio.
+        if max(abs(gx - sx), abs(gy - sy)) > max_radius:
+            return []
+
+        queue: deque[Tuple[int, int]] = deque()
+        queue.append((sx, sy))
+        came_from: dict[Tuple[int, int], Optional[Tuple[int, int]]] = {(sx, sy): None}
+
+        while queue:
+            cx, cy = queue.popleft()
+            if (cx, cy) == (gx, gy):
+                break
+            for nx, ny in self._neighbor_positions(cx, cy):
+                if (nx, ny) in came_from:
+                    continue
+                if not self._is_walkable_for_ai(
+                    nx,
+                    ny,
+                    can_pass_closed_doors=can_pass_closed_doors,
+                    can_open_doors=can_open_doors,
+                ):
+                    continue
+                # Limitar expansión al radio indicado.
+                if max(abs(nx - sx), abs(ny - sy)) > max_radius:
+                    continue
+                came_from[(nx, ny)] = (cx, cy)
+                queue.append((nx, ny))
+
+        if (gx, gy) not in came_from:
+            return []
+
+        # Reconstruir ruta desde goal hacia start (excluyendo origen).
+        path_rev: List[Tuple[int, int]] = []
+        current = (gx, gy)
+        while current and current in came_from:
+            prev = came_from[current]
+            if prev is None:
+                break
+            path_rev.append(current)
+            current = prev
+        path_rev.reverse()
+        return path_rev
+
     def get_path_to(self, dest_x: int, dest_y: int) -> List[Tuple[int, int]]:
         """Compute and return a path to the target position.
 
         If there is no valid path then returns an empty list.
         """
+        engine_turn = getattr(self.engine, "turn", 0)
+        # Incluir la posición actual en la clave: la ruta depende del origen tanto como del destino.
+        cache_key = (self.entity.x, self.entity.y, dest_x, dest_y)
+        recalc_interval = max(1, getattr(settings, "AI_PATH_RECALC_INTERVAL", 4))
+        cached_entry = self._path_cache.get(cache_key)
+        if cached_entry:
+            last_turn, cached_path = cached_entry
+            if engine_turn - last_turn < recalc_interval:
+                # Si no ha pasado el intervalo, intentamos reutilizar la ruta.
+                # Sólo la damos por válida si el siguiente paso sigue siendo walkable
+                # y no está bloqueado por otra entidad (evita chocar contra puertas/aliados).
+                if cached_path:
+                    next_x, next_y = cached_path[0]
+                    try:
+                        if self.entity.gamemap.tiles["walkable"][next_x, next_y]:
+                            blocker = self.entity.gamemap.get_blocking_entity_at_location(next_x, next_y)
+                            if not blocker or blocker is self.entity:
+                                # Devolvemos copia para no mutar la cache al hacer pop() fuera.
+                                return list(cached_path)
+                    except Exception:
+                        pass
         # Copy the walkable array.
         gamemap = self.entity.gamemap
         fighter = getattr(self.entity, "fighter", None)
         can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
         can_open_doors = getattr(fighter, "can_open_doors", False)
+        # No planificamos si el objetivo está fuera del sentido dominante (vista u oído)
+        # y aún no está agravado: evita que enemigos “dormidos” gasten CPU calculando rutas a ciegas.
+        if fighter and getattr(fighter, "aggravated", False) is False:
+            fov = max(0, getattr(fighter, "fov", 0))
+            foh = max(0, getattr(fighter, "foh", 0))
+            use_hearing = foh > fov
+            if use_hearing:
+                hearing_radius = foh
+                if hearing_radius <= 0:
+                    return []
+                # Atajo rápido por distancia antes de hacer FOV sonoro.
+                if max(abs(dest_x - self.entity.x), abs(dest_y - self.entity.y)) > hearing_radius:
+                    return []
+                try:
+                    if not self._can_hear_position(dest_x, dest_y, hearing_radius):
+                        return []
+                except Exception:
+                    pass
+            else:
+                try:
+                    if not gamemap.visible[dest_x, dest_y]:
+                        return []
+                except Exception:
+                    pass
+
+        # Si está cerca, usa un algoritmo BFS barato en radio limitado; así evitamos A* para caminos cortos.
+        bfs_radius = max(1, getattr(settings, "AI_PATH_BFS_RADIUS", 8))
+        bfs_path = self._bfs_path_limited(
+            (self.entity.x, self.entity.y),
+            (dest_x, dest_y),
+            max_radius=bfs_radius,
+            can_pass_closed_doors=can_pass_closed_doors,
+            can_open_doors=can_open_doors,
+        )
+        if bfs_path:
+            self._path_cache[cache_key] = (engine_turn, bfs_path)
+            return list(bfs_path)
 
         cost = np.array(gamemap.tiles["walkable"], dtype=np.int8)
         if can_pass_closed_doors or can_open_doors:
@@ -120,7 +309,7 @@ class BaseAI(Action):
             # A lower number means more enemies will crowd behind each other in
             # hallways.  A higher number means enemies will take longer paths in
             # order to surround the player.
-            cost[entity.x, entity.y] += 20
+            cost[entity.x, entity.y] += 15
 
         # Create a graph from the cost array and pass that graph to a new pathfinder.
         graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
@@ -132,7 +321,9 @@ class BaseAI(Action):
         path: List[List[int]] = pathfinder.path_to((dest_x, dest_y))[1:].tolist()
 
         # Convert from List[List[int]] to List[Tuple[int, int]].
-        return [(index[0], index[1]) for index in path]
+        computed_path = [(index[0], index[1]) for index in path]
+        self._path_cache[cache_key] = (engine_turn, computed_path)
+        return list(computed_path)
     
 class ConfusedEnemy(BaseAI):
     """
@@ -601,7 +792,14 @@ class HostileEnemyV3(BaseAI):
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
-        return bool(visible[actor.x, actor.y])
+        can_see = bool(visible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][SIGHT] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_see else 'cannot'} see {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with fov={radius}"
+            )
+        return can_see
 
     def _sound_transparency_map(self, gamemap) -> np.ndarray:
         try:
@@ -637,7 +835,14 @@ class HostileEnemyV3(BaseAI):
             hearing_radius,
             algorithm=constants.FOV_SHADOW,
         )
-        return bool(audible[actor.x, actor.y])
+        can_hear = bool(audible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][HEARING] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_hear else 'cannot'} hear {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with foh={hearing_radius}"
+            )
+        return can_hear
 
     def _noise_bonus(self, actor: Actor) -> int:
         """Noise made by the target (e.g. attacking or opening doors) reduces stealth for hearing checks."""
@@ -705,6 +910,16 @@ class HostileEnemyV3(BaseAI):
         # Estar dentro del FOV o el FOH de una criatura no agravia inmediatamente.
         # Para el agravio entran en juego el stealth y el luck del target.
         engage_rng = self._engage_range(detection_base, target_stealth, target_luck)
+        if settings.DEBUG_MODE:
+            noise_src = f"noise_bonus={noise_bonus}" if noise_bonus else "noise_bonus=0"
+            print(
+                f"[DEBUG][ENGAGE] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"target={getattr(target,'name','?')} dist={distance} "
+                f"see={can_see} hear={can_hear} base_range={detection_base} "
+                f"target_stealth={getattr(target.fighter,'stealth',0)} "
+                f"target_luck={target_luck} {noise_src} "
+                f"adjusted_stealth={target_stealth} engage_rng={engage_rng}"
+            )
         if engage_rng is None:
             engage_rng = -1
 

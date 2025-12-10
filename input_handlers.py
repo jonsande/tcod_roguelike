@@ -1874,8 +1874,8 @@ class HelpScreenEventHandler(EventHandler):
             #"",
         ]
         # Esta opción para imprimir también el game_documentation.txt
-        #return controls + self._load_documentation_lines()
-        return controls
+        return controls + self._load_documentation_lines()
+        #return controls
 
     def _load_documentation_lines(self) -> List[str]:
         doc_path = os.path.join(os.path.dirname(__file__), "game_documentation.txt")
