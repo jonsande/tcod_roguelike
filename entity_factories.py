@@ -170,6 +170,44 @@ poisoned_triple_ration = Item(
     id_name = "Poisoned triple ration",
     consumable=consumable.FoodConsumable(amount=-8)
 )
+_BONE_SHAPE_DESCRIPTIONS = [
+    "Los huesos son largos y arqueados, con bordes pulidos por el roce de la arena.",
+    "Ves falanges gruesas y astilladas que forman un abanico irregular.",
+    "Reconoces vertebras aplastadas y espinas finas cubiertas de polvo gris.",
+    "Las piezas estan ennegrecidas y secas, quebradizas como vidrio viejo.",
+]
+_BONE_CREATURE_GUESSES = [
+    "Podrian haber pertenecido a un goblin cazador por la forma de las articulaciones.",
+    "La amplitud de la caja toracica sugiere a un aventurero humano.",
+    "Todo apunta a una bestia reptiliana con huesos huecos pero flexibles.",
+    "Quizas sean restos de un orco joven; los huecos donde iban los colmillos son claros.",
+]
+_BONE_DEATH_SIGNS = [
+    "Se aprecian marcas de mordiscos profundos, como si algo hambriento lo hubiese despedazado.",
+    "Las fracturas rectas revelan golpes de arma contundente repetidos.",
+    "Las mellas oxidadas apuntan a filos toscos, tal vez cuchillas goblin.",
+    "Hay manchas verdosas y nervaduras quemadas, señal de un veneno corrosivo.",
+    "Una grieta limpia atraviesa el craneo; parece obra de un virote pesado.",
+]
+
+
+def _generate_bone_description() -> str:
+    shape = random.choice(_BONE_SHAPE_DESCRIPTIONS)
+    creature = random.choice(_BONE_CREATURE_GUESSES)
+    cause = random.choice(_BONE_DEATH_SIGNS)
+    return f"{shape} {creature} {cause}"
+
+
+bones = Item(
+    char="%",
+    color=(219, 210, 190),
+    name="Bones",
+    id_name="Bones",
+    stackable=False,
+    info="Fragmentos de hueso cubiertos de polvo.",
+    dynamic_info_factory=_generate_bone_description,
+)
+loot_tables.register_loot_item("bones", bones)
 
 # SCROLLS
 
@@ -1287,7 +1325,7 @@ player = Actor(
     char="@",
     color=(255, 255, 255),
     name="Player",
-    ai_cls=Dummy,
+    ai_cls=HostileEnemyV3, # Si usamos Dummy disparará los sonidos de un Dummy. Su IA, por lo demás, se ignora.
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=player_hp,
@@ -1296,7 +1334,7 @@ player = Actor(
         recover_rate=50,
         recover_amount=1,
         fov=2,
-        foh=6,
+        foh=8,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=0,

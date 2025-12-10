@@ -46,6 +46,7 @@ PERSONAJES ÚNICOS O ESPECIALES
 - [ ] Slime parlante.
 
 EFECTOS SONOROS / SONIDO
+- [ ] Sonido al comer.
 - [ ] Sonido de viento en el nivel de superficie.
 - [ ] Más sonidos! De muerte específicos por criatura, ataques por arma, bajada de escaleras, etc.
 - [-] Sonido de queja/lamento al recibir daño (específico de cada criatura).
@@ -164,7 +165,8 @@ EVENTOS ESPECIALES
 - [ ] Misiones.
 - [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
 
-HISTORIA
+HISTORIA / LORE
+- [!] Las notas/libros con mensajes deben ser únicas! Sólo debe haber una instancia de cada.
 - [ ] La conversación del anciano y otros personajes importantes tiene que salir en una ventana dedicada.
 - [ ] En el nivel 4 debe lanzarse un evento especial.
 - [ ] Está previsto que en el juego haya una serie de puzles menores y una serie de puzles mayores. Para resolver algunos de los puzles mayores hará falta algunos objetos únicos, como el reloj de arena y la pala y la cuerda para el nivel de la biblioteca.
@@ -243,6 +245,8 @@ VARIOS
 
 
 BUGS
+
+bug: los enemigos ciegos siguen persiguiéndote. Deberían quedarse quietos. O moverse al tuntún.
 
 GUB: A veces los adventurers atacan al jugador! Parecen ataques aleatorios. como si estuviese tratando de moverse a esa casilla (pues no engancha a melee). Se diría que no está bien configurado. Si en la casilla destina esta player, debe hacer un WaitAction.
 

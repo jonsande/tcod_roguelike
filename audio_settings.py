@@ -8,7 +8,7 @@ MIXER_CHANNELS = 2
 MIXER_BUFFER = 2048
 
 # Ambient loops --------------------------------------------------------------
-AMBIENT_SOUND_ENABLED = True
+AMBIENT_SOUND_ENABLED = False
 AMBIENT_SOUND_VOLUME = 1.0  # 0.0 - 1.0
 AMBIENT_SOUND_FADE_OUT_MS = 650  # Duración del fade out al cambiar de nivel
 AMBIENT_SOUND_FADE_IN_MS = 650   # Duración del fade in al iniciar la nueva pista
@@ -136,7 +136,7 @@ STAIR_DESCEND_VOLUME = 0.1
 
 # Melee weapon attacks ------------------------------------------------------
 MELEE_ATTACK_SOUND_ENABLED = True
-MELEE_ATTACK_DEFAULT_VOLUME = 0.35
+MELEE_ATTACK_DEFAULT_VOLUME = 0.25
 
 # Esto sólo es la plantilla, para usar más abajo
 def _empty_melee_sound_entry():
@@ -153,7 +153,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Impact Hit 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
         "hit_no_damage": {
             "tracks": [
@@ -165,7 +165,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Parry 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
         "miss": {
             "tracks": [
@@ -174,7 +174,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/Sword Attack 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
     },
     "short_sword": _empty_melee_sound_entry(),
@@ -190,7 +190,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_4.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
         "hit_no_damage": {
             "tracks": [
@@ -199,7 +199,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
         "miss": {
             "tracks": [
@@ -208,7 +208,7 @@ MELEE_ATTACK_SOUNDS = {
                 "data/audio/sfx/combat/no_hit/generic/fist_3.ogg",
                 ], 
                 "track": None, 
-                "volume": 0.3
+                "volume": 0.2
                 },
     },
 }

@@ -881,45 +881,58 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.stamina = self.stamina
     
     def poisoned(self):
-        
-        if self.is_poisoned:
-        
-            total_damage = (self.poisoned_counter * self.poison_dmg) - self.poison_resistance
-            if total_damage < 0:
-                total_damage = 0
-            if DEBUG_MODE:
-                print("DEBUG: >>> self.poison_resistance = ", self.poison_resistance)
-            
-            if self.poisoned_counter > 1:
-                #self.hp -= self.poison_dmg
-                self.hp -= total_damage
-                self.poisoned_counter -= 1
+        if not self.is_poisoned:
+            return
 
-                if self.parent.name == self.engine.player.name:
-                    self.engine.message_log.add_message(
-                        f"You are poisoned! You take {total_damage} damage points.",
-                        color.red,
-                        )
-                else:
-                    # TODO: esto hay que relativilarlo a si es o no visible la criatura.
-                    self.engine.message_log.add_message(
-                        f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points.",
-                        color.red,
-                        )
+        parent = getattr(self, "parent", None)
+        parent_alive = True
+        if parent and hasattr(parent, "is_alive"):
+            try:
+                parent_alive = bool(parent.is_alive)
+            except Exception:
+                parent_alive = True
+        if not parent_alive:
+            self.is_poisoned = False
+            self.poisoned_counter = 0
+            self.poison_dmg = 0
+            return
 
+        total_damage = (self.poisoned_counter * self.poison_dmg) - self.poison_resistance
+        if total_damage < 0:
+            total_damage = 0
+        if DEBUG_MODE:
+            print("DEBUG: >>> self.poison_resistance = ", self.poison_resistance)
+        
+        if self.poisoned_counter > 1:
+            #self.hp -= self.poison_dmg
+            self.hp -= total_damage
+            self.poisoned_counter -= 1
+
+            if self.parent.name == self.engine.player.name:
+                self.engine.message_log.add_message(
+                    f"You are poisoned! You take {total_damage} damage points.",
+                    color.red,
+                    )
             else:
-                self.poisoned_counter = 0
-                self.is_poisoned = False
-                if self.parent.name == self.engine.player.name:
-                    self.engine.message_log.add_message(
-                        f"You are no longer poisoned.",
-                        color.status_effect_applied,
-                        )
-                else:
-                    self.engine.message_log.add_message(
-                        f"{self.parent.name} is no longer poisoned.",
-                        color.status_effect_applied,
-                        )
+                # TODO: esto hay que relativilarlo a si es o no visible la criatura.
+                self.engine.message_log.add_message(
+                    f"{self.parent.name} is poisoned! {self.parent.name} takes {total_damage} damage points.",
+                    color.red,
+                    )
+
+        else:
+            self.poisoned_counter = 0
+            self.is_poisoned = False
+            if self.parent.name == self.engine.player.name:
+                self.engine.message_log.add_message(
+                    f"You are no longer poisoned.",
+                    color.status_effect_applied,
+                    )
+            else:
+                self.engine.message_log.add_message(
+                    f"{self.parent.name} is no longer poisoned.",
+                    color.status_effect_applied,
+                    )
  
     #def update_energy_points(self):
     #    self.current_energy_points += self.energy_points

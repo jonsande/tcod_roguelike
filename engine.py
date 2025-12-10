@@ -773,16 +773,23 @@ class Engine:
                     from color import bcolors
                     print(f"{bcolors.WARNING}DEBUG: New monsters upstairs! ({amount}){bcolors.ENDC}")
 
-                from entity_factories import monster_roulette, orc, goblin, snake, true_orc
+                from entity_factories import monster_roulette, orc, goblin, snake, true_orc, grey_goblin, slime, skeleton
+                from components.ai import ScoutV3
                 for i in range(amount):
 
                     # Generate random monsters upstairs
                     if self.game_world.current_floor <= 4:
                         selected_monster = monster_roulette(choices=[goblin,])
                         selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
-                    if self.game_world.current_floor > 4:
-                        selected_monster = monster_roulette(choices=[orc, goblin, true_orc,])
+                        selected_monster.ai_cls = ScoutV3
+                    elif self.game_world.current_floor > 5 and self.game_world.current_floor < 9:
+                        selected_monster = monster_roulette(choices=[orc, goblin, slime, skeleton])
                         selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
+                        selected_monster.ai_cls = ScoutV3
+                    else:
+                        selected_monster = monster_roulette(choices=[orc, true_orc, grey_goblin, skeleton])
+                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
+                        selected_monster.ai_cls = ScoutV3
                     
                     # Generate single type monster upstairs
                     #entity_factories.goblin.spawn(self.game_map, spawn_location[0], spawn_location[1])
@@ -812,8 +819,13 @@ class Engine:
 
     def update_poison(self):
         for actor in set(self.game_map.actors):
-            if actor.fighter.is_poisoned:
-                actor.fighter.poisoned()
+            fighter = getattr(actor, "fighter", None)
+            if not fighter:
+                continue
+            if hasattr(actor, "is_alive") and not actor.is_alive:
+                continue
+            if fighter.is_poisoned:
+                fighter.poisoned()
 
     def update_fire(self):
         for entity in set(self.game_map.entities):

@@ -636,8 +636,9 @@ class ThrowItemAction(Action):
                 self.entity.fighter.to_defense_counter = 0
 
             # Enemigo dado por enterado
-            target.fighter.aggravated = True
-            self.engine.message_log.add_message(f"{target.name} is aggravated!", color.red)
+            if isinstance(target, Actor) and target.is_alive:
+                target.fighter.aggravated = True
+                self.engine.message_log.add_message(f"{target.name} is aggravated!", color.red)
 
         # TODO: Contra objetivos no vivientes
         else:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import copy
 import math
-from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING, Union
+from typing import Callable, Optional, Tuple, Type, TypeVar, TYPE_CHECKING, Union
 
 from render_order import RenderOrder
 
@@ -78,6 +78,9 @@ class Entity:
         on_spawn = getattr(clone, "on_spawn", None)
         if callable(on_spawn):
             on_spawn(clone)
+        assign_dynamic = getattr(clone, "_assign_dynamic_info", None)
+        if callable(assign_dynamic):
+            assign_dynamic()
         return clone
 
     
@@ -177,6 +180,7 @@ class Item(Entity):
         stackable: bool = True,
         id_info: Optional[str] = None,
         info: str = "NO INFO",
+        dynamic_info_factory: Optional[Callable[[], str]] = None,
     ):
         super().__init__(
             x=x,
@@ -207,6 +211,18 @@ class Item(Entity):
         self.stackable = stackable
         self.id_info = id_info
         self.info = info
+        self._dynamic_info_factory = dynamic_info_factory
+        self._dynamic_info_assigned = False
+
+    def _assign_dynamic_info(self) -> None:
+        """Generate contextual info once when a factory is provided."""
+        if self._dynamic_info_assigned:
+            return
+        if self._dynamic_info_factory:
+            description = self._dynamic_info_factory()
+            if description:
+                self.info = description
+        self._dynamic_info_assigned = True
 
     def identify(self):
         # Esto creo que no es necesario
@@ -243,10 +259,12 @@ class Item(Entity):
         summary = equippable.describe_modifiers()
         if not summary:
             return ""
-        return f"Effects when equipped:\n{summary.lstrip('\\n')}"
+        newline = "\n"
+        return f"Effects when equipped:\n{summary.lstrip(newline)}"
 
     def full_info(self) -> str:
         """Return base info plus a generated summary of equippable effects."""
+        self._assign_dynamic_info()
         parts = []
         if self.info:
             parts.append(self.info)

@@ -127,9 +127,15 @@ GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
 
+# Flag temporal para desactivar el sistema de ocultación del jugador.
+# Advertencia: mantener desactivado. Entra en conflicto con ScoutV3 y, por lo demás,
+# actualmente no es necesaria esta mecánica, ya que es posible hacer un backstab posicionándose
+# a la vuelta de una puerta o esquina si se tiene el stealth suficiente.
+STEALTH_DISABLED = True
+
 # ANÁLISIS Y CONFIGURACIÓN DE RENDIMIENTO
 # Telemetría ligera de rendimiento por turno (se muestra cada N turnos).
-PERF_PROFILER_ENABLED = True
+PERF_PROFILER_ENABLED = False
 PERF_PROFILER_REPORT_INTERVAL = 30
 # Si está activo, cada mensaje del log también se imprime en stdout.
 LOG_ECHO_TO_STDOUT = True
@@ -143,11 +149,7 @@ AI_PATH_FAILURE_LIMIT = 8
 AI_MAX_PURSUIT_RANGE = 25
 # Turnos consecutivos sin ver/oír al objetivo antes de perder agro; se suma a la agresividad de la criatura.
 AI_AGGRO_LOSS_BASE = 3
-# Flag temporal para desactivar el sistema de ocultación del jugador.
-# Advertencia: mantener desactivado. Entra en conflicto con ScoutV3 y, por lo demás,
-# actualmente no es necesaria esta mecánica, ya que es posible hacer un backstab posicionándose
-# a la vuelta de una puerta o esquina si se tiene el stealth suficiente.
-STEALTH_DISABLED = True
+
 
 # -- Game settings ------------------------------------------------------
 
@@ -830,6 +832,7 @@ ITEM_SPAWN_RULES = {
     "cursed_vulnerability_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "cursed_misfortune_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     # OTHER
+    "bones": {"min_floor": 2, "weight_progression": [(2, 100), (4, 12)]},
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
     "note_wizard_1": {"min_floor": 2, "max_instances": 1, "weight_progression": [(2, 7)]},
     # ARTIFACTS
