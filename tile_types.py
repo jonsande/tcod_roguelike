@@ -202,6 +202,13 @@ elif GRAPHIC_MODE == "ascii":
         light=(ord("."), (50,50,40), (5,5,5)),
     )
 
+    library_floor = new_tile(
+        walkable=True,
+        transparent=True,
+        dark=(ord("."), (15,15,15), (0,0,0)),
+        light=(ord("."), (189, 138, 62), (0, 0, 0)),
+    )
+
     town_floor = new_tile(
         walkable=True,
         transparent=True,

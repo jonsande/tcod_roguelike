@@ -506,16 +506,21 @@ class ThrowItemAction(Action):
                         self.entity.fighter.poisons_on_hit = False
 
                 # THROWING DAMAGE CALCULATION
-                # Si es un arma...
-                if self.item.equippable.equipment_type.name == "WEAPON":
+                equippable = getattr(self.item, "equippable", None)
+                is_weapon = bool(
+                    equippable
+                    and getattr(equippable, "equipment_type", None)
+                    and equippable.equipment_type.name == "WEAPON"
+                )
+                if is_weapon:
 
                     strength = self.entity.fighter.strength
-                    weapon_dmg_dice_info = self.item.equippable.weapon_dmg_dice_info
-                    weapon_dmg_bonus = self.item.equippable.weapon_dmg_bonus
+                    weapon_dmg_dice_info = equippable.weapon_dmg_dice_info
+                    weapon_dmg_bonus = equippable.weapon_dmg_bonus
                     non_weapon_dmg_bonus = self.entity.fighter.non_weapon_dmg_bonus
                     total_equipment_dmg_bonus = self.entity.fighter.total_equipment_dmg_bonus
                     proficiency = self.entity.fighter.weapon_proficiency
-                    weapon_dmg_dice_roll = self.item.equippable.weapon_dmg_dice
+                    weapon_dmg_dice_roll = equippable.weapon_dmg_dice
                     
                     if attacker_visible or target_visible:
                         print(f"{bcolors.WARNING}Calculating THROWING damage with the following stats:{bcolors.ENDC}")
@@ -537,7 +542,7 @@ class ThrowItemAction(Action):
                     # Bonificador STEALTH ATTACK al daño
                     if stealth_attack:
 
-                        second_weapon_dmg_dice_roll = self.item.equippable.weapon_dmg_dice
+                        second_weapon_dmg_dice_roll = equippable.weapon_dmg_dice
                         damage = damage + strength + second_weapon_dmg_dice_roll
 
                         if target_visible or attacker_visible:
@@ -601,7 +606,7 @@ class ThrowItemAction(Action):
 
                     if attacker_visible or target_visible:
                         print(f"{attack_desc} but does no damage.")
-                        self.engine.message_log.add_message("{attack_desc} but does no damage.", damage_color)
+                        self.engine.message_log.add_message(f"{attack_desc} but does no damage.", damage_color)
                     # else:
                     #     print(f"You hear sounds of fighting.")
                     #     self.engine.message_log.add_message(f"You hear sounds of fighting.")

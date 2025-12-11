@@ -123,10 +123,10 @@ OBJETOS VARIOS
 - [ ] Botas!
 - [ ] Mushroms!
 - [x] Cascos! Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
-- [ ] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
+- [-] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
 - [ ] Bastones mágicos!
-- [ ] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
-- [ ] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
+- [!] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
+- [x] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas. 
 
 ARTEFACTOS
@@ -166,6 +166,8 @@ EVENTOS ESPECIALES
 - [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
 
 HISTORIA / LORE
+- [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
+- [ ] Estatua. Personajes petrificados por la poción de petrificación.
 - [!] Las notas/libros con mensajes deben ser únicas! Sólo debe haber una instancia de cada.
 - [ ] La conversación del anciano y otros personajes importantes tiene que salir en una ventana dedicada.
 - [ ] En el nivel 4 debe lanzarse un evento especial.

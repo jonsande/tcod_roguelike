@@ -11,7 +11,7 @@ from generators.fixed import generate_array_of
 from game_map import GameMap
 from procgen import (
     RectangularRoom,
-    _build_bookshelf_loot,
+    _build_loot_for_floor,
     _resolve_upstairs_location,
     _can_spawn_item_procedurally,
     _get_spawn_key,
@@ -66,14 +66,64 @@ THE_LIBRARY_TEMPLATE: Tuple[str, ...] = (
 )
 
 THE_LIBRARY_MONSTER_TABLE: List[Tuple[object, int]] = [
-    (entity_factories.orc, 6),
+    (entity_factories.skeleton, 6),
     (entity_factories.goblin, 5),
-    (entity_factories.swarm_rat, 3),
-    (entity_factories.snake, 90),
+    (entity_factories.swarm_rat, 9),
+    (entity_factories.snake, 2),
+    (entity_factories.slime, 15),
 ]
 
 # Tabla de posibles monstruos a generarse en las posiciones con "M"
 RANDOM_MONSTERS_IN_STATIC_POSITIONS = [entity_factories.orc, entity_factories.goblin, entity_factories.snake]
+
+# Tablas específicas de botín para las estanterías de este mapa.
+LIBRARY_BOOKSHELF_ITEM_COUNT_BY_FLOOR = [
+    (1, (1, 1)),
+]
+LIBRARY_BOOKSHELF_LOOT_TABLES = {
+    1: [
+        ("generated_book", 60), # Generador de libros
+        # Libros estáticos
+        ("forgotten_canticle", 5),
+        ("architect_notes", 5),
+        ("red_tower_mails", 5),
+        ("tired_librarian_notes", 5),
+        ("wanderers_diary", 5),
+        ("sixteen_rings", 5),
+        ("lower_cavern_bestiary", 5),
+        ("crack_finder_book", 5),
+        ("coal_stories", 5),
+        ("nine_lanterns_codex", 5),
+        ("living_stoone_theory", 5),
+        ("fungi_book", 5),
+        ("corridor_chronicles", 5),
+        # Libros con pistas
+        ("library_clue_1", 3),
+        ("library_clue_2", 3),
+        ("library_clue_3", 3),
+        ("library_clue_4", 3),
+        ("library_clue_5", 3),
+        ("library_clue_6", 3),
+        ("note_wizard_1", 3),
+        ("triple_ration", 1),
+        # Otros
+        ("banana", 1),
+        ("antidote", 1),
+        ("stamina_potion", 1),
+        ("remove_curse_scroll", 1),
+        ("strength_potion", 1),
+        ("confusion_scroll", 1),
+        ("paralisis_scroll", 1),
+        ("identify_scroll", 1),
+        ("remove_curse_scroll", 1),
+        ("lightning_scroll", 1),
+        ("fireball_scroll", 1),
+        ("descend_scroll", 1),
+        ("teleport_scroll", 1),
+        ("prodigious_memory_scroll", 1),
+        ("remove_curse_scroll", 1),
+    ]
+}
 
 THE_LIBRARY_ITEM_TABLE: List[Tuple[object, int]] = [
     (entity_factories.health_potion, 5),
@@ -125,8 +175,8 @@ THE_LIBRARY_ITEM_TABLE: List[Tuple[object, int]] = [
 ]
 
 # Rango de entidades aleatorias por habitación en este mapa.
-THE_LIBRARY_MONSTER_COUNT = (5, 6)
-THE_LIBRARY_ITEM_COUNT = (3, 6)
+THE_LIBRARY_MONSTER_COUNT = (1, 2)
+THE_LIBRARY_ITEM_COUNT = (0, 3)
 
 
 def _weighted_choices(pool: List[Tuple[object, int]], k: int) -> List[object]:
@@ -307,10 +357,11 @@ def generate_the_library_map(
 
     for x, y in bookshelf_array:
         shelf = entity_factories.bookshelf.spawn(dungeon, x, y)
-        # TODO: el contenido de los bookshelf de the_library no debe generarse de la forma
-        # habitual. Dentro sólo debe haber libros. Hay que crear también, por tanto, libros
-        # genéricos en entity_factories
-        loot = _build_bookshelf_loot(floor_number)
+        loot = _build_loot_for_floor(
+            LIBRARY_BOOKSHELF_LOOT_TABLES,
+            LIBRARY_BOOKSHELF_ITEM_COUNT_BY_FLOOR,
+            floor_number,
+        )
         entity_factories.fill_container_with_items(shelf, loot)
         record_loot_items(loot, floor_number, procedural=True, source="library_bookshelf")
 

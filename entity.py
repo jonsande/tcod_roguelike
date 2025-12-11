@@ -259,7 +259,7 @@ class Item(Entity):
         summary = equippable.describe_modifiers()
         if not summary:
             return ""
-        newline = "\n"
+        newline = "\n\n"
         return f"Effects when equipped:\n{summary.lstrip(newline)}"
 
     def full_info(self) -> str:
@@ -281,11 +281,41 @@ class Book(Item):
     """Consumables or notes that simply reveal their info text when read."""
 
     def __init__(self, *, info: str = "NO INFO", **kwargs):
+        kwargs.setdefault("throwable", True)
         kwargs.setdefault("info", info)
         super().__init__(**kwargs)
 
     def read_message(self) -> str:
         return self.info
+
+
+class GeneratedBook(Book):
+    """Book that rolls a fresh title and content each time it is copied."""
+
+    def __init__(
+        self,
+        *,
+        title_fn: Callable[[], str],
+        content_fn: Callable[[], str],
+        **kwargs,
+    ):
+        self._title_fn = title_fn
+        self._content_fn = content_fn
+        kwargs.setdefault("name", title_fn())
+        kwargs.setdefault("id_name", "Book")
+        kwargs.setdefault("info", content_fn())
+        kwargs.setdefault("stackable", False)
+        super().__init__(**kwargs)
+
+    def __deepcopy__(self, memo):
+        """Create a new generated book with a fresh title and content."""
+        return GeneratedBook(
+            title_fn=self._title_fn,
+            content_fn=self._content_fn,
+            char=self.char,
+            color=self.color,
+            id_name=self.id_name,
+        )
 
 
 class Decoration(Entity):

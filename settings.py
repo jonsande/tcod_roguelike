@@ -272,15 +272,15 @@ FIXED_DUNGEON_LAYOUTS = {
     #     "walls": "wall_v1",
     #     "walls_special": "wall_v2",
     # },
-    # 2: {
-    #     "map": "the_library",
-    #     "walls": "wall_v1",
-    #     "walls_special": "wall_v2",
-    # },
     8: {
         "map": "three_doors",
         "walls": "wall_v2",
         "walls_special": "wall_v1",
+    },
+    9: {
+        "map": "the_library",
+        "walls": "wall_v1",
+        "walls_special": "wall_v2",
     },
 }
 
@@ -359,6 +359,7 @@ ALL_ITEMS = [
     ("cursed_lethargy_ring", 1),
     ("cursed_vulnerability_ring", 1),
     ("cursed_misfortune_ring", 1),
+    ("bones", 1),
     ]
 
 # -- Chest generation -------------------------------------------------
@@ -527,35 +528,77 @@ BOOKSHELF_ITEM_COUNT_BY_FLOOR = [
 # Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
 TABLE_LOOT_TABLES = {
     2: [
-        ("library_clue_1", 1),
-        ("library_clue_2", 1),
-        ("library_clue_3", 1),
-        ("library_clue_4", 1),
-        ("library_clue_5", 1),
-        ("library_clue_6", 1),
+        ("generated_book", 3), # Generador de libros
+        # Libros estáticos
+        ("forgotten_canticle", 3),
+        ("architect_notes", 3),
+        ("red_tower_mails", 3),
+        ("tired_librarian_notes", 3),
+        ("wanderers_diary", 3),
+        ("sixteen_rings", 3),
+        ("lower_cavern_bestiary", 3),
+        ("crack_finder_book", 3),
+        ("coal_stories", 3),
+        ("nine_lanterns_codex", 3),
+        ("living_stoone_theory", 3),
+        ("fungi_book", 3),
+        ("corridor_chronicles", 3),
+        # Libros con pistas
+        ("library_clue_1", 3),
+        ("library_clue_2", 3),
+        ("library_clue_3", 3),
+        ("library_clue_4", 3),
+        ("library_clue_5", 3),
+        ("library_clue_6", 3),
+        ("note_wizard_1", 3),
         ("triple_ration", 1),
+        # Otros
         ("banana", 1),
-        ("sand_bag", 1),
-        ("note_wizard_1", 1),
         ("antidote", 1),
         ("stamina_potion", 1),
         ("remove_curse_scroll", 1),
         ("strength_potion", 1),
-        ("poison_potion", 1)
+        ("confusion_scroll", 1),
+        ("paralisis_scroll", 1),
+        ("identify_scroll", 1),
+        ("remove_curse_scroll", 1),
+        ("lightning_scroll", 1),
+        ("fireball_scroll", 1),
+        ("descend_scroll", 1),
+        ("teleport_scroll", 1),
+        ("prodigious_memory_scroll", 1),
+        ("remove_curse_scroll", 1),
     ],
 }
 
 # Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
 BOOKSHELF_LOOT_TABLES = {
     2: [
-        ("library_clue_1", 1),
-        ("library_clue_2", 1),
-        ("library_clue_3", 1),
-        ("library_clue_4", 1),
-        ("library_clue_5", 1),
-        ("library_clue_6", 1),
-        ("note_wizard_1", 1),
+        ("generated_book", 3), # Generador de libros
+        # Libros estáticos
+        ("forgotten_canticle", 3),
+        ("architect_notes", 3),
+        ("red_tower_mails", 3),
+        ("tired_librarian_notes", 3),
+        ("wanderers_diary", 3),
+        ("sixteen_rings", 3),
+        ("lower_cavern_bestiary", 3),
+        ("crack_finder_book", 3),
+        ("coal_stories", 3),
+        ("nine_lanterns_codex", 3),
+        ("living_stoone_theory", 3),
+        ("fungi_book", 3),
+        ("corridor_chronicles", 3),
+        # Libros con pistas
+        ("library_clue_1", 3),
+        ("library_clue_2", 3),
+        ("library_clue_3", 3),
+        ("library_clue_4", 3),
+        ("library_clue_5", 3),
+        ("library_clue_6", 3),
+        ("note_wizard_1", 3),
         ("triple_ration", 1),
+        # Otros
         ("banana", 1),
         ("antidote", 1),
         ("stamina_potion", 1),

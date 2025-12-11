@@ -24,12 +24,13 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapon
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Book, Decoration, Obstacle, Entity, Chest, TableContainer, BookShelfContainer
+from entity import Actor, Item, Book, GeneratedBook, Decoration, Obstacle, Entity, Chest, TableContainer, BookShelfContainer
 from render_order import RenderOrder
 import random
 import numpy as np
 import tile_types
 import loot_tables
+import bookgen
 from equipment_types import EquipmentType
 from settings import (
     GOD_MODE,
@@ -175,19 +176,33 @@ _BONE_SHAPE_DESCRIPTIONS = [
     "Ves falanges gruesas y astilladas que forman un abanico irregular.",
     "Reconoces vertebras aplastadas y espinas finas cubiertas de polvo gris.",
     "Las piezas estan ennegrecidas y secas, quebradizas como vidrio viejo.",
+    "Hay costillas finas trenzadas entre si, como si algo las hubiese enrollado.",
+    "Un fémur queda incrustado en placas rotas; parecen de un caparazon.",
+    "Se distinguen discos de cartilago endurecido, perforados en el centro.",
+    "Hay algo extraño en estos huesos.",
+    "Aún hay carne pegada en los huesos.",
 ]
 _BONE_CREATURE_GUESSES = [
+    "No reconoces el tipo de criatura a la que pertenecen",
     "Podrian haber pertenecido a un goblin cazador por la forma de las articulaciones.",
     "La amplitud de la caja toracica sugiere a un aventurero humano.",
     "Todo apunta a una bestia reptiliana con huesos huecos pero flexibles.",
-    "Quizas sean restos de un orco joven; los huecos donde iban los colmillos son claros.",
+    "Quizas sean restos de un orco joven. Se aprecian claramente unos huecos de colmillos.",
+    "Dirias que son de un ogro escuálido; las epifisis apenas estan selladas.",
+    "Los segmentos alargados evocan a un lagarto gigante acostumbrado a trepar.",
+    "El patron de crecimiento indica criatura subterranea de vida corta.",
 ]
 _BONE_DEATH_SIGNS = [
+    "Parece que hubieran intentado quemar una parte.",
+    "No hay signos visibles de la causa de la muerte",
     "Se aprecian marcas de mordiscos profundos, como si algo hambriento lo hubiese despedazado.",
     "Las fracturas rectas revelan golpes de arma contundente repetidos.",
     "Las mellas oxidadas apuntan a filos toscos, tal vez cuchillas goblin.",
     "Hay manchas verdosas y nervaduras quemadas, señal de un veneno corrosivo.",
     "Una grieta limpia atraviesa el craneo; parece obra de un virote pesado.",
+    "La medula esta seca y cristalizada, como si hubiese sido drenada por magia.",
+    "El hueso tiene surcos paralelos, señal de haber sido arrastrado por la corriente.",
+    "Algunas piezas han sido roidas con paciencia, dejando bordes lisos y brillantes.",
 ]
 
 
@@ -411,7 +426,38 @@ note_name_options = [
     "Smelly paper",
     "Strange note",
     "Manuscript",
+    "Torn Letter",
+    "Faded Journal Page",
+    "Dust-covered Tome",
+    "Fragmented Scroll",
+    "Oil-stained Note",
+    "Blood-spattered Parchment",
+    "Cracked Leather Notebook",
+    "Old Expedition Log",
+    "Unfinished Manuscript",
+    "Ink-blotted Paper",
+    "Charcoal-marked Draft",
+    "Frayed Message Slip",
+    "Weathered Diary Scrap",
+    "Rune-etched Paper",
+    "Tattered Codex Leaf",
+    "Ragged Field Report",
+    "Cryptic Handwriting Sample",
+    "Warped Parchment Roll",
+    "Mold-specked Memo",
+    "Secretive Correspondence",
+    "Illegible Scribbles",
+    "Traveler’s Note",
+    "Curled-edge Scroll",
+    "Old Archive Page",
+    "Loose Binding Sheet",
+    "Strange Symbol Sheet",
+    "Unsealed Letter",
+    "Merchant’s Ledger Fragment",
+    "Scholar’s Margin Notes",
+    "Broken-seal Document",
 ]
+
 
 def note_name_generator():
     global note_name_options
@@ -1206,6 +1252,36 @@ goblin_tooth_amulet = Item(
 )
 
 # NOTES, BOOKS, NON MAGIC SCROLLS
+
+generated_book = GeneratedBook(
+    char="~",
+    color=(200, 180, 120),
+    title_fn=bookgen.random_book_title,
+    content_fn=bookgen.random_book_fragment,
+    id_name="Book",
+)
+generated_book._spawn_key = "generated_book"
+loot_tables.register_loot_item("generated_book", generated_book)
+
+def _build_static_book(key: str) -> Book:
+    title, content = bookgen.get_static_book_payload(key)
+    return Book(
+        char="~",
+        color=(210, 200, 170),
+        name=title,
+        id_name=title,
+        info=content,
+        stackable=False,
+    )
+
+forgotten_canticle = _build_static_book("forgotten_canticle")
+forgotten_canticle._spawn_key = "forgotten_canticle"
+loot_tables.register_loot_item("forgotten_canticle", forgotten_canticle)
+
+architect_notes = _build_static_book("architect_notes")
+architect_notes._spawn_key = "architect_notes"
+loot_tables.register_loot_item("architect_notes", architect_notes)
+
 # Notas inútiles o pistas falsas
 note_wizard_1 = Book(
     char="~",
@@ -1560,7 +1636,7 @@ goblin = Actor(
     #inventory=Inventory(capacity=1, items=loot_tables.build_monster_inventory("Goblin", 1)),
     #inventory=Inventory(capacity=3, items=loot_tables.build_monster_inventory("Goblin", 3)),
     #inventory=Inventory(capacity=1, items=[dagger]),
-    inventory=Inventory(capacity=3, loot_table_key="Goblin", loot_amount=1),
+    inventory=Inventory(capacity=3, loot_table_key="Goblin", loot_amount=2),
     level=Level(xp_given=3),
 )
 #goblin.on_spawn = _setup_creature_equipment
