@@ -8,7 +8,7 @@ MIXER_CHANNELS = 2
 MIXER_BUFFER = 2048
 
 # Ambient loops --------------------------------------------------------------
-AMBIENT_SOUND_ENABLED = False
+AMBIENT_SOUND_ENABLED = True
 AMBIENT_SOUND_VOLUME = 1.0  # 0.0 - 1.0
 AMBIENT_SOUND_FADE_OUT_MS = 650  # Duración del fade out al cambiar de nivel
 AMBIENT_SOUND_FADE_IN_MS = 650   # Duración del fade in al iniciar la nueva pista
@@ -36,6 +36,17 @@ AMBIENT_SOUND_DEFAULT_TRACK = [
     "data/audio/ambient/CO.AG_22_Magnetic.ogg",
     "data/audio/ambient/underground_1.ogg",
 ]
+
+# Main menu ambience ---------------------------------------------------------
+MENU_AMBIENT_SOUND_ENABLED = False
+MENU_AMBIENT_SOUND_VOLUME = 0.3  # 0.0 - 1.0
+MENU_AMBIENT_SOUND_FADE_OUT_MS = 900
+MENU_AMBIENT_SOUND_FADE_IN_MS = 600
+# Puede ser string único o lista para selección aleatoria.
+MENU_AMBIENT_SOUND_TRACKS = [
+    "data/audio/menu/night-short.mp3",
+]
+MENU_AMBIENT_SOUND_TRACK = None
 
 # Player footsteps -----------------------------------------------------------
 PLAYER_FOOTSTEP_SOUND_ENABLED = True

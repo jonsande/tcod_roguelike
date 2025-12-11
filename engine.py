@@ -9,7 +9,7 @@ import time
 import lzma
 import pickle
 from collections import deque
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import tcod
 import tcod.event
@@ -328,7 +328,9 @@ class Engine:
             self._noise_notified.discard(actor)
 
     def _sound_transparency_map(self) -> np.ndarray:
-        gamemap = self.game_map
+        gamemap = getattr(self, "game_map", None)
+        if gamemap is None:
+            return False
         try:
             base = gamemap.get_transparency_map()
         except AttributeError:
@@ -344,8 +346,13 @@ class Engine:
             pass
         return sound_map
 
-    def _player_can_hear(self, source: Actor, level: int) -> bool:
-        """Return True if the player can hear `source` based on their foh and noise level."""
+    def _player_can_hear(
+        self,
+        source: Optional[Any] = None,
+        level: int = 1,
+        position: Optional[Tuple[int, int]] = None,
+    ) -> bool:
+        """Return True if the player can hear `source` (or `position`) based on FOH and noise level."""
         if level <= 0:
             return False
         fighter = getattr(self.player, "fighter", None)
@@ -354,9 +361,18 @@ class Engine:
         radius = getattr(fighter, "foh", 0)
         if radius <= 0:
             return False
-        if getattr(source, "gamemap", None) is not self.game_map:
+        gamemap = self.game_map
+        if position is not None:
+            x, y = position
+        elif source is not None:
+            if getattr(source, "gamemap", None) is not gamemap:
+                return False
+            x, y = getattr(source, "x", None), getattr(source, "y", None)
+            if x is None or y is None:
+                return False
+        else:
             return False
-        if not self.game_map.in_bounds(source.x, source.y):
+        if not gamemap.in_bounds(x, y):
             return False
         audible = compute_fov(
             self._sound_transparency_map(),
@@ -364,7 +380,49 @@ class Engine:
             radius,
             algorithm=constants.FOV_SHADOW,
         )
-        return bool(audible[source.x, source.y])
+        return bool(audible[x, y])
+
+    def can_player_hear_sound(
+        self,
+        source: Optional[Any] = None,
+        *,
+        level: int = 1,
+        position: Optional[Tuple[int, int]] = None,
+    ) -> bool:
+        player = getattr(self, "player", None)
+        if player is None:
+            return False
+        if source is player:
+            return True
+        if position and (player.x, player.y) == position:
+            return True
+        if source is None and position is None:
+            return False
+        gamemap = getattr(self, "game_map", None)
+        if gamemap is None:
+            return False
+        if source is not None:
+            gamemap = getattr(source, "gamemap", None)
+            if gamemap is not None and gamemap is not self.game_map:
+                return False
+        elif position is not None and not self.game_map.in_bounds(*position):
+            return False
+        return self._player_can_hear(source=source, level=level, position=position)
+
+    def play_sound_effect(
+        self,
+        callback: Optional[Callable],
+        *args,
+        source: Optional[Any] = None,
+        level: int = 1,
+        position: Optional[Tuple[int, int]] = None,
+        force: bool = False,
+        **kwargs,
+    ) -> None:
+        if callback is None:
+            return
+        if force or self.can_player_hear_sound(source=source, level=level, position=position):
+            callback(*args, **kwargs)
 
     def _describe_noise_direction(self, source: Actor) -> str:
         dx = source.x - self.player.x
@@ -395,7 +453,7 @@ class Engine:
                 continue
             if actor in self._noise_notified:
                 continue
-            if not self._player_can_hear(actor, level):
+            if not self.can_player_hear_sound(source=actor, level=level):
                 continue
             # If the source is visible to the player, skip the descriptive noise message.
             if getattr(self.game_map, "visible", None) is not None:

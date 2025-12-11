@@ -921,6 +921,17 @@ class MeleeAction(ActionWithDirection):
         target_ai = getattr(target, "ai", None)
         target_is_dummy = self.is_dummy_object(target_ai)
         target_fighter = getattr(target, "fighter", None)
+        def _play_attack_sound(result: str) -> None:
+            force_sound = self.entity is self.engine.player or target is self.engine.player
+            self.engine.play_sound_effect(
+                play_melee_attack_sound,
+                self.entity,
+                result,
+                source=self.entity,
+                level=2,
+                force=force_sound,
+                target_is_dummy=target_is_dummy,
+            )
         if target_fighter and getattr(target_fighter, "is_hidden", False):
             target_fighter.break_hide(reason="collision", revealer=self.entity)
             if self.entity is self.engine.player:
@@ -1171,7 +1182,7 @@ class MeleeAction(ActionWithDirection):
                     self.engine.message_log.add_message(
                         f"{attack_desc} and HITS ({hit_dice} VS {target.fighter.defense}) for {damage} dmg points!", damage_color
                     )
-                play_melee_attack_sound(self.entity, "hit_damage", target_is_dummy=target_is_dummy)
+                _play_attack_sound("hit_damage")
 
                 target.fighter.take_damage(
                     damage,
@@ -1203,7 +1214,7 @@ class MeleeAction(ActionWithDirection):
                     self.engine.message_log.add_message(
                         f"{attack_desc} but does no damage.", failure_color
                     )
-                play_melee_attack_sound(self.entity, "hit_no_damage", target_is_dummy=target_is_dummy)
+                _play_attack_sound("hit_no_damage")
         
         # Si no impacta:
         else:
@@ -1249,7 +1260,7 @@ class MeleeAction(ActionWithDirection):
                 )
             if target is self.engine.player:
                 target.fighter.register_enemy_miss()
-            play_melee_attack_sound(self.entity, "miss", target_is_dummy=target_is_dummy)
+            _play_attack_sound("miss")
 
 
         # Ajustes de BONIFICACIONES FINALES
@@ -1315,6 +1326,14 @@ class MovementAction(ActionWithDirection):
         door_opened = False
         player_moved = False
         move_dx, move_dy = self.dx, self.dy
+        fighter = getattr(self.entity, "fighter", None)
+        if (
+            fighter
+            and getattr(fighter, "is_blind", False)
+            and self.entity is not self.engine.player
+        ):
+            # Blinded creatures stay put until the effect wears off.
+            return WaitAction(self.entity).perform()
         can_pass_closed_doors = getattr(self.entity.fighter, "can_pass_closed_doors", False)
         can_open_doors = getattr(self.entity.fighter, "can_open_doors", False)
         is_closed_door = game_map.is_closed_door(dest_x, dest_y)
@@ -1548,7 +1567,12 @@ class CloseDoorAction(Action):
         gamemap.close_door(target_x, target_y)
         if self.entity is self.engine.player:
             self.engine.message_log.add_message("You close the door.", color.descend)
-            play_door_close_sound()
+        self.engine.play_sound_effect(
+            play_door_close_sound,
+            source=self.entity,
+            level=2,
+            force=self.entity is self.engine.player,
+        )
         # Closing a door also makes noise.
         if getattr(self.engine, "register_noise", None):
             self.engine.register_noise(self.entity, level=2, duration=2, tag="door")

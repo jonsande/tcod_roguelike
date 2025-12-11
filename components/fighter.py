@@ -26,6 +26,32 @@ from audio import (
 if TYPE_CHECKING:
     from entity import Actor, Obstacle, Item
 
+
+def _play_sound_if_audible(
+    engine,
+    callback,
+    *args,
+    source=None,
+    level: int = 1,
+    position=None,
+    force: bool = False,
+    **kwargs,
+) -> None:
+    if callback is None:
+        return
+    if engine:
+        engine.play_sound_effect(
+            callback,
+            *args,
+            source=source,
+            level=level,
+            position=position,
+            force=force,
+            **kwargs,
+        )
+    else:
+        callback(*args, **kwargs)
+
 x = 0
 
 # ESTO NO SÉ SI TIENE ALGUNA UTILIDAD AHORA MISMO (pero creo que no):
@@ -360,7 +386,22 @@ class Fighter(FireStatusMixin, BaseComponent):
         took_damage = clamped < old_hp
         self._hp = clamped
         if took_damage:
-            play_pain_sound(getattr(self, "parent", None))
+            parent_entity = getattr(self, "parent", None)
+            engine = None
+            try:
+                engine = self.engine
+            except Exception:
+                engine = None
+            player_entity = getattr(engine, "player", None) if engine else None
+            force_sound = parent_entity is player_entity
+            _play_sound_if_audible(
+                engine,
+                play_pain_sound,
+                parent_entity,
+                source=parent_entity,
+                level=2,
+                force=force_sound,
+            )
         if self._hp == 0 and getattr(self.parent, "ai", None):
             self.die()
 
@@ -974,10 +1015,27 @@ class Fighter(FireStatusMixin, BaseComponent):
         else:
             death_message = f"{self.parent.name} is dead!"
             death_message_color = color.enemy_die
+        engine = getattr(self, "engine", None)
+        player_entity = getattr(engine, "player", None) if engine else None
+        sound_source = getattr(self, "parent", None)
+        force_sound = sound_source is player_entity
         if is_table:
-            play_table_destroy_sound()
+            _play_sound_if_audible(
+                engine,
+                play_table_destroy_sound,
+                source=sound_source,
+                level=3,
+                force=force_sound,
+            )
         else:
-            play_death_sound(self.parent)
+            _play_sound_if_audible(
+                engine,
+                play_death_sound,
+                sound_source,
+                source=sound_source,
+                level=2,
+                force=force_sound,
+            )
 
         self.parent.char = "%"
         self.parent.color = (160, 160, 160)
@@ -1579,7 +1637,13 @@ class Door(FireStatusMixin, BaseComponent):
         self.engine.player.level.add_xp(self.parent.level.xp_given)
         self.drop_loot()
         if getattr(self.parent, "name", "").lower() == "table":
-            play_table_destroy_sound()
+            _play_sound_if_audible(
+                self.engine,
+                play_table_destroy_sound,
+                source=self.parent,
+                level=3,
+                force=self.parent is getattr(self.engine, "player", None),
+            )
         import entity_factories
         entity_factories.breakable_wall_rubble.spawn(gamemap, x, y)
         return None
@@ -1652,6 +1716,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.stamina = 0
         self.weapon_proficiency = 1.0
         self._init_fire_status(fire_resistance)
+        self._last_attacker_is_player = False
 
     @property
     def hp(self) -> int:
@@ -1708,10 +1773,12 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         attack_item: Optional["Item"] = None,
     ) -> None:
         self.hp -= amount
+        player_entity = getattr(self.engine, "player", None)
+        self._last_attacker_is_player = attacker is player_entity
         # Being hit generates noise so the player hears blows on the wall.
         if getattr(self.engine, "register_noise", None):
             try:
-                self.engine.register_noise(attacker or self.parent, level=3, duration=1, tag="wall_hit")
+                self.engine.register_noise(self.parent, level=3, duration=1, tag="wall_hit")
             except Exception:
                 pass
 
@@ -1734,9 +1801,27 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         x, y = self.parent.x, self.parent.y
         gamemap = self.engine.game_map
         death_message = f"The {self.parent.name.lower()} collapses!"
-        self.engine.message_log.add_message(death_message, color.enemy_die)
-        #play_death_sound(self.parent)
-        play_breakable_wall_destroy_sound()
+        visible = getattr(gamemap, "visible", None)
+        player_can_see = False
+        if visible is not None and gamemap.in_bounds(x, y):
+            try:
+                player_can_see = bool(visible[x, y])
+            except Exception:
+                player_can_see = False
+        last_attacker_player = getattr(self, "_last_attacker_is_player", False)
+        if player_can_see or last_attacker_player:
+            self.engine.message_log.add_message(death_message, color.enemy_die)
+        engine = getattr(self, "engine", None)
+        player_entity = getattr(engine, "player", None) if engine else None
+        force_sound = bool(last_attacker_player or self.parent is player_entity)
+        _play_sound_if_audible(
+            engine,
+            play_breakable_wall_destroy_sound,
+            source=self.parent,
+            level=4,
+            force=force_sound,
+        )
+        
         # Extra noise on wall destruction so nearby foes (and the player) can hear it.
         if getattr(self.engine, "register_noise", None):
             try:

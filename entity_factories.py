@@ -200,7 +200,7 @@ _BONE_DEATH_SIGNS = [
     "Las mellas oxidadas apuntan a filos toscos, tal vez cuchillas goblin.",
     "Hay manchas verdosas y nervaduras quemadas, señal de un veneno corrosivo.",
     "Una grieta limpia atraviesa el craneo; parece obra de un virote pesado.",
-    "La medula esta seca y cristalizada, como si hubiese sido drenada por magia.",
+    "La médula esta seca y cristalizada, como si hubiese sido drenada por magia.",
     "El hueso tiene surcos paralelos, señal de haber sido arrastrado por la corriente.",
     "Algunas piezas han sido roidas con paciencia, dejando bordes lisos y brillantes.",
 ]
@@ -1410,7 +1410,7 @@ player = Actor(
         recover_rate=50,
         recover_amount=1,
         fov=2,
-        foh=8,
+        foh=10,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
         base_stealth=3, 
         base_to_hit=0,

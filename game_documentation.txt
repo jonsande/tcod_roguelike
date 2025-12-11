@@ -27,19 +27,38 @@
 
 2.1. SISTEMA DE OÍDO/ESCUCHA
 
-- En el juego todas las criaturas vivientes (el PJ incluido) tienen "oidos". Dependiendo de su Field Of Hearing (FOH) y de la capa de "opacidad" sonora del terreno circundante (los muros absorven gran parte del sonido, aunque no totalmente; las puertas absorven parte también), el PJ y los PNJ pueden oir a cierta distancia distintos eventos, como el movimiento de una criatura, puertas que se abren o se cierran, o muros que se derrumban. El jugador recibirá en la parte de abajo de la pantalla una descripción de lo que oye (y en qué dirección lo oye), si alguno de los eventos por él audibles entran dentro de su rango de escucha.
+- En el juego la mayoría de las criaturas vivientes (el PJ incluido) tienen "oidos". Dependiendo de su Field Of Hearing (FOH) y de la capa de "opacidad" sonora del terreno circundante (los muros absorven gran parte del sonido, aunque no totalmente; las puertas absorven parte también), el PJ y los PNJ pueden oir a cierta distancia distintos eventos, como el movimiento de una criatura, puertas que se abren o se cierran, o muros que se derrumban. El jugador recibirá en la parte de abajo de la pantalla una descripción de lo que oye (y en qué dirección lo oye), si alguno de los eventos por él audibles entran dentro de su rango de escucha.
 
 - Es posible escuchar a través de las puertas. Espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
 
 - Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 
+- Los muros y las puertas absorven el sonido, pero no impiden totalmente su propagación (cada cual tiene su propio factor de absorción).
+
+
 2.2. SISTEMA DE SIGILO
+
+- El sistema de sigilo en este juego es rico y se encuentra integrado en las mecánicas generales. Por ello es más apropiado hablar de «estilo de juego sigiloso» o «mecánicas para un juego basado en el sigilo» que de «sistéma de sigilo» propiamente. 
+
+- Esto quiere decir que para un estilo de juego sigiloso el Jugador habrá de servirse de varias mecánicas del juego, como las de oido/escucha, visión, maniobras de combate, etc. Así pues, en esta sección sólo cubriremos en sus términos generales lo relativo a los ataques por sorpresa (STEALTH ATTACK o BACKSTAB), el sistema de «oído» y el de detección de los PNJ. 
 
 [...]
 
+- Algunas acciones producen ruido, facilitando la detección de los actores implicados en ellos (es decir, que el sistema de ruido funciona en los dos sentidos: tanto como forma de detección de PNJ por parte del PJ, como, al revés, del PJ por los PNJ). Entre ellas las principales son:
+    
+    - Caminar o moverse.
+    - Abrir o cerrar puertas.
+    - Combatir, golpear, dañar o recibir daño.
+    - Derribar muros.
+
+- Distintos objetos, consumibles y equipamientos pueden otorgar bonificaciones o penalizaciones al STEALTH, así como a otros atributos que afectan al estilo de juego sigiloso, como por ejemplo el campo de visión (FOV) en la oscuridad o campo de oído (FOH), principalmente.
+
+- Estar junto a un muro (posición ortogonal) proporciona un bonificador de +1 al STEALTH.
+
+
 2.2.1. Ocultarse en las sombras
 
-- Si el PJ no está en combate, no está dentro del FOV de ninguna otra criatura, tiene equipada una capa, tiene la lámpara apagada y espera junto a un muro (en posición ortogonal) cuatro turnos seguidos (WaitAction), se considerará «oculto» (se generará un mensaje en la parte de abajo de la pantalla indicándolo). Cuando está oculto, no podrá ser atacado directamente por ninguna criatura. Si el PJ, estando oculto, lleva a cabo cualquier otra acción que no sea pasar turno (WaitAction), dejará de estar oculto inmediatamente después de llevar a cabo dicha acción. Si el PJ, estando oculto, ataca a otra criatura, ese ataque sera un ataque sigiloso (stealth attack), con sus correspondientes bonificadores, e inmediatamente después dejará de estar oculto. Por otra parte, si una criatura intenta moverse a una casilla en la que se encuentra oculto el jugador u otra criatura, la criatura que intenta moverse perderá el turno y la criatura oculta dejará de estar oculta. Siempre que el PJ se oculte o deje de estar oculto se generará un mensaje indicándolo.
+- [OBSOLETO] Si el PJ no está en combate, no está dentro del FOV de ninguna otra criatura, tiene equipada una capa, tiene la lámpara apagada y espera junto a un muro (en posición ortogonal) cuatro turnos seguidos (WaitAction), se considerará «oculto» (se generará un mensaje en la parte de abajo de la pantalla indicándolo). Cuando está oculto, no podrá ser atacado directamente por ninguna criatura. Si el PJ, estando oculto, lleva a cabo cualquier otra acción que no sea pasar turno (WaitAction), dejará de estar oculto inmediatamente después de llevar a cabo dicha acción. Si el PJ, estando oculto, ataca a otra criatura, ese ataque sera un ataque sigiloso (stealth attack), con sus correspondientes bonificadores, e inmediatamente después dejará de estar oculto. Por otra parte, si una criatura intenta moverse a una casilla en la que se encuentra oculto el jugador u otra criatura, la criatura que intenta moverse perderá el turno y la criatura oculta dejará de estar oculta. Siempre que el PJ se oculte o deje de estar oculto se generará un mensaje indicándolo.
 
 
 3. EL INVENTARIO

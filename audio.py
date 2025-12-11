@@ -181,13 +181,17 @@ class AmbientSoundController:
             if settings.DEBUG_MODE:
                 print(f"[audio] Unable to set volume: {exc}")
 
-    def stop(self) -> None:
-        if not self._initialized or pygame is None:
-            return
-        try:
-            pygame.mixer.music.stop()
-        except Exception:
-            pass
+    def stop(self, *, fade_out_ms: Optional[int] = None) -> None:
+        fade_ms = max(0, int(fade_out_ms or 0))
+        if self._initialized and pygame is not None:
+            try:
+                if fade_ms > 0 and pygame.mixer.music.get_busy():
+                    pygame.mixer.music.fadeout(fade_ms)
+                    self._wait_for_music_stop(timeout_ms=fade_ms)
+                else:
+                    pygame.mixer.music.stop()
+            except Exception:
+                pass
         self._current_track = None
         self._current_floor = None
 
@@ -202,46 +206,19 @@ class AmbientSoundController:
             self.stop()
             return
 
-        self.initialize()
-        if not self._initialized or pygame is None:
-            return
-
-        resolved = _resolve_audio_path(track)
-        if not resolved:
-            if track not in self._missing_tracks and settings.DEBUG_MODE:
-                print(f"[audio] Ambient track '{track}' not found.")
-                self._missing_tracks.add(track)
-            self.stop()
-            return
-
-        if self._current_track == resolved:
-            if pygame.mixer.music.get_busy():
-                return
         fade_out_ms = max(0, int(getattr(audio_cfg, "AMBIENT_SOUND_FADE_OUT_MS", 0)))
         fade_in_ms = max(0, int(getattr(audio_cfg, "AMBIENT_SOUND_FADE_IN_MS", 0)))
-        if self._current_track and self._current_track != resolved and pygame.mixer.music.get_busy():
-            try:
-                if fade_out_ms > 0:
-                    pygame.mixer.music.fadeout(fade_out_ms)
-                    self._wait_for_music_stop(timeout_ms=fade_out_ms)
-                else:
-                    pygame.mixer.music.stop()
-            except Exception:
-                pass
-        try:
-            pygame.mixer.music.load(str(resolved))
-            self.set_volume(audio_cfg.AMBIENT_SOUND_VOLUME)
-            if fade_in_ms > 0:
-                pygame.mixer.music.play(-1, fade_ms=fade_in_ms)
-            else:
-                pygame.mixer.music.play(-1)
-        except Exception as exc:  # pragma: no cover - runtime environment issue
-            if settings.DEBUG_MODE:
-                print(f"[audio] Unable to play '{resolved}': {exc}")
-            return
-
-        self._current_track = resolved
-        self._current_floor = floor
+        volume = _resolve_volume(
+            getattr(audio_cfg, "AMBIENT_SOUND_VOLUME", None),
+            1.0,
+        )
+        if self._switch_to_track(
+            track,
+            fade_out_ms=fade_out_ms,
+            fade_in_ms=fade_in_ms,
+            volume=volume,
+        ):
+            self._current_floor = floor
 
     def _wait_for_music_stop(self, *, timeout_ms: int, poll_interval: float = 0.05) -> None:
         """Wait briefly for the current music to finish fading out."""
@@ -271,6 +248,113 @@ class AmbientSoundController:
         if isinstance(entry, str) and entry.strip():
             return entry
         return None
+
+    def _switch_to_track(
+        self,
+        track: str,
+        *,
+        fade_out_ms: int,
+        fade_in_ms: int,
+        volume: float,
+        allow_when_disabled: bool = False,
+    ) -> bool:
+        self.initialize(allow_when_disabled=allow_when_disabled)
+        if not self._initialized or pygame is None:
+            return False
+
+        resolved = _resolve_audio_path(track)
+        if not resolved:
+            if track not in self._missing_tracks and settings.DEBUG_MODE:
+                print(f"[audio] Ambient track '{track}' not found.")
+                self._missing_tracks.add(track)
+            self.stop()
+            return False
+
+        if self._current_track == resolved and pygame.mixer.music.get_busy():
+            self.set_volume(volume)
+            self._current_track = resolved
+            return True
+
+        if self._current_track and self._current_track != resolved and pygame.mixer.music.get_busy():
+            try:
+                if fade_out_ms > 0:
+                    pygame.mixer.music.fadeout(fade_out_ms)
+                    self._wait_for_music_stop(timeout_ms=fade_out_ms)
+                else:
+                    pygame.mixer.music.stop()
+            except Exception:
+                pass
+        try:
+            pygame.mixer.music.load(str(resolved))
+            self.set_volume(volume)
+            if fade_in_ms > 0:
+                pygame.mixer.music.play(-1, fade_ms=fade_in_ms)
+            else:
+                pygame.mixer.music.play(-1)
+        except Exception as exc:  # pragma: no cover - runtime environment issue
+            if settings.DEBUG_MODE:
+                print(f"[audio] Unable to play '{resolved}': {exc}")
+            return False
+
+        self._current_track = resolved
+        return True
+
+    def play_menu_track(self) -> None:
+        if not getattr(audio_cfg, "MENU_AMBIENT_SOUND_ENABLED", False):
+            self.stop()
+            return
+        track_choice = getattr(audio_cfg, "MENU_AMBIENT_SOUND_TRACKS", None)
+        if track_choice is None:
+            track_choice = getattr(audio_cfg, "MENU_AMBIENT_SOUND_TRACK", None)
+        track = self._resolve_track_choice(track_choice)
+        if not track:
+            self.stop()
+            return
+        fade_out_ms = max(
+            0,
+            int(
+                getattr(
+                    audio_cfg,
+                    "MENU_AMBIENT_SOUND_FADE_OUT_MS",
+                    getattr(audio_cfg, "AMBIENT_SOUND_FADE_OUT_MS", 0),
+                )
+            ),
+        )
+        fade_in_ms = max(
+            0,
+            int(
+                getattr(
+                    audio_cfg,
+                    "MENU_AMBIENT_SOUND_FADE_IN_MS",
+                    getattr(audio_cfg, "AMBIENT_SOUND_FADE_IN_MS", 0),
+                )
+            ),
+        )
+        volume = _resolve_volume(
+            getattr(audio_cfg, "MENU_AMBIENT_SOUND_VOLUME", None),
+            getattr(audio_cfg, "AMBIENT_SOUND_VOLUME", 1.0),
+        )
+        if self._switch_to_track(
+            track,
+            fade_out_ms=fade_out_ms,
+            fade_in_ms=fade_in_ms,
+            volume=volume,
+            allow_when_disabled=True,
+        ):
+            self._current_floor = None
+
+    def stop_menu_track(self) -> None:
+        fade_out_ms = max(
+            0,
+            int(
+                getattr(
+                    audio_cfg,
+                    "MENU_AMBIENT_SOUND_FADE_OUT_MS",
+                    getattr(audio_cfg, "AMBIENT_SOUND_FADE_OUT_MS", 0),
+                )
+            ),
+        )
+        self.stop(fade_out_ms=fade_out_ms)
 
 
 ambient_sound = AmbientSoundController()

@@ -34,21 +34,19 @@ def _maybe_play_door_open_sound(
     x: int,
     y: int,
 ) -> None:
-    """Play the door open sound when the tile is visible or the player opened it."""
-    try:
-        player = game_map.engine.player
-    except Exception:
-        player = None
-    if player is not None and actor is player:
-        play_door_open_sound()
+    """Play the door open sound when the event is audible for the player."""
+    engine = getattr(game_map, "engine", None)
+    if engine is None:
         return
-    visible = getattr(game_map, "visible", None)
-    if visible is None:
-        return
-    if not game_map.in_bounds(x, y):
-        return
-    if bool(visible[x, y]):
-        play_door_open_sound()
+    player = getattr(engine, "player", None)
+    force = actor is not None and actor is player
+    engine.play_sound_effect(
+        play_door_open_sound,
+        source=actor,
+        position=(x, y),
+        level=2,
+        force=force,
+    )
 
 
 class GameMapTown:

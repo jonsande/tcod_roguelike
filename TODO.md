@@ -84,6 +84,8 @@ PERGAMINOS
 - [ ] Pergamino que identifica si el efecto del objeto es bueno, malo, o neutral.
 
 POCIONES
+- [ ] Poción de aumento del FOH temporal!! Que lo aumente un montón temporalmente, de forma que quien la beba reciba un montón de mensajes detallados de lo que está pasando/hay a su alrededor.
+- [ ] Poción de pequeño aumento permanente del FOH.
 - [x] BUG: Creo que la potion of True Sight se está identificando al lanzarla contra criatura. No debería.
 - [x] Crear animación para lanzamiento de pociones.
 - [ ] ¿Animación para la rotura de pociones?
