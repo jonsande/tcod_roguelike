@@ -1039,9 +1039,6 @@ class HostileEnemyV3(BaseAI):
         # Default fallback
         return WaitAction(self.entity).perform()
 
-
-
-
 class ScoutV3(BaseAI):
     """Scout enemy that can engage via sight or hearing."""
 

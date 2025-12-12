@@ -1609,7 +1609,7 @@ class MainGameEventHandler(EventHandler):
             return HelpScreenEventHandler(self.engine)
         # Ver el historial
         elif key == tcod.event.KeySym.v:
-            return HistoryViewer(self.engine)
+            return HistoryViewer(self.engine, parent_handler=self)
         # Coger objeto
         elif key == tcod.event.KeySym.g:
             items_here = sorted(
@@ -1707,9 +1707,14 @@ class GameOverEventHandler(EventHandler):
     def ev_quit(self, event: tcod.event.Quit) -> None:
         self.on_quit()
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         if event.sym == tcod.event.KeySym.ESCAPE:
             self.on_quit()
+        elif event.sym in WAIT_KEYS:
+            return WaitAction(self.engine.player)
+        elif event.sym == tcod.event.KeySym.v:
+            return HistoryViewer(self.engine, parent_handler=self)
+        return None
     
 
 CURSOR_Y_KEYS = {
@@ -1727,10 +1732,13 @@ CURSOR_Y_KEYS = {
 class HistoryViewer(EventHandler):
     """Print the history on a larger window which can be navigated."""
 
-    def __init__(self, engine: Engine):
+    def __init__(
+        self, engine: Engine, parent_handler: Optional[BaseEventHandler] = None
+    ):
         super().__init__(engine)
         self.log_length = len(engine.message_log.messages)
         self.cursor = self.log_length - 1
+        self.parent_handler = parent_handler
 
     def on_render(self, console: tcod.console.Console) -> None:
         super().on_render(console)  # Draw the main state as the background.
@@ -1755,7 +1763,7 @@ class HistoryViewer(EventHandler):
         )
         log_console.blit(console, 3, 3)
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[MainGameEventHandler]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         # Fancy conditional movement to make it feel right.
         if event.sym in CURSOR_Y_KEYS:
             adjust = CURSOR_Y_KEYS[event.sym]
@@ -1772,8 +1780,8 @@ class HistoryViewer(EventHandler):
             self.cursor = 0  # Move directly to the top message.
         elif event.sym == tcod.event.KeySym.END:
             self.cursor = self.log_length - 1  # Move directly to the last message.
-        else:  # Any other key moves back to the main game state.
-            return MainGameEventHandler(self.engine)
+        else:  # Any other key moves back to the previous state (defaults to main).
+            return self.parent_handler or MainGameEventHandler(self.engine)
         return None
 
 
@@ -1797,77 +1805,53 @@ class HelpScreenEventHandler(EventHandler):
             _("You can also open this help with F1."),
             "",
             "",
-            "NumPad",
+            "NUMPAD",
             "",
-            "9 - Up&Right",
+            "   7 8 9",
+            "   4 5 6",
+            "   1 2 3",
             "",
-            "8 - Up",
-            "",
-            "7 - Up&Left",
-            "",
-            "6 - Right",
-            "",
-            "4 - Left",
-            "",
-            "3 - Down&Right",
-            "",
-            "2 - Down",
-            "",
-            "1 - Down&Left",
-            "",
-            "5 - Wait",
+            "   5 - Wait",
             "",
             "",
-            "Vi Keys",
+            "VI KEYS (recommended)",
             "",
-            "k - Up",
+            "   y k u",
+            "   j . l",
+            "   b j n",
             "",
-            "j - Down",
-            "",
-            "h - Left",
-            "",
-            "l - Right",
-            "",
-            "y - Up&Left",
-            "",
-            "u - Up&Right",
-            "",
-            "b - Down&Left",
-            "",
-            "n - Down&Right",
-            "",
-            ". - Wait",
+            "   . - Wait",
             "",
             "",
-            "Other",
+            "OTHER",
             "",
-            "i - Examine inventory",
+            "   i - Examine inventory",
             "",
-            "g - Pickup item",
+            "   g - Pickup item",
             "",
-            "d - Drop item",
+            "   d - Drop item",
             "",
-            "a - Use/wear/wield item (from inventory)",
+            "   a - Use/wear/wield item (from inventory)",
             "",
-            "t - Throw item",
+            "   t - Throw item",
             "",
-            "x, z, / - Look/examine",
+            "   x, z, / - Look/examine",
             "",
-            "c - Close door",
+            "   c - Close door",
             "",
-            "SPACE - Interact (take stairs)",
+            "   SPACE - Interact (take stairs)",
             "",
-            "q - On/Off lantern",
+            "   q - On/Off lantern",
             "",
-            "c, @, \" - Character information",
+            "   c, @, \" - Character information",
             "",
-            "p - Visible monster information panel",
+            "   p - Visible monster information panel",
             "",
-            "v - Message log",
+            "   v - Message log",
             "",
-            "ESC - Save game and quit",
+            "   ESC - Save game and quit",
             "",
-            "BACKSPACE - Debug Console (only on debug mode)",
+            "   BACKSPACE - Debug Console (only on debug mode)",
             "",
             "",
             #"DOCUMENTACIÓN DEL JUEGO",

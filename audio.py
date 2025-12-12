@@ -377,7 +377,7 @@ def _pick_random_track(list_attr: str, single_attr: Optional[str] = None, *, max
 def _load_sound(track: str) -> Optional["pygame.mixer.Sound"]:
     resolved = _resolve_audio_path(track)
     if not resolved:
-        if track not in _missing_effects and settings.DEBUG_MODE:
+        if track not in _missing_effects:
             print(f"[audio] Effect track '{track}' not found.")
             _missing_effects.add(track)
         return None

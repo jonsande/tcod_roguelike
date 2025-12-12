@@ -979,8 +979,8 @@ class MeleeAction(ActionWithDirection):
         # hit_dice = random.randint(1, 6) + self.entity.fighter.to_hit + self.entity.fighter.weapon_proficiency
         # hit_dice = round(hit_dice)
 
-        # TODO: Hay que revisar todo esto para que funcione como en ThrowItemAction
-        # MECÁNICA BACKSTAB/STEALTH/SIGILO (beta)
+        # TODO: Hay que confirmar que ThrowItemAction es igual en este punto.
+        # MECÁNICA BACKSTAB/STEALTH/SIGILO
         
         # Bonificador al impacto
         stealth_allowed = attacking_from_hide or was_aggravated == False
@@ -1584,6 +1584,10 @@ class WaitAction(Action):
         """
         Wait. Gain +1 to To-Hit and +1 to Defense.
         """
+
+        if not getattr(self.entity, "is_alive", True):
+            # Dead actors can still advance time without modifying stats.
+            return
 
         # Accion de esperar resetea el tipo de BONIFICACIÓN por impactos, 
         # indiferentemente de si se está o no en melee:

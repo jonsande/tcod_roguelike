@@ -8,6 +8,7 @@ import color
 from render_order import RenderOrder
 from entity import Actor
 from i18n import _
+from components.ai import SleepingEnemy
 
 if TYPE_CHECKING:
     from tcod import Console
@@ -121,6 +122,9 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
                 slime_suffix = _slime_inside_description(entity)
                 if slime_suffix:
                     name += slime_suffix
+                ai = getattr(entity, "ai", None)
+                if isinstance(ai, SleepingEnemy):
+                    name += " (sleeping)"
             names.append(name)
 
     tile_descriptions: List[str] = []

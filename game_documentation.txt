@@ -1,59 +1,123 @@
+
+INSTRUCCIONES DEL JUEGO
+
 1. MECÁNICAS GENERALES
 
 1.1. El MOVIMIENTO
 
-[...]
+- Controles Vi:
 
-1.2. ABRIR/CERRAR PUERTAS
+    y k u
+    j . l
+    b j n
 
-[...]
+- Numpad:
 
-1.3. INSPECCIONAR ALREDEDORES
+    7 8 9
+    4 5 6
+    1 2 3
 
-[...]
+- Las teclas '.' y '5' sirven para esperar/pasar un turno.
 
-- No todos los muros son lo que parecen. A veces descubrir pasadizos secretos inspeccionando (tecla 'x') las paredes o golpeando contra ellas.
 
-1.4. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
+1.2. ABRIR/CERRAR PUERTAS, COFRES, LIBRERÍAS, MESAS, ETC.
 
-[...]
+- Las puertas cerradas sin llave se abren moviéndose hacia ellas. Lo mismo para cofres, librerías, mesas, etc.
 
-1.5. BAJAR/SUBIER ESCALERAS
+- Si una puerta está cerrada con llave, la puerta se abre teniendo la llave apropiada en el inventario (moviéndote hacia la puerta).
 
-[...]
+- Puedes cerrar puertas con la tecla 'c'.
+
+- Es posible escuchar a través de las puertas esperando cuatro turnos junto a una (en posición ortogonal). Para más información sobre el sistema de oído/escucha, ver más abajo.
+
+
+1.3. INSPECCIONAR ALREDEDORES Y COGER OBJETOS
+
+- Puedes inspeccionar lo que hay en una casilla usando la tecla 'x' y colocando el cursor sobre la casilla deseada (también se puede usar el ratón a este mismo efecto).
+
+- Acostúbrate a inspeccionar crituras, objetos y tus alrededores, pues puedes obtener información muy valiosa de ello.
+
+- No todos los muros son lo que parecen. A veces descubrir pasadizos secretos inspeccionando las paredes o golpeando contra ellas.
+
+- Puedes recoger objetos del suelo situándote sobre ellos y pulsando la tecla 'g' (del inglés «grab»).
+
+- Así mismo, puedes coger objetos del interior de un cofre, biblioteca, etc. abriendo el contenedor y pulsando la tecla asociada al objeto deseado.
+
+
+1.4. EL INVENTARIO
+
+- Puedes inspeccionar un objeto de tu inventario abriendo el inventario con la tecla 'i' y pulsando la tecla asociada al objeto que desees inspeccionar.
+
+- Recuerda que puedes recoger objetos del suelo situándote sobre ellos y pulsando la tecla 'g' (del inglés «grab»).
+
+
+1.5. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
+
+- Para equiparse un objeto, beber una poción, leer un pergamino, libro o nota, o activar un dispositivo, pulsa la tecla 'a' y selecciona el objeto del inventario que desees activar o con el que desees interactuar.
+
+- Ten en cuenta que el uso o activación de un objeto puede producir resultados diferentes si ese objeto se encuentra o no identificado.
+
+- Acostúmbrate a inspeccionar los objetos de tu inventario antes de usarlos o activarlos.
+
+- Recuerda también que usar o activar objetos de tu inventario consume una cantidad de tiempo.
+
+
+1.6. BAJAR/SUBIER ESCALERAS
+
+- Puedes subir o bajar por unas escaleras situándote sobre ellas y pulsando la tecla 'SPACE'.
 
 
 2. MECÁNICAS ESPECIALES
 
 2.1. SISTEMA DE OÍDO/ESCUCHA
 
-- En el juego la mayoría de las criaturas vivientes (el PJ incluido) tienen "oidos". Dependiendo de su Field Of Hearing (FOH) y de la capa de "opacidad" sonora del terreno circundante (los muros absorven gran parte del sonido, aunque no totalmente; las puertas absorven parte también), el PJ y los PNJ pueden oir a cierta distancia distintos eventos, como el movimiento de una criatura, puertas que se abren o se cierran, o muros que se derrumban. El jugador recibirá en la parte de abajo de la pantalla una descripción de lo que oye (y en qué dirección lo oye), si alguno de los eventos por él audibles entran dentro de su rango de escucha.
+- En el juego la mayoría de las criaturas vivientes (el PJ incluido) tienen «oidos». 
 
-- Es posible escuchar a través de las puertas. Espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
-
-- Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
+- Dependiendo de su Field Of Hearing (FOH) y de la capa de «opacidad» sonora del terreno circundante, el PJ y los PNJ con oído oirán a cierta distancia distintos eventos, como el movimiento de una criatura, puertas que se abren o se cierran, o muros que se derrumban. 
 
 - Los muros y las puertas absorven el sonido, pero no impiden totalmente su propagación (cada cual tiene su propio factor de absorción).
+
+- El jugador recibirá en la parte de abajo de la pantalla una descripción de lo que oye (y en qué dirección lo oye), si alguno de los eventos por él audibles entran dentro de su rango de escucha.
+
+- Además, es posible escuchar a través de las puertas: espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
+
+- Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 
 
 2.2. SISTEMA DE SIGILO
 
-- El sistema de sigilo en este juego es rico y se encuentra integrado en las mecánicas generales. Por ello es más apropiado hablar de «estilo de juego sigiloso» o «mecánicas para un juego basado en el sigilo» que de «sistéma de sigilo» propiamente. 
+- Aunque todo Personaje cuenta con un atributo STEALTH (que afecta a varias mecánicas, como se describirá más abajo), el sistema de sigilo en este juego se encuentra integrado en las mecánicas generales. Por ello es más apropiado hablar de «estilo de juego sigiloso» o «mecánicas para un juego basado en el sigilo» que de «sistéma de sigilo» propiamente. 
 
-- Esto quiere decir que para un estilo de juego sigiloso el Jugador habrá de servirse de varias mecánicas del juego, como las de oido/escucha, visión, maniobras de combate, etc. Así pues, en esta sección sólo cubriremos en sus términos generales lo relativo a los ataques por sorpresa (STEALTH ATTACK o BACKSTAB), el sistema de «oído» y el de detección de los PNJ. 
+- Esto quiere decir que para un estilo de juego sigiloso el Jugador habrá de servirse de varias mecánicas del juego, como las de oido/escucha, visión, maniobras de combate, etc. Así pues, en esta sección sólo cubriremos en sus términos generales lo relativo a los ataques por sorpresa (STEALTH ATTACK o BACKSTAB), al sistema de «oído» y de detección de los PNJ. 
 
-[...]
-
-- Algunas acciones producen ruido, facilitando la detección de los actores implicados en ellos (es decir, que el sistema de ruido funciona en los dos sentidos: tanto como forma de detección de PNJ por parte del PJ, como, al revés, del PJ por los PNJ). Entre ellas las principales son:
+- Recuerda que algunas acciones producen ruido, facilitando la detección de los actores implicados en ellos (es decir, que el sistema de ruido funciona en los dos sentidos: tanto como forma de detección de PNJ, como, al revés, del PJ por los PNJ). Entre ellas las principales fuentes de ruido son:
     
     - Caminar o moverse.
     - Abrir o cerrar puertas.
     - Combatir, golpear, dañar o recibir daño.
     - Derribar muros.
 
-- Distintos objetos, consumibles y equipamientos pueden otorgar bonificaciones o penalizaciones al STEALTH, así como a otros atributos que afectan al estilo de juego sigiloso, como por ejemplo el campo de visión (FOV) en la oscuridad o campo de oído (FOH), principalmente.
+- Distintos objetos, consumibles y equipamientos pueden otorgar bonificaciones o penalizaciones al STEALTH, así como a otros atributos, esenciales para un estilo de juego sigiloso (el FOV y el FOH principalmente, aunque no exclusivamente).
+
+- Encender la lámpara (tecla 'q') aumenta considerablemente el FOV del PJ, pero también aplica una penalización importante al su STEALTH. No esperes poder pillar por sorpresa a un enemigo con tu lámpara encendida.
 
 - Estar junto a un muro (posición ortogonal) proporciona un bonificador de +1 al STEALTH.
+
+- Si un PNJ está despierto pero no está agraviado, su rango de detección del PJ dependerá de su propio FOV y FOH, una tirada de percepción (por defecto, 1d4), el ruido generado por el PJ, el STEALTH y la SUERTE del PJ. La fórmula es la siguiente:
+
+        RANGO DE DETECCIÓN = FOV o FOH (según aplique) + TIRADA PERCEPCIÓN + RUIDO - STEALTH - LUCK
+
+  Si la distancia (Chebyshev) a la que se encuentra el PJ es igual o menor al rango de detección, los PNJ hostiles al PJ se considerarán agraviadas, y ejecutarán su comportamiento asociado (normalmente, buscar y destruir al PJ).
+
+- Si una criatura agraviada deja de ver y oir a su objetivo durante un número determinado de turnos (dependiente del nivel de agresividad de la criatura), dejará de estar agraviada y volverá a su ocupación anterior. No obstante, no será posible llevar a cabo un STEALTH ATTACK o BACKSTAB contra una criatura que haya sido agraviada alguna vez.
+
+- Tampoco es posible llevar a cabo un STEALTH ATTACK o BACKSTAB contra una criatura agraviada.
+
+- En resumen: para llevar a cabo un STEALTH ATTACK o BACKSTAB contra una criatura es necesario que esta no se encuentre actualmente agraviada y que tampoco haya sido agraviada por el PJ nunca.
+
+- Ahora bien: si el PJ logra posicionarse en una casilla contigua a un PNJ sin que este esté agraviado (ni haya sido agraviado anteriormente), tendrá una única oportunidad para llevar a cabo un STEALTH ATTACK o BACKSTAB. El ataque tendrá una serie de bonificadores basados en el STEALTH y la SUERTE del PJ, tanto al to-hit como al daño.
+
+- [FALTA: descripción breve de las mecánicas con criaturas dormidas.]
 
 
 2.2.1. Ocultarse en las sombras
@@ -61,27 +125,23 @@
 - [OBSOLETO] Si el PJ no está en combate, no está dentro del FOV de ninguna otra criatura, tiene equipada una capa, tiene la lámpara apagada y espera junto a un muro (en posición ortogonal) cuatro turnos seguidos (WaitAction), se considerará «oculto» (se generará un mensaje en la parte de abajo de la pantalla indicándolo). Cuando está oculto, no podrá ser atacado directamente por ninguna criatura. Si el PJ, estando oculto, lleva a cabo cualquier otra acción que no sea pasar turno (WaitAction), dejará de estar oculto inmediatamente después de llevar a cabo dicha acción. Si el PJ, estando oculto, ataca a otra criatura, ese ataque sera un ataque sigiloso (stealth attack), con sus correspondientes bonificadores, e inmediatamente después dejará de estar oculto. Por otra parte, si una criatura intenta moverse a una casilla en la que se encuentra oculto el jugador u otra criatura, la criatura que intenta moverse perderá el turno y la criatura oculta dejará de estar oculta. Siempre que el PJ se oculte o deje de estar oculto se generará un mensaje indicándolo.
 
 
-3. EL INVENTARIO
-
-[...]
-
-
-4. EL COMBATE
+3. EL COMBATE
 
 - ¿Cómo se ataca? Todo personaje que intente moverse a una casilla ocupada por otro personaje lo atacará (hay algunas excepciones).
 
-- ¡Cuidado! ¡En este los combates son peligrosos! Algunos consejos básicos para sobrevivir: 
+- ¡Cuidado! ¡En este juego todo combate es peligroso! Algunos consejos básicos para sobrevivir: 
   
   - Todo enemigo ha de tomarse en serio.
   - Aprende las fortalezas y debilidades de cada tipo de enemigo y/o de su equipación o estado.
-  - A veces empezar un combate no es la mejor táctica. 
+  - A veces empezar un combate no es la mejor opción.
   - En combate, aprende a luchar con cabeza (en este documento aprenderás lo básico). 
   - No olvides hacer uso de pociones, pergaminos y otros objetos de tu inventario que te puedan ser de ayuda (sé creativo). 
   - Aprende a hacer uso del entorno. A veces el sigilo es tu mejor carta. 
   - Aprende a escapar.
+  - El juego no cuenta con ningún sistema de ganancia de experiencia por matar.
   
 
-4.1. EL MODO COMBATE (MODO MELEE)
+3.1. EL MODO COMBATE (MODO MELEE)
 
 - Si el PJ y una criatura hostil se encuentran en casillas contiguas, ambos entran en MODO MELEE (aparecerá un indicador en rojo). 
 
@@ -126,7 +186,7 @@ Redibir daño:                 -     |  reset   |  reset
 
 
 
-4.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
+3.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
 
 - Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
 
@@ -135,14 +195,14 @@ Redibir daño:                 -     |  reset   |  reset
 - Se considera que tiene lugar el impacto en caso de que el resultado sea MAYOR que la defensa del objetivo.
 
 
-4.3. CÁLCULO DE DAÑO
+3.3. CÁLCULO DE DAÑO
 
 - Si un ataque impacta, se calcula el daño según la siguiente fórmula:
 
         (FIGHTER STRENTH + WEAPON DAMAGE (1dx+y) + EQUIPMENT BONUS TO DAMAGE) * FIGHTER WEAPON PROFICIENCY - TARGET ARMOR VALUE
 
 
-4.4. TABLAS ORIENTATIVAS DE REFERENCIA (incompletas)
+3.4. TABLAS ORIENTATIVAS DE REFERENCIA (incompletas)
 
 - La siguiente tabla asume el PJ To-hit base del del PJ, que es 1d6. 
 
@@ -172,10 +232,24 @@ Redibir daño:                 -     |  reset   |  reset
 - Como observará el lector, las posibilidades de atacar e impactar a un Cave bat son muy bajas si el PJ carece del equipamiento apropiado y/o no se planifica el golpe cuidadosamente. En este escenario una táctica sensata podría ser invertir uno o dos turnos buscando el golpe oportundo (WaitAction), y obtener así un bonus de +1 o +2 al To-Hit (suponiendo que en el proceso no sea dañado por el Cave bat, cosa poco probable). Con un bonus +2 al To-Hit por maniobra de combate, más un bonus +1 por portar una dagga ordinaria, el PJ lograría un impacto obteniendo 3 o más en 1d6, lo cuál es ya una probabilidad lo bastante alta como para (dados los pocos puntos de vida de un Cave bat) librarse de la criatura fácilmente.
 
 
-4.5. CONSEJOS VARIOS
+3.5. COMBATE A DISTANCIA
+
+- Actualmente, es posible (y en ocasiones muy útil) lanzar dagas contra un enemigo pulsando la tecla 't' (del inglés 'throw') y seleccionando una daga del inventario.
+
+
+3.6. CONSEJOS VARIOS
 
 - En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
 - Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.
+
+3.7. PANEL DE COMBATE
+
+- Si la opción Panel de Combate se encuntra activa en en el archivo settings, puedes abrir el panel de combate pulsando la tecla 'p'.
+
+- En el Panel de Combate se imprimirá una lista de las criaturas visibles (ordenadas por distancia al PJ), junto con información de dicha criatura relevante para el combate (DEFENSA de la criatura, PUNTOS DE GOLPE, TO-HIT, etc.).
+
+- Si la criatura se encuentra agraviada, junto al nombre de la criatura aparecerá el signo '!' entre paréntesis.
+
 
 
 APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los PNJ) - Información técnica [SPOILERS!]
@@ -193,12 +267,11 @@ APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los P
 - Pregunta frecuente: ¿Cómo funciona el rango de «engage»? Respuesta: para que una criatura sea agraviada, tiene que oir o ver al PJ dentro de su rango de «engage». Para HostileEnemyV3, el rango de «engage» se calcula así:
   
   - Primero determina si puede ver u oír al jugador. Si lo ve, usa su fov como base; si no lo ve pero lo oye, usa su foh como base. Si no ve ni oye pero ya está agravado, toma el máximo de fov y foh como base. 
-  # TODO: creo que a la hora de determinar si la criatura pude ver u oír al jugador, deben aplicarse ya la reducción del target_stealth (con su noise_bonus) etc. Confirmar cómo está funcionando esto y decidir en consecuencia.
   - Ajusta el sigilo del jugador por ruido: target_stealth se reduce por el noise_bonus de engine.noise_level(target) (ruidos como abrir puertas o atacar lo hacen más fácil de detectar por oído).
   - Llama a _engage_range(base_range, target_stealth, target_luck):
      - Si no está agraviado: engage_rng = random(0, fighter_perception) + base_range - target_stealth - rand(0..target_luck).
      - Si ya está agraviado: engage_rng = random(0, fighter_perception) + base_range
-     - [NOTA: POR DIFÍCIL DE ENTENDER QUE ESTA MECÁNICA SEA, ESTÁ BIEN PENSADA Y SU RESULTADO ES MUY REALISTA. NO TOCAR!]
+     - [NOTA: POR DIFÍCIL DE ENTENDER QUE ESTA MECÁNICA PUEDA RESULTAR DE PRIMERAS, ESTÁ BIEN PENSADA Y SU RESULTADO ES MUY REALISTA. NO TOCAR!]
   - Si engage_rng es válido (>=0) y la distancia Chebyshev al jugador está entre 2 y engage_rng, agravia al enemigo (si no lo estaba) y avanza un paso por la ruta planificada hacia el jugador. Si la distancia es 1, intenta melee (con un chequeo de sigilo si aún no estaba agravado).
 
   - En resumen: el rango depende del mejor sentido disponible (vista u oído), reducido por sigilo/suerte del jugador y aumentado por ruido; una vez agravado, los ajustes de sigilo/luck ya no aplican.
@@ -224,6 +297,7 @@ APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los P
       - Si distance > max_pursuit_range (configurable desde el settings).
 
 - En resumen: una vez agravadas, planifican y se mueven cada turno hacia el objetivo usando el pathfinding cacheado, ataquen o avancen según la distancia, sin volver a exigir ver/u oír para seguir. Pero dejan de estar agraviadas de cumplirse las condiciones descritas.
+
 
 
 APÉNDICE II - GENERACIÓN DE NIVELES (parcialmente desactualizado)
@@ -283,18 +357,25 @@ Con este repaso ya tenemos una visión clara de qué hace cada generador y qué 
 
 
 
+NOTAS DEL DESARROLLADOR AL DESARROLLADOR (BORRAR)
+
 SISTEMA DE PROGRESIÓN DE PERSONAJE Y DIFICULTAD
 
 No habrá weapon proficiency (no merece la pena: el mismo resultado se puede conseguir con un sistema más simple).
 De momento se puede dejar el sistema proficiency, haciendo que todas las criaturas tengan el nivel por defecto "Novice".	
-Si va a haber modo de incrementar el To-Hit, tiene que haber modo de incrementar la DV, tanto para PJ como para PNJs.
-Como sí va a haber modo de aumentar daño, también tiene que haber modo de aumentar el AV y/o la vida.
-Creo que debería de haber un límite (bastante bajo) de aumento del To-Hit, pues de otro modo hay que modificar también la proporción de aumento en es sistema táctico, y esto complica todo innecesariaemnte.
-Dedidido: límite al to_hit 7.
-
-Pociones que aumenten el to_hit_base: 2 max (+1 punto cada una)
+Si va a haber modo de incrementar el To-Hit, debe haber modo de incrementar la DV, tanto para PJ como para PNJs.
+Dado que sí va a haber modo de aumentar daño, también tiene que haber modo de aumentar el AV y/o la vida.
+Creo que debería de haber un límite (bastante bajo) de aumento del To-Hit, pues de otro modo hay que modificar también la proporción de aumento en el sistema táctico, y esto complica todo innecesariaemnte.
+Dedidido: límite al bonus to_hit 7.
+Pociones que aumenten el to_hit_base: 2 max (+1 punto cada una) [Creo que actualmente no existe esta poción]
 Máximo de bonus por equipo al to_hit: 2 (por arma) + 1 (por artefacto) = 3
 Máximo de bonus al to_hit por WaitAction en combate: 3
 Total: 8
+
+P.D.
+Actualmente (excluidos stealth attacks) el máximo al to-hit es 1d6 + 6, y el mínimo 1d6 + -4
+Eso resulta en un rango (-3,12).
+Parece equilibrado y más que suficiente.
+
 
 La dificultad del juego tiene que aumentaR más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.

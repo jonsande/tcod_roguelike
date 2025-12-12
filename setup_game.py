@@ -35,10 +35,14 @@ if TYPE_CHECKING:
     import uniques
 
 
+# console.draw_semigraphics no aplica ningún escalado automático: espera un array con 
+# tamaño (alto, ancho, RGB) que ya tenga el doble de resolución que el número de tiles 
+# del Console. Con la terminal actual (main.py (line 15) fija 80×44 tiles), la imagen 
+# que le pases desde setup_game.py (line 41) debería medir 160×88 píxeles
 
 # Load the background image and remove the alpha channel.
-#background_image = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
-background_image = tcod.image.load("data/graphics/menu.png")[:, :, :3]
+#BACKGROUND_IMAGE = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
+BACKGROUND_IMAGE = tcod.image.load("data/graphics/menu.png")[:, :, :3]
 
 
 _EQUIPMENT_SLOT_NAMES = {
@@ -220,7 +224,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
     def on_render(self, console: tcod.Console) -> None:
         """Render the main menu on a background image."""
-        console.draw_semigraphics(background_image, 0, 0)
+        console.draw_semigraphics(BACKGROUND_IMAGE, 0, 0)
 
 #         console.print(
 #             6,
@@ -241,11 +245,11 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height // 2 - 8,
-            _("the roguelike"),
+            _("a roguelike"),
             #fg=color.menu_title,
             #fg=(155, 155, 33),
-            fg=color.orange,
-            bg=(9,9,11),
+            fg=color.descend,
+            #bg=(9,9,11),
             #alignment=tcod.CENTER,   # DEPRECATED
             alignment=libtcodpy.CENTER,
         )
@@ -270,10 +274,18 @@ class MainMenu(input_handlers.BaseEventHandler):
                 #fg=color.menu_text,
                 fg=(200,200,200),
                 #bg=color.black,
-                bg=(9,9,11),
+                #bg=(9,9,11),
                 alignment=libtcodpy.CENTER,
                 bg_blend=libtcodpy.BKGND_ALPHA(64),
             )
+
+        console.print(
+            console.width // 2,
+            28,
+            _("A experimental roguelike made with libtcod and pygame.\nThanks to CO.AG for his awesome music\n and to the whole open-source community."),
+            fg=(15,15,15),
+            alignment=libtcodpy.CENTER,
+        )
 
     def ev_keydown(
         self, event: tcod.event.KeyDown

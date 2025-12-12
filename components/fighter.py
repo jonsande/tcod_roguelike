@@ -999,6 +999,28 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         return 0
 
+    def _identify_inventory_on_player_death(self) -> None:
+        """Reveal any unidentified player items when the feature is enabled."""
+        if not getattr(settings, "AUTO_IDENTIFY_INVENTORY_ON_DEATH", False):
+            return
+        inventory = getattr(self.parent, "inventory", None)
+        if not inventory or not getattr(inventory, "items", None):
+            return
+        message_log = getattr(self.engine, "message_log", None)
+        newly_identified = 0
+        for item in list(inventory.items):
+            if not getattr(item, "identified", False):
+                try:
+                    item.identify()
+                except Exception:
+                    continue
+                newly_identified += 1
+        if newly_identified and message_log:
+            message_log.add_message(
+                _("As the darkness takes you, your remaining belongings reveal their secrets."),
+                color.status_effect_applied,
+            )
+
     def die(self) -> None:
 
         #self.engine.player.fighter.is_in_melee = False
@@ -1009,6 +1031,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         is_table = lowered_name == "table"
 
         if self.engine.player is self.parent:
+            self._identify_inventory_on_player_death()
             # TODO: disparar sonido de muerte del Personaje.
             death_message = "You died!"
             death_message_color = color.player_die
@@ -1088,6 +1111,7 @@ class Fighter(FireStatusMixin, BaseComponent):
             adventurer_loot = [copy.deepcopy(item) for item in self.parent.inventory.items]
 
         if self.engine.player is self.parent:
+            self._identify_inventory_on_player_death()
             death_message = "You died!"
             death_message_color = color.player_die
         else:

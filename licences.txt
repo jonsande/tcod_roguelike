@@ -1,5 +1,19 @@
 Archivos de audio utilizados bajo licencia CC BY-SA 4.0:
 
+- Autor: CO.AG music
+  Enlace original: https://www.youtube.com/channel/UCcavSftXHgxLBWwLDm_bNvA
+  "For Terror"
+  "Lets Read"
+  "The Desert"
+  "Magnetic"
+  "Dark Rooms"
+  "In The Heart Of This Ancient City"
+
+  Licencia: El autor declara su trabajo "copyright and royalty free" (fuente: 
+  https://www.youtube.com/channel/UCcavSftXHgxLBWwLDm_bNvA, consultada el 12 
+  de diciembre de 2025), conque se presume la propiedad de autor sin pago de 
+  regalías.
+
 - Autor: VoiceBosch
   Enlace original: https://www.voicebosch.com
   "male_grunt01.wav"

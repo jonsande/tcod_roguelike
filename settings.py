@@ -158,6 +158,9 @@ if LANGUAGE == "es":
 else:
     INTRO_MESSAGE = "After a long journey, you find the entrance to the labyrinth."
 
+# Si está activo, todo el inventario pendiente se identifica automáticamente al morir.
+AUTO_IDENTIFY_INVENTORY_ON_DEATH = True
+
 # -- Player progression -------------------------------------------------------
 # Permite activar/desactivar el sistema de subida de nivel del jugador.
 # Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
@@ -181,10 +184,10 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "red_key", "quantity": 1},
     #{"item": "white_key", "quantity": 1},
     #{"item": "gray_key", "quantity": 1},
-    # {"item": "identify_scroll", "quantity": 6},
-    # {"item": "antidote_ring", "quantity": 1},
-    # {"item": "infra_vision_potion", "quantity": 5},
-    # {"item": "remove_curse_scroll", "quantity": 3},
+    #{"item": "identify_scroll", "quantity": 6},
+    #{"item": "antidote_ring", "quantity": 1},
+    #{"item": "infra_vision_potion", "quantity": 5},
+    #{"item": "remove_curse_scroll", "quantity": 3},
     #{"item": "sand_bag", "quantity": 2},
     #{"item": "scout_hood", "quantity": 1},
     #{"item": "cloak", "quantity": 1},

@@ -38,13 +38,15 @@ AMBIENT_SOUND_DEFAULT_TRACK = [
 ]
 
 # Main menu ambience ---------------------------------------------------------
-MENU_AMBIENT_SOUND_ENABLED = False
+MENU_AMBIENT_SOUND_ENABLED = True
 MENU_AMBIENT_SOUND_VOLUME = 0.3  # 0.0 - 1.0
 MENU_AMBIENT_SOUND_FADE_OUT_MS = 900
 MENU_AMBIENT_SOUND_FADE_IN_MS = 600
 # Puede ser string único o lista para selección aleatoria.
 MENU_AMBIENT_SOUND_TRACKS = [
-    "data/audio/menu/night-short.mp3",
+    #"data/audio/menu/night-short.mp3",
+    #"data/audio/menu/great-synth-space-top.mp3",
+    #"data/audio/menu/synth-ton.mp3",
 ]
 MENU_AMBIENT_SOUND_TRACK = None
 
@@ -159,9 +161,10 @@ MELEE_ATTACK_SOUNDS = {
     "dagger": {
         "hit_damage": {
             "tracks": [
-                "data/audio/sfx/combat/Sword Impact Hit 1.ogg",
-                "data/audio/sfx/combat/Sword Impact Hit 2.ogg",
-                "data/audio/sfx/combat/Sword Impact Hit 3.ogg",
+                "data/audio/sfx/combat/hit_and_damage/dagger/swing_3.ogg",
+                "data/audio/sfx/combat/hit_and_damage/dagger/swing_4.ogg",
+                "data/audio/sfx/combat/hit_and_damage/dagger/swing_5.ogg",
+                "data/audio/sfx/combat/hit_and_damage/dagger/swing_6.ogg",
                 ], 
                 "track": None, 
                 "volume": 0.2
@@ -180,18 +183,136 @@ MELEE_ATTACK_SOUNDS = {
                 },
         "miss": {
             "tracks": [
-                "data/audio/sfx/combat/Sword Attack 1.ogg",
-                "data/audio/sfx/combat/Sword Attack 2.ogg",
-                "data/audio/sfx/combat/Sword Attack 3.ogg",
+                # "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                # "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/generic/item-swing-sfx-2.mp3",
+                "data/audio/sfx/combat/no_hit/generic/item-swing-sfx-3.mp3",
+                "data/audio/sfx/combat/no_hit/generic/sword-sound-miss.mp3",
+                ], 
+                "track": None, 
+                "volume": 0.6
+                },
+    },
+    "short_sword": {
+        "hit_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_1.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_2.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_3.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_4.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "hit_no_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 1.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 2.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 3.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "miss": {
+            "tracks": [
+                "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-2.mp3",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-3.mp3",
+                "data/audio/sfx/combat/no_hit/sword-sound-miss.mp3",
                 ], 
                 "track": None, 
                 "volume": 0.2
                 },
     },
-    "short_sword": _empty_melee_sound_entry(),
-    "long_sword": _empty_melee_sound_entry(),
-    "spear": _empty_melee_sound_entry(),
-    "natural": _empty_melee_sound_entry(),
+    "long_sword": {
+        "hit_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_1.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_2.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_3.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_4.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "hit_no_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 1.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 2.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 3.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "miss": {
+            "tracks": [
+                "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-2.mp3",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-3.mp3",
+                "data/audio/sfx/combat/no_hit/sword-sound-miss.mp3",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+    },
+    "spear": {
+        "hit_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_1.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_2.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_3.ogg",
+                "data/audio/sfx/combat/hit_and_damage/generic/hit_flesh_4.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "hit_no_damage": {
+            "tracks": [
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 1.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 2.ogg",
+                "data/audio/sfx/combat/hit_no_damage/generic/Sword Blocked 3.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "miss": {
+            "tracks": [
+                "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-2.mp3",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-3.mp3",
+                "data/audio/sfx/combat/no_hit/sword-sound-miss.mp3",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+    },
+    "natural": {
+        "hit_damage": {
+            "tracks": [
+                "",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "hit_no_damage": {
+            "tracks": [
+                "",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+        "miss": {
+            "tracks": [
+                "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                ], 
+                "track": None, 
+                "volume": 0.2
+                },
+    },
     "generic": {
         "hit_damage": {
             "tracks": [
@@ -214,9 +335,11 @@ MELEE_ATTACK_SOUNDS = {
                 },
         "miss": {
             "tracks": [
-                "data/audio/sfx/combat/no_hit/generic/fist_6.ogg",
-                "data/audio/sfx/combat/no_hit/generic/fist_5.ogg",
-                "data/audio/sfx/combat/no_hit/generic/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/fist_2.ogg",
+                "data/audio/sfx/combat/no_hit/fist_3.ogg",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-2.mp3",
+                "data/audio/sfx/combat/no_hit/item-swing-sfx-3.mp3",
+                "data/audio/sfx/combat/no_hit/sword-sound-miss.mp3",
                 ], 
                 "track": None, 
                 "volume": 0.2
@@ -238,6 +361,8 @@ PAIN_SOUND_ENABLED = True
 PAIN_SOUND_DEFAULT_VOLUME = 0.25
 PAIN_SOUNDS = {
     "player": {"tracks": [
+        "data/audio/sfx/combat/hurt/player/grunt2.mp3",
+        "data/audio/sfx/combat/hurt/player/grunt2.mp3",
         "data/audio/sfx/combat/hurt/player/hurt_6.ogg",
         "data/audio/sfx/combat/hurt/player/male_hurt7.mp3",
         "data/audio/sfx/combat/hurt/player/male_grunt01.wav",

@@ -260,7 +260,7 @@ class Item(Entity):
         if not summary:
             return ""
         newline = "\n\n"
-        return f"Effects when equipped:\n{summary.lstrip(newline)}"
+        return f"Effects when equipped:\n\n{summary.lstrip(newline)}"
 
     def full_info(self) -> str:
         """Return base info plus a generated summary of equippable effects."""
