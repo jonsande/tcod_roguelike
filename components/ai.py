@@ -551,6 +551,8 @@ class HostileEnemyPlus(BaseAI):
                     self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
                
                 self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+                if not self.path_to_origin:
+                    return WaitAction(self.entity).perform()
                 dest_x, dest_y = self.path_to_origin.pop(0)
 
                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
@@ -562,11 +564,11 @@ class HostileEnemyPlus(BaseAI):
 
                     self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
 
-                    try:
-                        dest_x, dest_y = self.path_to_origin.pop(0) # BUG: Esto estaba dando error IndexError: pop from empty list
-                        return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-                    except IndexError:
+                    if not self.path_to_origin:
                         return MeleeAction(self.entity, dx, dy).perform()
+
+                    dest_x, dest_y = self.path_to_origin.pop(0) # BUG: Esto estaba dando error IndexError: pop from empty list
+                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
 
                 else:
                     return MeleeAction(self.entity, dx, dy).perform()
@@ -879,8 +881,8 @@ class HostileEnemyV3(BaseAI):
     def perform(self) -> None:
         target = self._select_target()
         if not target:
-            # Si no hay objetivo (p.ej. jugador oculto), sigue patrullando.
-            return self._patrol_rooms()
+            # Si no hay objetivo (p.ej. jugador oculto), simplemente espera.
+            return WaitAction(self.entity).perform()
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
