@@ -294,14 +294,16 @@ class MainMenu(input_handlers.BaseEventHandler):
             ambient_sound.stop_menu_track()
             raise SystemExit()
         elif event.sym == tcod.event.KeySym.c:
+            ambient_sound.stop_menu_track()
             try:
                 handler = input_handlers.MainGameEventHandler(load_game("savegame.sav"))
             except FileNotFoundError:
+                ambient_sound.play_menu_track()
                 return input_handlers.PopupMessage(self, "No saved game to load.")
             except Exception as exc:
                 traceback.print_exc()  # Print to stderr.
+                ambient_sound.play_menu_track()
                 return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
-            ambient_sound.stop_menu_track()
             return handler
         elif event.sym == tcod.event.KeySym.n:
             ambient_sound.stop_menu_track()

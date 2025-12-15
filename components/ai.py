@@ -1941,6 +1941,24 @@ class AdventurerAI(BaseAI):
         if can_pass_closed_doors or can_open_doors:
             door_mask = gm.tiles["dark"]["ch"] == tile_types.closed_door["dark"]["ch"]
             cost[door_mask] = 1
+        # Evita calcular rutas por casillas ocupadas por entidades bloqueantes como cofres.
+        for entity in getattr(gm, "entities", []):
+            if entity is self.entity:
+                continue
+            if not getattr(entity, "blocks_movement", False):
+                continue
+            ex = getattr(entity, "x", None)
+            ey = getattr(entity, "y", None)
+            if ex is None or ey is None or not gm.in_bounds(ex, ey):
+                continue
+            name = getattr(entity, "name", "")
+            if (
+                name
+                and name.lower() == "door"
+                and (can_pass_closed_doors or can_open_doors)
+            ):
+                continue
+            cost[ex, ey] = 0
 
         graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
         pathfinder = tcod.path.Pathfinder(graph)
