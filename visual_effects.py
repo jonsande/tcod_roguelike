@@ -30,11 +30,13 @@ class WindEffect:
         density: float = 0.008,
         speed_range: Sequence[float] = (48.0, 64.0),
         direction: int = 1,
+        sound_enabled: bool = True,
     ):
         self.width = max(1, int(width))
         self.height = max(1, int(height))
         self.char = char
         self.color = color
+        self.sound_enabled = sound_enabled
         self.density = max(0.0, float(density))
         self.speed_min = float(speed_range[0]) if speed_range else 6.0
         self.speed_max = float(speed_range[-1]) if speed_range else self.speed_min

@@ -117,6 +117,8 @@ _campfire_loop_channel: Optional["pygame.mixer.Channel"] = None
 _campfire_active_sources: Set[int] = set()
 _current_campfire_track: Optional[str] = None
 _campfire_preloaded = False
+_wind_loop_channel: Optional["pygame.mixer.Channel"] = None
+_current_wind_track: Optional[str] = None
 
 _PICKUP_SOUND_CONFIG = {
     "potion": {
@@ -806,3 +808,77 @@ def update_campfire_audio(source: object, active: bool, *, fadeout_ms: int = 600
             _campfire_active_sources.remove(key)
         if not _campfire_active_sources:
             _stop_campfire_loop(fade_ms=fadeout_ms)
+
+
+def _start_wind_loop(volume: float) -> None:
+    global _wind_loop_channel, _current_wind_track
+
+    if not getattr(audio_cfg, "WIND_SOUND_ENABLED", False):
+        return
+    if not _ensure_mixer_initialized(allow_when_disabled=True) or pygame is None:
+        return
+
+    channel = _wind_loop_channel
+    if channel and channel.get_busy():
+        try:
+            channel.set_volume(volume)
+        except Exception:
+            pass
+        return
+
+    track = _pick_random_track("WIND_SOUNDS", "WIND_SOUND")
+    if not track:
+        return
+
+    sound = _load_sound(track)
+    if sound is None:
+        return
+
+    try:
+        channel = sound.play(loops=-1)
+    except Exception as exc:  # pragma: no cover
+        if settings.DEBUG_MODE:
+            print(f"[audio] Unable to loop wind '{track}': {exc}")
+        return
+
+    if channel is None:
+        return
+
+    try:
+        channel.set_volume(max(0.0, min(1.0, volume)))
+    except Exception:
+        pass
+    _wind_loop_channel = channel
+    _current_wind_track = track
+
+
+def _stop_wind_loop(*, fade_ms: int = 400) -> None:
+    global _wind_loop_channel, _current_wind_track
+
+    channel = _wind_loop_channel
+    if not channel:
+        return
+
+    try:
+        if fade_ms > 0:
+            channel.fadeout(fade_ms)
+        else:
+            channel.stop()
+    except Exception:
+        pass
+
+    _wind_loop_channel = None
+    _current_wind_track = None
+
+
+def update_wind_audio(active: bool) -> None:
+    """Start/stop the looping wind audio based on whether wind is present on screen."""
+    fade_out_ms = max(0, int(getattr(audio_cfg, "WIND_SOUND_FADE_OUT_MS", 500)))
+    if not getattr(audio_cfg, "WIND_SOUND_ENABLED", False):
+        _stop_wind_loop(fade_ms=fade_out_ms)
+        return
+    if active:
+        volume = _resolve_volume(getattr(audio_cfg, "WIND_VOLUME", 1.0), 1.0)
+        _start_wind_loop(volume)
+    else:
+        _stop_wind_loop(fade_ms=fade_out_ms)

@@ -1,9 +1,39 @@
 
 INSTRUCCIONES DEL JUEGO
 
+ÍNDICE DE CONTENIDOS
+
+1. MECÁNICAS GENERALES
+1.1. EL MOVIMIENTO Y EL TIEMPO
+1.2. ABRIR Y CERRAR PUERTAS, COFRES, LIBRERÍAS, ETC.
+1.3. INSPECCIONAR ALREDEDORES
+1.4. COGER OBJETOS
+1.5. EL INVENTARIO
+1.6. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
+1.7. BAJAR/SUBIER ESCALERAS
+2. MECÁNICAS ESPECIALES
+2.1. SISTEMA DE OÍDO/ESCUCHA
+2.2. SISTEMA DE SIGILO
+2.2.1. OCULTARSE EN LAS SOMBRAS
+3. EL COMBATE
+3.1. EL MODO COMBATE (MODO MELEE)
+3.2. CÁLCULO DE IMPACTOS (MECÁNICA «TO-HIT»)
+3.3. CÁLCULO DE DAÑO
+3.4. TABLAS ORIENTATIVAS DE REFERENCIA (incompletas)
+3.5. COMBATE A DISTANCIA
+3.6. CONSEJOS VARIOS
+3.7. PANEL DE COMBATE
+
+
 1. MECÁNICAS GENERALES
 
-1.1. El MOVIMIENTO
+1.1. El MOVIMIENTO Y EL TIEMPO
+
+- Este es un juego por turnos. En situaciones normales el tiempo del juego no avanza hasta que el Personaje Jugador (PJ) lleve a cabo alguna acción. No toda acción del Jugador, sin embargo, consume tiempo de juego (normalmente, acciones como las de inspeccionar objetos o alrededores son gratuitas).
+
+- El tiempo del juego es relativo al PJ. Cada una de las acciones (con coste de tiempo) que lleve a cabo el PJ requieren de una unidad de tiempo (equivalente a 10 t-points). Esto implica que en lo que el PJ lleva a cabo una acción, otros Personajes No Jugadores (PNJ) pueden llevar a cabo menos o más de una acción. Normalmente, los PNJ más rápidos acumulan sus t-poins extra hasta que disponen de una unidad extra de tiempo completa (así, un goblin, por ejemplo, llevará a cabo una acción extra cada 4 turnos del PJ).
+
+- La acción más corriente es el desplazamiento (MovementAction). El Jugador puede desplazarse usando el conjunto de teclas VI o el NUMPAD.
 
 - Controles Vi:
 
@@ -17,7 +47,7 @@ INSTRUCCIONES DEL JUEGO
     4 5 6
     1 2 3
 
-- Las teclas '.' y '5' sirven para esperar/pasar un turno.
+- Las teclas '.' y '5' sirven para esperar/pasar un turno (e.e. una unidad de tiempo).
 
 
 1.2. ABRIR/CERRAR PUERTAS, COFRES, LIBRERÍAS, MESAS, ETC.
@@ -39,19 +69,22 @@ INSTRUCCIONES DEL JUEGO
 
 - No todos los muros son lo que parecen. A veces descubrir pasadizos secretos inspeccionando las paredes o golpeando contra ellas.
 
+
+1.4. COGER OBJETOS
+
 - Puedes recoger objetos del suelo situándote sobre ellos y pulsando la tecla 'g' (del inglés «grab»).
 
 - Así mismo, puedes coger objetos del interior de un cofre, biblioteca, etc. abriendo el contenedor y pulsando la tecla asociada al objeto deseado.
 
 
-1.4. EL INVENTARIO
+1.5. EL INVENTARIO
 
 - Puedes inspeccionar un objeto de tu inventario abriendo el inventario con la tecla 'i' y pulsando la tecla asociada al objeto que desees inspeccionar.
 
 - Recuerda que puedes recoger objetos del suelo situándote sobre ellos y pulsando la tecla 'g' (del inglés «grab»).
 
 
-1.5. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
+1.6. EQUIPARSE OBJETOS, BEBER POCIONES, LEER PERGAMINOS, ACTIVAR DISPOSITIVOS, ETC.
 
 - Para equiparse un objeto, beber una poción, leer un pergamino, libro o nota, o activar un dispositivo, pulsa la tecla 'a' y selecciona el objeto del inventario que desees activar o con el que desees interactuar.
 
@@ -62,7 +95,7 @@ INSTRUCCIONES DEL JUEGO
 - Recuerda también que usar o activar objetos de tu inventario consume una cantidad de tiempo.
 
 
-1.6. BAJAR/SUBIER ESCALERAS
+1.7. BAJAR/SUBIER ESCALERAS
 
 - Puedes subir o bajar por unas escaleras situándote sobre ellas y pulsando la tecla 'SPACE'.
 
@@ -120,7 +153,7 @@ INSTRUCCIONES DEL JUEGO
 - [FALTA: descripción breve de las mecánicas con criaturas dormidas.]
 
 
-2.2.1. Ocultarse en las sombras
+2.2.1. OCULTARSE EN LAS SOMBRAS
 
 - [OBSOLETO] Si el PJ no está en combate, no está dentro del FOV de ninguna otra criatura, tiene equipada una capa, tiene la lámpara apagada y espera junto a un muro (en posición ortogonal) cuatro turnos seguidos (WaitAction), se considerará «oculto» (se generará un mensaje en la parte de abajo de la pantalla indicándolo). Cuando está oculto, no podrá ser atacado directamente por ninguna criatura. Si el PJ, estando oculto, lleva a cabo cualquier otra acción que no sea pasar turno (WaitAction), dejará de estar oculto inmediatamente después de llevar a cabo dicha acción. Si el PJ, estando oculto, ataca a otra criatura, ese ataque sera un ataque sigiloso (stealth attack), con sus correspondientes bonificadores, e inmediatamente después dejará de estar oculto. Por otra parte, si una criatura intenta moverse a una casilla en la que se encuentra oculto el jugador u otra criatura, la criatura que intenta moverse perderá el turno y la criatura oculta dejará de estar oculta. Siempre que el PJ se oculte o deje de estar oculto se generará un mensaje indicándolo.
 
@@ -185,7 +218,6 @@ Redibir daño:                 -     |  reset   |  reset
 - Además de estas acciones, en MODO MELEE siempre se puede llevar a cabo cualquier gestión con los objetos del inventario o alrededores. ¡Pero recuerda!: toda acción consume una cantidad de puntos de tiempo.
 
 
-
 3.2. CÁLCULO DE IMPACTOS (MECÁNICA DEL TO-HIT)
 
 - Cuando una criatura ataca a otra, se lleva a cabo una tirada de impacto para calcular si se impacta o no. La fórmula para todas las criaturas (y tipos de ataque) es:
@@ -242,6 +274,7 @@ Redibir daño:                 -     |  reset   |  reset
 - En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
 - Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.
 
+
 3.7. PANEL DE COMBATE
 
 - Si la opción Panel de Combate se encuntra activa en en el archivo settings, puedes abrir el panel de combate pulsando la tecla 'p'.
@@ -249,6 +282,8 @@ Redibir daño:                 -     |  reset   |  reset
 - En el Panel de Combate se imprimirá una lista de las criaturas visibles (ordenadas por distancia al PJ), junto con información de dicha criatura relevante para el combate (DEFENSA de la criatura, PUNTOS DE GOLPE, TO-HIT, etc.).
 
 - Si la criatura se encuentra agraviada, junto al nombre de la criatura aparecerá el signo '!' entre paréntesis.
+
+
 
 
 
@@ -376,6 +411,5 @@ P.D.
 Actualmente (excluidos stealth attacks) el máximo al to-hit es 1d6 + 6, y el mínimo 1d6 + -4
 Eso resulta en un rango (-3,12).
 Parece equilibrado y más que suficiente.
-
 
 La dificultad del juego tiene que aumentaR más por la estrategia que requieren las nuevas situaciones/enemigos que por progresión de stats.

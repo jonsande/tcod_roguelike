@@ -28,7 +28,8 @@ import color
 import render_functions
 from entity import Actor
 from render_order import RenderOrder
-from audio import update_campfire_audio, preload_campfire_audio
+from audio import update_campfire_audio, preload_campfire_audio, update_wind_audio
+from visual_effects import WindEffect
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -1083,6 +1084,11 @@ class Engine:
     def render(self, console: Console) -> None:
 
         dt = self._compute_frame_dt()
+        has_wind = any(
+            isinstance(effect, WindEffect) and getattr(effect, "sound_enabled", True)
+            for effect in getattr(self.game_map, "ambient_effects", ())
+        )
+        update_wind_audio(has_wind)
         self._update_ambient_effects(dt)
         self.game_map.render(console)
         self._render_ambient_effects(console)

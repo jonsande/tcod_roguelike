@@ -141,6 +141,16 @@ CAMPFIRE_SOUNDS = ["data/audio/sfx/campfire/campfire_1.mp3",]
 CAMPFIRE_SOUND = None
 CAMPFIRE_VOLUME = 0.75
 
+# Wind ambience -------------------------------------------------------------
+# Añade un loop de viento cuando esté activo el efecto visual de viento.
+WIND_SOUND_ENABLED = True
+WIND_SOUNDS = [
+    # Ejemplo: "data/audio/sfx/wind/wind_loop_1.ogg",
+]
+WIND_SOUND = "data/audio/sfx/wind/gentle-wind-gusts.mp3"  # Track único opcional; si se define, se usará en vez de la lista.
+WIND_VOLUME = 0.1
+WIND_SOUND_FADE_OUT_MS = 0
+
 # Stair interactions --------------------------------------------------------
 STAIR_DESCEND_SOUND_ENABLED = True
 STAIR_DESCEND_SOUNDS = ["data/audio/sfx/stairs/Arcane_Symbol_Activate_01.wav",]
