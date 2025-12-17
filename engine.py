@@ -196,6 +196,7 @@ class Engine:
             report_interval=getattr(settings, "PERF_PROFILER_REPORT_INTERVAL", 50),
         )
         self._configure_profiler()
+        self._last_frame_time = time.monotonic()
 
     def reset_listen_state(self) -> None:
         """Limpia el estado del contador de escuchar puertas."""
@@ -1046,9 +1047,45 @@ class Engine:
     # Las entidades ya tienen un método spawn
 
 
+    def _compute_frame_dt(self) -> float:
+        now = time.monotonic()
+        last = getattr(self, "_last_frame_time", None)
+        self._last_frame_time = now
+        if last is None:
+            return 0.0
+        return max(0.0, now - last)
+
+    def _update_ambient_effects(self, dt: float) -> None:
+        effects = getattr(self.game_map, "ambient_effects", None)
+        if not effects:
+            return
+        for effect in tuple(effects):
+            update = getattr(effect, "update", None)
+            if not update:
+                continue
+            try:
+                update(dt)
+            except Exception:
+                if settings.DEBUG_MODE:
+                    print("DEBUG: ambient effect update failed.")
+
+    def _render_ambient_effects(self, console: Console) -> None:
+        effects = getattr(self.game_map, "ambient_effects", None)
+        if not effects:
+            return
+        for effect in effects:
+            render = getattr(effect, "render", None)
+            if not render:
+                continue
+            render(console, self.game_map)
+
+
     def render(self, console: Console) -> None:
 
+        dt = self._compute_frame_dt()
+        self._update_ambient_effects(dt)
         self.game_map.render(console)
+        self._render_ambient_effects(console)
 
         # La Barra de vida
         # La posición en pantalla de la barra de vida se ajusta

@@ -13,6 +13,7 @@ from procgen import (
     maybe_place_bookshelf,
     place_entities,
 )
+from visual_effects import WindEffect
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -83,6 +84,17 @@ def generate_town(
             raise RuntimeError("Town generation failed to connect starting area with stairs.")
 
     dungeon.center_rooms = []
+    dungeon.add_ambient_effect(
+        WindEffect(
+            width=map_width,
+            height=map_height,
+            char="-",
+            color=(103, 86, 36),
+            density=0.009,
+            speed_range=(48.0, 64.0),
+            direction=1,
+        )
+    )
     return dungeon
 
 

@@ -57,6 +57,7 @@ class GameMapTown:
         self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
+        self.ambient_effects: List[object] = []
         #self.tiles = np.full((width, height), fill_value=tile_types.town_wall, order="F")
         self.tiles = np.full((width, height), fill_value=tile_types.town_floor, order="F")
         self.visible = np.full(
@@ -264,6 +265,10 @@ class GameMapTown:
                 transparent[entity.x, entity.y] = False
         return transparent
 
+    def add_ambient_effect(self, effect: object) -> None:
+        """Register a passive visual effect to render on top of the map."""
+        self.ambient_effects.append(effect)
+
 
 class GameMap:
 
@@ -280,6 +285,7 @@ class GameMap:
         self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
+        self.ambient_effects: List[object] = []
         #self.tiles = np.full((width, height), fill_value=tile_types.dummy_wall, order="F")
         self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
         self.visible = np.full(
@@ -544,6 +550,10 @@ class GameMap:
             if getattr(entity, "id_name", "").lower() == "bookshelf":
                 transparent[entity.x, entity.y] = False
         return transparent
+
+    def add_ambient_effect(self, effect: object) -> None:
+        """Register a passive visual effect to render on top of the map."""
+        self.ambient_effects.append(effect)
 
 
 
