@@ -136,10 +136,12 @@ ARTEFACTOS
 - [ ] Crear artefacto revolver. Es un objeto único. Se tiene en el inventario, y al activarlo, permite disparar. El revolver tiene 6 balas (y no se puede recargar, pues no existirán más balas en toda la mazmorra). Cuando se dispara el revolver, el jugador escoge el objetivo. Son objetivos válidos las criaturas que sean visibles y que se encuentren en un radio de 25 casillas o menos. La probabilidad de impactar será como sigue: 100% a la distancia de una casilla.... El daño será variable.
 
 HUD - USER INTERFACE - ETC
-- [ ] Si una criatura está dormida, debe indicarse en la descripción de inspección. Si está despierta pero ignorando al jugador, estaría bien que lo dijera también.
+- [ ] Ventana con diálogos.
+- [ ] Instrucciones que se carguen de un html, con colores.
+- [x] Si una criatura está dormida, debe indicarse en la descripción de inspección. Si está despierta pero ignorando al jugador, estaría bien que lo dijera también.
 - [ ] Posibilidad de fuentes diferentes en el panel inferior de mensajes, en las ventanas popup, etc. Ver tema fuentes en cogmind: https://www.gridsagegames.com/blog/2014/09/cogmind-fonts/
 - [ ] Tras morir, mensaje de confirmación y fundido a negro. Ir a una pantalla con algún arte (una lápida o restos de huesos o lo que sea).
-- [ ] Intro. Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen). Texto útil:
+- [x] Intro. Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen). Texto útil:
 
 «Está escrito en el templo: ...e incontables niños retornarán a la noche primigenia.»
 «Estás aterrorizado. Nadie te preparó para esta oscuridad.»
@@ -185,6 +187,7 @@ WORLD GENERATION
 - [ ] Ramas (branches). En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa. Algunas branches deberías ser obligatorias: en ellas habrá una llave sin la cual no se puede avanzar en la rama principal.
 
 DUNGEON GENERATION
+- [ ] Crear algún generador diferente.
 - [x] Hot path.
 - [-] Green zone: función que te devuelve el conjunto de habitaciones que son accesibles desde una habitación cualquiera. [Hecho pero con defectos. Hay función específica para debugging]
 - [x] Cerciorarse de que el max_instances de un objeto está funcionando. [P.D. Se ha rehecho el sistema. Ahora funciona. Afecta, lo mismo que el nuevo min_instances únicamente a lo generado proceduralemente, no a lo generado estáticamente].
