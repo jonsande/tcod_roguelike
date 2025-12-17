@@ -129,7 +129,18 @@ OBJETOS VARIOS
 - [ ] Bastones mágicos!
 - [!] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
 - [x] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
-- [x] Libros, notas. 
+- [x] Libros, notas.
+
+LIBROS MÁGICOS
+- [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
+- [ ] Los libros mágicos serán libros con efectos muy poderosos, pero cuyos efectos son sensibles a condiciones, o que sólo pueden activarse sus efectos si al leerlos se cumplen una serie de condiciones.
+- [ ] Libro de levantar muertos. Todos los cadáveres se levantan como zombies y los huesos como skeletons. En un caso los levantados serán aliados del jugador y en otro enemigos.
+- [ ] Libro/s reactivo/s: a) Se vuelve ilegible si matas a cierto tipo de criatura. b) Cambia su efecto según tu alineamiento o reputación. c) Te “juzga” y decide si cooperar. Pueden negarse a ser leídos. Pueden también atraer enemigos que quieren destruirlos.
+- [ ] Libro/s con condiciones para poder ser leídos: luz, silencio o tiempo sin interrupciones; leer en combate tiene efectos imprevisibles; según la cordura u otro atributo, puede tener efectos diferentes.
+- [ ] Libro de silencio. Deja en silencio todo durante X turnos. Bajo ciertas condiciones, todas las criaturas se duermen.
+- [ ] Libro de conciencia remota. Te permite tomar la perspectiva de un enemigo. Mientras estás "conectado" con él no puedes ver lo que pasa a tu alrededor. Bajo ciertas condiciones, puedes tomar el control de la criatura. Bajo ciertas condiciones, puedes escoger con qué criatura conectar.
+- [ ] Libro transformador. Transforma un objeto en otro. Bajo ciertas condiciones, transforma todos los objetos de tu inventario en otros. Bajo ciertas condiciones, te permite controlar qué objeto conseguir.
+- [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
 
 ARTEFACTOS
 - [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.
@@ -170,7 +181,6 @@ EVENTOS ESPECIALES
 - [ ] Mensaje misterioso de radio. Un antiguo mensaje grabado y reproduciéndose en bucle.
 
 HISTORIA / LORE
-- [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
 - [ ] Estatua. Personajes petrificados por la poción de petrificación.
 - [!] Las notas/libros con mensajes deben ser únicas! Sólo debe haber una instancia de cada.
 - [ ] La conversación del anciano y otros personajes importantes tiene que salir en una ventana dedicada.

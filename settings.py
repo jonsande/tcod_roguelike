@@ -209,15 +209,6 @@ PLAYER_STARTING_EQUIP_LIMITS = {
 # que en el nivel 2 el WALL_STYLE es 1 pero en el nivel 3 es 1, por ejemplo.
 WALL_STYLE = None
 
-# Parámetros experimentales para el generador generate_dungeon_v2().
-# DUNGEON_V2_ROOM_MIN_SIZE = 3
-# DUNGEON_V2_ROOM_MAX_SIZE = 8
-# DUNGEON_V2_MIN_ROOM_DISTANCE = 2
-# DUNGEON_V2_MAX_ROOM_DISTANCE = 12
-# DUNGEON_V2_MAX_ROOMS = 75
-# DUNGEON_V2_ROOM_PLACEMENT_ATTEMPTS = 150
-# DUNGEON_V2_MAX_MAP_ATTEMPTS = 150
-
 # Parámetros experimentales para generate_dungeon_v3().
 DUNGEON_V3_MIN_ROOMS = 8
 DUNGEON_V3_MAX_ROOMS = 20

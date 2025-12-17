@@ -603,11 +603,11 @@ class GameWorld:
 
     def _generate_world(self) -> None:
         from generators import (
-            generate_dungeon,
+            #generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,
-            generate_dungeon_v2,
+            #generate_dungeon_v2,
             generate_dungeon_v3,
             generate_the_library_map,
             generate_three_doors_map,
@@ -744,7 +744,7 @@ class GameWorld:
         weights = [variant.get("weight", 1.0) for variant in variants]
         variant = random.choices(variants, weights=weights, k=1)[0]
 
-        # El generador estándar pasa a ser generate_dungeon_v2,
+        # El generador estándar pasa a ser generate_dungeon_v3,
         # pero conservamos la lógica de variantes por si en el futuro
         # queremos que influyan en parámetros específicos.
         return generate_dungeon_v3, {}
