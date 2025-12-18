@@ -28,6 +28,7 @@ from procgen import (
     choose_room_shape,
     ensure_path_between,
     get_fixed_room_choice,
+    _remove_invalid_fixed_room_doors,
     guarantee_downstairs_access,
     maybe_place_chest,
     maybe_place_table,
@@ -56,6 +57,7 @@ def generate_dungeon_v3(
 
     rooms: List[RectangularRoom] = []
     padding = max(0, settings.DUNGEON_V3_PADDING)
+    fixed_room_allowed_doors: Set[Tuple[int, int]] = set()
 
     target_rooms = random.randint(settings.DUNGEON_V3_MIN_ROOMS, settings.DUNGEON_V3_MAX_ROOMS)
     attempts = 0
@@ -98,6 +100,7 @@ def generate_dungeon_v3(
         if template:
             if carve_fixed_room(dungeon, room, template):
                 used_fixed_room = True
+                fixed_room_allowed_doors.update(getattr(room, "allowed_door_coords", set()))
 
         if not used_fixed_room:
             add_room_decorations(dungeon, room)
@@ -143,6 +146,7 @@ def generate_dungeon_v3(
         for coord in tunnel_between(centers[i], centers[j]):
             dug_tiles.add(coord)
 
+    _remove_invalid_fixed_room_doors(dungeon, fixed_room_allowed_doors)
     feature_probs = _normalize_feature_probs(
         getattr(settings, "DUNGEON_V3_ENTRY_FEATURE_PROBS", {"none": 1.0})
     )
@@ -155,6 +159,8 @@ def generate_dungeon_v3(
     lock_chance = base_lock_chance if allowed_lock_colors else 0.0
     locked_colors_in_floor: Set[str] = set()
     for room_tiles, (room, _) in zip(room_tile_sets, rooms):
+        if getattr(room, "is_fixed_room", False):
+            continue
         for coord in _collect_room_entry_candidates_v3(dungeon, room_tiles, dug_tiles):
             _maybe_place_entry_feature(
                 dungeon,

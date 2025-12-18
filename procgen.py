@@ -504,6 +504,9 @@ class RectangularRoom:
         self.x2 = x + width
         self.y2 = y + height
         self.shape = shape
+        self.is_fixed_room: bool = False
+        self.allowed_door_coords: Set[Tuple[int, int]] = set()
+        self.fixed_room_tiles: Set[Tuple[int, int]] = set()
 
         inner_width = max(1, self.x2 - self.x1 - 1)
         inner_height = max(1, self.y2 - self.y1 - 1)
@@ -2315,10 +2318,13 @@ def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[st
 
     offset_x = room.x1
     offset_y = room.y1
+    template_tiles: Set[Tuple[int, int]] = set()
+    door_positions: Set[Tuple[int, int]] = set()
     for y, row in enumerate(template):
         for x, ch in enumerate(row):
             tx = offset_x + x
             ty = offset_y + y
+            template_tiles.add((tx, ty))
             if ch == "#":
                 dungeon.tiles[tx, ty] = tile_types.wall
             elif ch == ".":
@@ -2329,6 +2335,10 @@ def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[st
             elif ch == "+":
                 dungeon.tiles[tx, ty] = tile_types.closed_door
                 spawn_door_entity(dungeon, tx, ty)
+                door_positions.add((tx, ty))
+    room.is_fixed_room = True
+    room.allowed_door_coords = door_positions
+    room.fixed_room_tiles = template_tiles
     cx, cy = room.center
     dungeon.tiles[cx, cy] = tile_types.floor
     return True
@@ -2532,6 +2542,55 @@ def spawn_door_entity(
     if room_center is not None:
         setattr(door_entity, "room_center", room_center)
 
+
+
+def _is_wall_like(dungeon: GameMap, x: int, y: int) -> bool:
+    if not dungeon.in_bounds(x, y):
+        return False
+    tile = dungeon.tiles[x, y]
+    if np.array_equal(tile, tile_types.closed_door) or np.array_equal(tile, tile_types.open_door):
+        return False
+    return not dungeon.tiles["walkable"][x, y]
+
+
+def _remove_door_entity_at(dungeon: GameMap, x: int, y: int) -> bool:
+    for entity in list(dungeon.entities):
+        name = getattr(entity, "name", "").lower()
+        if name == "door" and entity.x == x and entity.y == y:
+            dungeon.entities.discard(entity)
+            return True
+    return False
+
+
+def _remove_invalid_fixed_room_doors(
+    dungeon: GameMap, door_coords: Set[Tuple[int, int]]
+) -> int:
+    """Ensure fixed-room doors stay valid: keep only those between opposing walls."""
+    removed = 0
+    for x, y in door_coords:
+        if not dungeon.in_bounds(x, y):
+            continue
+        tile = dungeon.tiles[x, y]
+        tile_is_door = np.array_equal(tile, tile_types.closed_door) or np.array_equal(tile, tile_types.open_door)
+        door_entity_present = any(
+            getattr(entity, "name", "").lower() == "door" and entity.x == x and entity.y == y
+            for entity in dungeon.entities
+        )
+        if not tile_is_door and not door_entity_present:
+            continue
+        north = _is_wall_like(dungeon, x, y - 1)
+        south = _is_wall_like(dungeon, x, y + 1)
+        east = _is_wall_like(dungeon, x + 1, y)
+        west = _is_wall_like(dungeon, x - 1, y)
+        if (north and south) or (east and west):
+            dungeon.tiles[x, y] = tile_types.closed_door
+            spawn_door_entity(dungeon, x, y)
+            continue
+        dungeon.tiles[x, y] = tile_types.floor
+        if _remove_door_entity_at(dungeon, x, y):
+            pass
+        removed += 1
+    return removed
 
 
 def get_fixed_room_choice(current_floor: int) -> Optional[Tuple[str, Tuple[str, ...]]]:

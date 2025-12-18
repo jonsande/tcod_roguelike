@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import List, Optional, Set, Tuple, TYPE_CHECKING
 
 import random
+import numpy as np
 
 import entity_factories
 import settings
@@ -23,6 +24,7 @@ from procgen import (
     get_fixed_room_choice,
     guarantee_downstairs_access,
     log_breakable_tile_mismatches,
+    _remove_invalid_fixed_room_doors,
     maybe_place_chest,
     maybe_place_table,
     maybe_place_bookshelf,
@@ -53,6 +55,8 @@ def generate_dungeon(
 
     rooms: List[RectangularRoom] = []
     room_floor_tiles: List[List[Tuple[int, int]]] = []
+    fixed_room_tiles: Set[Tuple[int, int]] = set()
+    fixed_room_allowed_doors: Set[Tuple[int, int]] = set()
 
     center_of_last_room = (0, 0)
     downstairs_candidate: Optional[Tuple[int, int]] = None
@@ -90,6 +94,8 @@ def generate_dungeon(
         if template:
             if carve_fixed_room(dungeon, new_room, template):
                 used_fixed_room = True
+                fixed_room_tiles.update(getattr(new_room, "fixed_room_tiles", set()))
+                fixed_room_allowed_doors.update(getattr(new_room, "allowed_door_coords", set()))
 
         if not used_fixed_room:
             add_room_decorations(dungeon, new_room)
@@ -189,7 +195,12 @@ def generate_dungeon(
                     upstairs_location=upstairs_location,
                 )
 
-    door_candidates = collect_door_candidates(dungeon)
+    _remove_invalid_fixed_room_doors(dungeon, fixed_room_allowed_doors)
+    door_candidates = collect_door_candidates(
+        dungeon,
+        fixed_room_tiles=fixed_room_tiles,
+        fixed_room_allowed_doors=fixed_room_allowed_doors,
+    )
 
     dungeon = place_doors(dungeon, door_candidates)
     ensure_breakable_tiles(dungeon)
@@ -231,18 +242,30 @@ def place_doors(dungeon: GameMap, door_options: List[Tuple[int, int]]) -> GameMa
     return dungeon
 
 
-def collect_door_candidates(dungeon: GameMap) -> List[Tuple[int, int]]:
+def collect_door_candidates(
+    dungeon: GameMap,
+    *,
+    fixed_room_tiles: Optional[Set[Tuple[int, int]]] = None,
+    fixed_room_allowed_doors: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
     candidates: List[Tuple[int, int]] = []
 
     for x in range(1, dungeon.width - 1):
         for y in range(1, dungeon.height - 1):
             if not dungeon.tiles["walkable"][x, y]:
                 continue
+            tile = dungeon.tiles[x, y]
+            if np.array_equal(tile, tile_types.closed_door):
+                continue
 
             if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
                 continue
             if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
                 continue
+
+            if fixed_room_tiles is not None and (x, y) in fixed_room_tiles:
+                if not (fixed_room_allowed_doors and (x, y) in fixed_room_allowed_doors):
+                    continue
 
             walls = {}
             wall_neighbors = 0

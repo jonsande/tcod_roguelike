@@ -155,6 +155,7 @@ LIBROS MÁGICOS
 - [ ] Libro transformador. Transforma un objeto en otro. Bajo ciertas condiciones, transforma todos los objetos de tu inventario en otros. Bajo ciertas condiciones, te permite controlar qué objeto conseguir.
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
 - [ ] Libro de visión. Permite ver qué hay en otro punto del mapa.
+- [ ] Libro de portal. Abre un portal mágico que lleva a algún otro sitio. Bajo ciertas circunstancias te introduce en un bucle espacio-temporal.
 
 ARTEFACTOS
 - [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.

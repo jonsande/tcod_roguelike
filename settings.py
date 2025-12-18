@@ -166,6 +166,7 @@ AUTO_IDENTIFY_INVENTORY_ON_DEATH = True
 # Cambia a True si quieres recuperar los mensajes y el menú de subida de niveles por
 # xp en el futuro. El sistema está obsoleto y mal implementado ahora mismo.
 PLAYER_LEVELING_ENABLED = False
+
 # Ataques fallidos necesarios (contra el jugador) para ganar +1 a base_defense. Usa 0 para desactivar.
 PLAYER_DEFENSE_MISS_THRESHOLD = 60
 
@@ -191,7 +192,7 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "sand_bag", "quantity": 2},
     #{"item": "scout_hood", "quantity": 1},
     #{"item": "cloak", "quantity": 1},
-    {"item": "tunneling_staff", "quantity": 1},
+    #{"item": "tunneling_staff", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -355,6 +356,7 @@ ALL_ITEMS = [
     ("cursed_vulnerability_ring", 1),
     ("cursed_misfortune_ring", 1),
     ("bones", 1),
+    ("tunneling_staff", 1)
     ]
 
 # -- Chest generation -------------------------------------------------
@@ -616,13 +618,13 @@ BOOKSHELF_LOOT_TABLES = {
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
-    "room_01": [(2, 0.08), (8, 0.00), (9, 0.08)],
-    "room_02": [(2, 0.08), (8, 0.00), (9, 0.08)],
-    "room_03": [(2, 0.08), (8, 0.00), (9, 0.08)],
-    "room_04": [(2, 0.08), (8, 0.00), (9, 0.08)],
-    # "room_secret": [(2, 0.10), (8, 0.10)], # BUGGED
-    # "room_door": [(2, 0.08), (5, 0.00)], # BUGGED
-    "room_secret_B": [(2, 0.08), (8, 0.00)],
+    "room_01": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_02": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_03": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_04": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_05": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_06": [(2, 0.01), (8, 0.00), (9, 0.01)],
+    "room_07": [(2, 0.01), (8, 0.00), (9, 0.01)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------
@@ -830,7 +832,7 @@ ITEM_SPAWN_RULES = {
     "spear": {"min_floor": 2, "weight_progression": [(2, 5), (7, 10)]},
     "spear_plus": {"min_floor": 2, "weight_progression": [(2, 3), (7, 5)]},
     # WANDS
-    "tunneling_staff": {"min_floor": 3, "max_instances": 1, "base_weight": 1},
+    "tunneling_staff": {"min_floor": 3, "min_instances": 1, "max_instances": 1, "base_weight": 1},
     # FOOD
     "poisoned_triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
     "triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
