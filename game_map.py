@@ -603,11 +603,9 @@ class GameWorld:
 
     def _generate_world(self) -> None:
         from generators import (
-            #generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,
-            #generate_dungeon_v2,
             generate_dungeon_v3,
             generate_the_library_map,
             generate_three_doors_map,
@@ -686,7 +684,6 @@ class GameWorld:
         from generators import (
             THE_LIBRARY_TEMPLATE,
             THREE_DOORS_TEMPLATE,
-            #generate_dungeon,
             generate_town,
             generate_fixed_dungeon,
             generate_cavern,
@@ -732,21 +729,7 @@ class GameWorld:
             return generate_cavern, {}
 
         # STANDARD PROCEDURAL DUNGEON GENERATION
-        # Primero se carga la configuración de generación específica
-        # de cada nivel (si la hay en el settings).
-        variants = settings.DUNGEON_MAP_VARIANT_OVERRIDES.get(floor)
-        if not variants:
-            variants = settings.DUNGEON_MAP_VARIANTS
-        if not variants:
-            variants = [
-                settings.DUNGEON_MAP_STANDARD
-            ]
-        weights = [variant.get("weight", 1.0) for variant in variants]
-        variant = random.choices(variants, weights=weights, k=1)[0]
-
-        # El generador estándar pasa a ser generate_dungeon_v3,
-        # pero conservamos la lógica de variantes por si en el futuro
-        # queremos que influyan en parámetros específicos.
+        # El generador estándar es generate_dungeon_v3.
         return generate_dungeon_v3, {}
 
     def _find_spawn_location(self, game_map: GameMap, *, prefer_downstairs: bool = False) -> Tuple[int, int]:

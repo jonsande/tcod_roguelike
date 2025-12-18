@@ -645,46 +645,6 @@ ROOM_MIN_SIZE_SHAPES = {
     "cross": 5,
 }
 
-# Generación de mapas de habitaciones y pasillos.
-# Cada variante define el tamaño medio y el número de habitaciones del piso.
-# room_min_size establece el ancho (o alto) mínimo para cada habitación (es decir,
-# que una room_min_size = 3 quiere decir que la habitación mínima será de 3x3). Y
-# lo mismo para max_room_size.
-DUNGEON_MAP_VARIANTS = [
-    {
-        "weight": 0.5,
-        "max_rooms": 8,
-        "room_min_size": 4,
-        "room_max_size": 10,
-    },
-    {
-        "weight": 0.5,
-        "max_rooms": 20,
-        "room_min_size": 3,
-        "room_max_size": 13,
-    },
-]
-
-# Permite sobreescribir la configuración anterior para pisos concretos.
-# Ejemplo: {3: [{"weight": 1.0, "max_rooms": 30, ...}]}
-DUNGEON_MAP_VARIANT_OVERRIDES = {}
-
-# Configuración de (entiendo) el generador estandard.
-DUNGEON_MAP_STANDARD = {
-    "weight": 1.0, 
-    "max_rooms": 20, 
-    "room_min_size": 2, 
-    "room_max_size": 17
-    }
-
-# Probabilidad de excavar pasadizos extra entre salas ya existentes.
-# Ajusta este valor para reducir o aumentar la cantidad de pasillos secundarios.
-# TODO: Con los valores al mínimo parece que aun así se generan demasiados pasillos
-# a veces. Esto habría que revisarlo.
-DUNGEON_EXTRA_CONNECTION_CHANCE = 0.0
-# Intentos que se hacen por cada sala para abrir conexiones extra si la tirada tiene éxito.
-DUNGEON_EXTRA_CONNECTION_ATTEMPTS = 1
-
 # -- Cavern generation --------------------------------------------------------
 # Probabilidad de que un piso generado proceduralmente sea una caverna en vez de un conjunto de habitaciones.
 CAVERN_SPAWN_CHANCE = 0.10

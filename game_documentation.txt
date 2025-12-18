@@ -337,23 +337,11 @@ APÉNDICE I - SISTEMA DE DETECCIÓN/AGRAVIO/PERSECUCIÓN IA común a todos los P
 
 APÉNDICE II - GENERACIÓN DE NIVELES (parcialmente desactualizado)
 
-En el juego existen cinco generadores de mapas:  generate_town(), generate_fixed_dungeon(), generate_cavern(), generate_dungeon() y generate_dungeon_v3(). El generador generate_dungeon_v3() es ahora mismo el generador estándar, es decir, el generador que se usa en la mayoría de niveles.
+En el juego existen cuatro generadores de mapas: generate_town(), generate_fixed_dungeon(), generate_cavern() y generate_dungeon_v3(). El generador generate_dungeon_v3() es ahora mismo el generador estándar, es decir, el generador que se usa en la mayoría de niveles.
 
 == GENERATE_DUNGEON_V3
 
 [...]
-
-== GENERATE_DUNGEON
-
-generate_dungeon() es el generador obsoleto. Su flujo funciona así:
-
-Prepara un GameMap, reutiliza RectangularRoom para cada intento de sala (forma básica o choose_room_shape, posibles círculos/elipses/cruces) y limpia el hueco con carve_room.
-En cada iteración puede reemplazar la sala por un “fixed room” (get_fixed_room_choice, carve_fixed_room) según tablas de settings.
-Conecta salas con pasillos en L (carve_tunnel_path + extras opcionales para reducir cul-de-sacs) y registra sus centros para telemetría.
-Pone entidades por sala (place_entities usa reglas de aparición definidas en settings, tracking con GenerationTracker), añade decoraciones/columnas, y llama a uniques.place_uniques para eventos especiales.
-Las escaleras abajo se asignan al último centro válido; las de subida se fuerzan si nadie colocó al jugador.
-Post-procesa: garantiza camino entre escaleras (ensure_path_between o guarantee_downstairs_access tallando muros rompibles), recoge candidatos a portas paredes (collect_door_candidates, place_doors también crea muros rompibles si sobra), asegura consistencia de muros frágiles y coloca cofres (maybe_place_chest con loot tables).
-Toda la lógica depende fuertemente de constantes tuning (settings.py: límites de puertas, decoración, spawn, etc.).
 
 == GENERATE_CAVERN
 
