@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING
 
 from components.base_component import BaseComponent
 from equipment_types import EquipmentType
+import color
 
 if TYPE_CHECKING:
-    from entity import Item
+    from entity import Item, Actor
 
 import random
 
@@ -222,6 +223,31 @@ class SpearPlus(Equippable):
             defense_bonus=2,
             to_hit_bonus=2,
             )
+
+class TunnelingStaff(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.WAND,
+            min_dmg=1,
+            max_dmg=4,
+            dmg_bonus=0,
+            defense_bonus=1,
+        )
+
+    def get_activation_handler(self, consumer: "Actor"):
+        """Return a targeting handler to tunnel a visible wall."""
+        from input_handlers import SingleRangedAttackHandler
+        import actions
+
+        engine = consumer.gamemap.engine
+        engine.message_log.add_message(
+            "Selecciona un muro visible para tunelar.",
+            color.needs_target,
+        )
+        return SingleRangedAttackHandler(
+            engine,
+            callback=lambda xy: actions.TunnelingStaffAction(consumer, self.parent, xy),
+        )
 
 
 class LeatherArmor(Equippable):

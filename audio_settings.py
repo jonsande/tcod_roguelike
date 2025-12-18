@@ -418,3 +418,14 @@ TABLE_DESTROY_SOUNDS = ["data/audio/sfx/combat/dummy_target/break_table/crash_wo
                         "data/audio/sfx/combat/dummy_target/break_table/crash_wooden_2.ogg",]
 TABLE_DESTROY_SOUND = None
 TABLE_DESTROY_VOLUME = 0.3
+
+# Tunneling staff -----------------------------------------------------------
+TUNNELING_STAFF_SOUND_ENABLED = True
+TUNNELING_STAFF_SOUNDS = [
+    "data/audio/sfx/combat/dummy_target/break_wall/smash_rock_1.ogg",
+    "data/audio/sfx/combat/dummy_target/break_wall/smash_rock_2.ogg",
+    "data/audio/sfx/combat/dummy_target/break_wall/smash_rock_3.ogg",
+    "data/audio/sfx/combat/dummy_target/break_wall/smash_rock_4.ogg",
+]
+TUNNELING_STAFF_SOUND = None
+TUNNELING_STAFF_VOLUME = 0.35

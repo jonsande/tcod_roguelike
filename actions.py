@@ -13,6 +13,8 @@ from entity import Actor
 import exceptions
 import random
 from settings import DEBUG_MODE
+import numpy as np
+import tile_types
 from audio import (
     play_player_footstep,
     play_door_close_sound,
@@ -20,6 +22,7 @@ from audio import (
     play_stair_descend_sound,
     play_melee_attack_sound,
     play_player_stamina_depleted_sound,
+    play_tunneling_staff_sound,
 )
 
 if TYPE_CHECKING:
@@ -139,6 +142,79 @@ class ItemAction(Action):
         if self.item.consumable:
             self.item.consumable.activate(self)
                     
+class TunnelingStaffAction(Action):
+    """Carve a tunnel through a selected wall tile."""
+
+    def __init__(
+        self,
+        entity: Actor,
+        staff: "Item",
+        target_xy: Tuple[int, int],
+    ) -> None:
+        super().__init__(entity)
+        self.staff = staff
+        self.target_xy = target_xy
+
+    def _is_wall_target(self, gamemap, x: int, y: int) -> bool:
+        tile = gamemap.tiles[x, y]
+        if np.array_equal(tile, tile_types.breakable_wall):
+            return True
+        if np.array_equal(tile, tile_types.closed_door):
+            return False
+        return not gamemap.tiles["walkable"][x, y]
+
+    def perform(self) -> None:
+        dest_x, dest_y = self.target_xy
+        gamemap = self.engine.game_map
+
+        if not gamemap.in_bounds(dest_x, dest_y):
+            raise exceptions.Impossible("Objetivo inválido.")
+        if not gamemap.visible[dest_x, dest_y]:
+            raise exceptions.Impossible("Solo puedes elegir casillas que ves.")
+        if not self._is_wall_target(gamemap, dest_x, dest_y):
+            raise exceptions.Impossible("Solo puedes tunelar muros.")
+
+        blocking = gamemap.get_blocking_entity_at_location(dest_x, dest_y)
+        destroyed_breakable = False
+
+        if blocking:
+            from components.fighter import BreakableWallFighter
+
+            fighter = getattr(blocking, "fighter", None)
+            if isinstance(fighter, BreakableWallFighter):
+                fighter.take_damage(fighter.hp, attacker=self.entity, attack_item=self.staff)
+                destroyed_breakable = True
+
+        if not destroyed_breakable:
+            gamemap.tiles[dest_x, dest_y] = tile_types.floor
+
+        register_noise = getattr(self.engine, "register_noise", None)
+        if callable(register_noise):
+            try:
+                register_noise(self.entity, level=4, duration=3, tag="wall_break")
+            except Exception:
+                pass
+
+        self.engine.play_sound_effect(
+            play_tunneling_staff_sound,
+            source=self.entity,
+            level=4,
+            position=(dest_x, dest_y),
+        )
+
+        if getattr(self.entity, "fighter", None):
+            self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+            if DEBUG_MODE:
+                print(
+                    f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in TunnelingStaffAction"
+                )
+
+        self.engine.update_fov()
+        self.engine.message_log.add_message(
+            "El bastón perfora el muro, creando un pasaje.",
+            color.descend,
+        )
+
 
 class IdentifyItemAction(Action):
     """Identify an item from the actor inventory using a scroll."""

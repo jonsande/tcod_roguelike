@@ -391,7 +391,7 @@ class Equipment(BaseComponent):
     def toggle_equip(self, equippable_item: Item, add_message: bool = True) -> None:
         if (
             equippable_item.equippable
-            and equippable_item.equippable.equipment_type == EquipmentType.WEAPON
+            and equippable_item.equippable.equipment_type in (EquipmentType.WEAPON, EquipmentType.WAND)
         ):
             slot = "weapon"
             identify_on_equip = False

@@ -727,6 +727,19 @@ def play_player_stamina_depleted_sound() -> None:
     _play_sound_effect(track, volume=volume)
 
 
+def play_tunneling_staff_sound() -> None:
+    if not getattr(audio_cfg, "TUNNELING_STAFF_SOUND_ENABLED", False):
+        return
+    track = _pick_random_track(
+        "TUNNELING_STAFF_SOUNDS",
+        "TUNNELING_STAFF_SOUND",
+    )
+    if not track:
+        return
+    volume = getattr(audio_cfg, "TUNNELING_STAFF_VOLUME", 1.0)
+    _play_sound_effect(track, volume=volume)
+
+
 def _start_campfire_loop(volume: float) -> None:
     global _campfire_loop_channel, _current_campfire_track
 

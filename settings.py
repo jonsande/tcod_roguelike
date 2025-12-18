@@ -191,6 +191,7 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "sand_bag", "quantity": 2},
     #{"item": "scout_hood", "quantity": 1},
     #{"item": "cloak", "quantity": 1},
+    {"item": "tunneling_staff", "quantity": 1},
 ]
 # Límite superior de piezas equipadas automáticamente por tipo de ranura.
 PLAYER_STARTING_EQUIP_LIMITS = {
@@ -828,6 +829,8 @@ ITEM_SPAWN_RULES = {
     "long_sword_plus": {"min_floor": 2, "weight_progression": [(7, 8)]},
     "spear": {"min_floor": 2, "weight_progression": [(2, 5), (7, 10)]},
     "spear_plus": {"min_floor": 2, "weight_progression": [(2, 3), (7, 5)]},
+    # WANDS
+    "tunneling_staff": {"min_floor": 3, "max_instances": 1, "base_weight": 1},
     # FOOD
     "poisoned_triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},
     "triple_ration": {"min_floor": 2, "weight_progression": [(2, 10)]},

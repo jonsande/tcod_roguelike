@@ -1075,6 +1075,11 @@ class InventoryActivateHandler(InventoryEventHandler):
             # Return the action for the selected item.
             return item.consumable.get_action(self.engine.player)
         elif item.equippable:
+            activator = getattr(item.equippable, "get_activation_handler", None)
+            if callable(activator) and self.engine.player.equipment.item_is_equipped(item):
+                handler = activator(self.engine.player)
+                if handler:
+                    return handler
             return actions.EquipAction(self.engine.player, item)
         else:
             return None

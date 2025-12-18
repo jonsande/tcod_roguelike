@@ -976,6 +976,17 @@ spear_plus = Item(
 )
 loot_tables.register_loot_item("spear_plus", spear_plus)
 
+tunneling_staff = Item(
+    char="|",
+    color=(170, 120, 60),
+    name="Tunneling staff",
+    id_name="Tunneling staff",
+    equippable=equippable.TunnelingStaff(),
+    stackable=False,
+    info="A rune-scarred staff that can bore through stone. Equip it in your weapon slot; while equipped, activate it to select a visible wall or breakable barrier and open a passage.",
+)
+loot_tables.register_loot_item("tunneling_staff", tunneling_staff)
+
 leather_armor = Item(
     char="[",
     color=(139, 69, 19),
