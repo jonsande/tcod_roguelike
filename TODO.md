@@ -69,6 +69,15 @@ EFECTOS VISUALES
 - [x] Efecto de transición al/del negro al cambiar de niveles (fading).
 - [ ] Ahora mismo la luz (el fov) de los adventurers sólo se ve si el adventurer es visible. Esto lo ideal es cambiarlo. Aunque el adventurer no sea visible, si alguna de las casillas iluminadas por el adventurer (e.e. casillas que sí son visibles para el adventurer) es visible por el personaje jugador, esa casilla debe verse iluminada. Lo mismo con los campfires. Las casillas iluminadas por el campfire que sean visibles por el jugador deben estar iluminadas, aunque el jugador no vea la casilla en la que se encuentra el campfire.
 
+HABILIDADES ESPECIALES
+- [ ] Tiene que haber alguna manera de desbloquear habilidades especiales.
+- [ ] Saltar una casilla y atacar (ortogonal).
+- [ ] Saltar una casilla y atacar (diagonal).
+- [ ] Saltar una casilla (retroceder) ortogonal.
+- [ ] Saltar una casilla (retroceder) diagonal.
+- [ ] Atacar a una casilla de distancia (con lanza).
+- [ ] Ganar bonus en ataque diagonal. (Parece que actualmente los enemigos buscan siempre ortogonal. Esto es trabajo ganado. Se trataría de añadir ciertos bonus a los ataques diagonales, y diseñar la manera de conseguir posicionarse en diagonal).
+
 PERGAMINOS
 - [DESCARTADO] Limitar la distancia a la que se pueden "lanzar" los pergaminos. [P.D. Está naturalmente limitada por la limitación de visión]
 - [x] Pergamino de descender de nivel.
@@ -106,6 +115,10 @@ COLGANTES Y AMULETOS
 ARMAS MÁGICAS
 
 
+BASTONES MÁGICOS ÚNICOS
+- [ ] Bastón tunelador.
+
+
 ARMADURAS MÁGICAS
 
 
@@ -133,7 +146,7 @@ OBJETOS VARIOS
 
 LIBROS MÁGICOS
 - [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
-- [ ] Los libros mágicos serán libros con efectos muy poderosos, pero cuyos efectos son sensibles a condiciones, o que sólo pueden activarse sus efectos si al leerlos se cumplen una serie de condiciones.
+- [ ] Los libros mágicos serán libros con efectos muy poderosos, pero cuyos efectos son sensibles a condiciones, o que sólo pueden activarse sus efectos si al leerlos se cumplen una serie de condiciones. Los libros mágicos no se consumen. Pero leerlos tiene un coste. Algunos pueden transformar de algún modo al jugador, o producir un efecto colateral/secundario.
 - [ ] Libro de levantar muertos. Todos los cadáveres se levantan como zombies y los huesos como skeletons. En un caso los levantados serán aliados del jugador y en otro enemigos.
 - [ ] Libro/s reactivo/s: a) Se vuelve ilegible si matas a cierto tipo de criatura. b) Cambia su efecto según tu alineamiento o reputación. c) Te “juzga” y decide si cooperar. Pueden negarse a ser leídos. Pueden también atraer enemigos que quieren destruirlos.
 - [ ] Libro/s con condiciones para poder ser leídos: luz, silencio o tiempo sin interrupciones; leer en combate tiene efectos imprevisibles; según la cordura u otro atributo, puede tener efectos diferentes.
@@ -141,6 +154,7 @@ LIBROS MÁGICOS
 - [ ] Libro de conciencia remota. Te permite tomar la perspectiva de un enemigo. Mientras estás "conectado" con él no puedes ver lo que pasa a tu alrededor. Bajo ciertas condiciones, puedes tomar el control de la criatura. Bajo ciertas condiciones, puedes escoger con qué criatura conectar.
 - [ ] Libro transformador. Transforma un objeto en otro. Bajo ciertas condiciones, transforma todos los objetos de tu inventario en otros. Bajo ciertas condiciones, te permite controlar qué objeto conseguir.
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
+- [ ] Libro de visión. Permite ver qué hay en otro punto del mapa.
 
 ARTEFACTOS
 - [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.
