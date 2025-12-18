@@ -616,6 +616,9 @@ BOOKSHELF_LOOT_TABLES = {
 
 # -- Fixed room templates -----------------------------------------------------
 # Probabilidad (por nivel mínimo) de sustituir una sala generada por cada plantilla fija.
+# Cada iteración de generación hace un sorteo por cada plantilla y luego elige una al azar 
+# entre las que hayan salido “sí”. Con 7 plantillas al 6% cada una, la probabilidad de que 
+# alguna salga es: 1 - (1 - 0.06)^7 ≈ 34% por habitación.
 FIXED_ROOM_CHANCES = {
     # BUG: Generan a veces mapas sin camino transitable desde unas escaleras a otras
     "room_01": [(2, 0.01), (8, 0.00), (9, 0.01)],
