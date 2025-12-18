@@ -116,7 +116,7 @@ ARMAS MÁGICAS
 
 
 BASTONES MÁGICOS ÚNICOS
-- [ ] Bastón tunelador.
+- [x] Bastón tunelador. [Actualmente el bastón tiene cargas infinitas]
 
 
 ARMADURAS MÁGICAS

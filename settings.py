@@ -188,7 +188,8 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "identify_scroll", "quantity": 6},
     #{"item": "antidote_ring", "quantity": 1},
     #{"item": "infra_vision_potion", "quantity": 5},
-    #{"item": "remove_curse_scroll", "quantity": 3},
+    #{"item": "confusion_potion", "quantity": 3},
+    #{"item": "identify_scroll", "quantity": 9},
     #{"item": "sand_bag", "quantity": 2},
     #{"item": "scout_hood", "quantity": 1},
     #{"item": "cloak", "quantity": 1},
@@ -633,8 +634,8 @@ FIXED_ROOM_CHANCES = {
 # -- Procedural room shapes ---------------------------------------------------
 # Probabilidades relativas de que una sala se genere como círculo, elipse o cruz (rectángulo siempre pesa 1.0).
 ROOM_SHAPE_WEIGHTS = {
-    "circle": 0.0,
-    "ellipse": 0.0,
+    "circle": 0.09,
+    "ellipse": 0.09,
     "cross": 0.0,
 }
 
