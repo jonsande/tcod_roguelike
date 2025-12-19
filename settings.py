@@ -133,12 +133,13 @@ DEBUG_DRAW_HOT_PATH = False
 # a la vuelta de una puerta o esquina si se tiene el stealth suficiente.
 STEALTH_DISABLED = True
 
-# ANÁLISIS Y CONFIGURACIÓN DE RENDIMIENTO
+# -- Análisis y configuración de rendimiento ----------------------------
 # Telemetría ligera de rendimiento por turno (se muestra cada N turnos).
 PERF_PROFILER_ENABLED = False
 PERF_PROFILER_REPORT_INTERVAL = 30
 # Si está activo, cada mensaje del log también se imprime en stdout.
 LOG_ECHO_TO_STDOUT = True
+
 # Número de turnos que se mantiene una ruta de IA antes de recalcularla si no hay bloqueos.
 AI_PATH_RECALC_INTERVAL = 4
 # Radio (Chebyshev) hasta el que se usa un BFS barato; más lejos se usa A*.
@@ -149,7 +150,8 @@ AI_PATH_FAILURE_LIMIT = 8
 AI_MAX_PURSUIT_RANGE = 25
 # Turnos consecutivos sin ver/oír al objetivo antes de perder agro; se suma a la agresividad de la criatura.
 AI_AGGRO_LOSS_BASE = 3
-
+# Turnos base que los guardianes buscan un objetivo tras perderlo de vista.
+WARDEN_SEARCH_TURNS = 5
 
 # -- Game settings ------------------------------------------------------
 
@@ -241,6 +243,7 @@ KEY_CARRIER_ALLOWED_MONSTERS = [
     "Bandit",
     "Cultist",
     "Sentinel",
+    "Warden",
 ]
 
 # Probabilidad de que la llave aparezca dentro de un cofre existente en la planta.
@@ -669,7 +672,8 @@ CAVERN_MONSTER_SPAWN_RULES = {
     "orc": {"min_floor": 4, "weight_progression": [(4, 12), (6, 25), (9, 10)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(1, 18), (4, 2), (7, 1)]},
     "skeleton": {"min_floor": 6, "weight_progression": [(5, 5), (7, 10)]},
-    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]}
+    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
+    #"warden": {"min_floor": 6, "weight_progression": [(6, 4), (8, 10), (10, 0)]},
 }
 
 # -- Cavern item population ---------------------------------------------------
@@ -888,6 +892,7 @@ ENEMY_SPAWN_RULES = {
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
     "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
+    #"warden": {"min_floor": 6, "weight_progression": [(6, 6), (8, 14), (10, 6), (12, 0)]},
 }
 
 PROFICIENCY_LEVELS = {

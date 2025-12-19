@@ -49,6 +49,7 @@ MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
     "Cave bat": (),
     "Skeleton": ("short_sword", "spear", "health_potion", "iron_helmet", "cloak"),
     "Cultist": ("dagger", "poison_potion", "confusion_scroll", "leather_cap", "cloak"),
+    "Warden": ("spear", "chain_mail", "iron_helmet", "guard_ring", "health_potion"),
 }
 
 # Configurable tables for special drops outside the creature inventory.
@@ -136,6 +137,14 @@ SPECIAL_DROP_TABLES: Dict[str, Dict[str, object]] = {
         "items": (
             ("spear_plus", 1),
             ("dagger_plus", 1),
+        ),
+    },
+    "Warden": {
+        "chance": 0.20,
+        "items": (
+            ("guard_ring", 1),
+            ("power_potion", 1),
+            ("chain_mail", 1),
         ),
     },
 }

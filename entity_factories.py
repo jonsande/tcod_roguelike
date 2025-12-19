@@ -18,6 +18,7 @@ from components.ai import (
     SlimeAI,
     AdventurerAI,
     OldManAI,
+    WardenAI,
 )
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -1813,6 +1814,36 @@ skeleton = Actor(
     level=Level(xp_given=8),
 )
 skeleton.on_spawn = _setup_creature_equipment
+
+warden = Actor(
+    char="W",
+    color=(92, 110, 168),
+    name="Warden",
+    ai_cls=WardenAI,
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
+    fighter=Fighter(
+        hp=22,
+        base_defense=5,
+        base_to_hit=2,
+        base_armor_value=2,
+        strength=3,
+        recover_rate=45,
+        recover_amount=1,
+        fov=7,
+        foh=5,
+        perception=5,
+        weapon_proficiency=PROFICIENCY_LEVELS["Apprentice"],
+        aggressivity=9,
+        stamina=4,
+        max_stamina=4,
+        action_time_cost=9,
+        can_open_doors=True,
+        natural_weapon=NaturalWeapon(name="Steel fist", min_dmg=1, max_dmg=3, dmg_bonus=1),
+    ),
+    inventory=Inventory(capacity=4, loot_table_key="Warden", loot_amount=2),
+    level=Level(xp_given=12),
+)
+warden.on_spawn = _setup_creature_equipment
 
 troll = Actor(
     char="T",

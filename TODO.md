@@ -156,6 +156,8 @@ LIBROS MÁGICOS
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
 - [ ] Libro de visión. Permite ver qué hay en otro punto del mapa.
 - [ ] Libro de portal. Abre un portal mágico que lleva a algún otro sitio. Bajo ciertas circunstancias te introduce en un bucle espacio-temporal.
+- [ ] Libro de las pociones! Si lo lees, identifica todas las pociones.
+- [ ] Libro de los pergaminos. Idem.
 
 ARTEFACTOS
 - [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.

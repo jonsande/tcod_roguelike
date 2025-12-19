@@ -2172,6 +2172,167 @@ class AdventurerAI(BaseAI):
         self.waiting_campfire = None
         self._player_contact = False
 
+
+class WardenAI(BaseAI):
+    """Patrols a small route and searches the last known position of any intruder."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self._patrol_points: List[Tuple[int, int]] = []
+        self._patrol_index: int = 0
+        self._search_target: Optional[Tuple[int, int]] = None
+        self._search_turns: int = 0
+        self._hold_turns: int = 0
+
+    def _reset_search_turns(self) -> int:
+        base = getattr(settings, "WARDEN_SEARCH_TURNS", 5)
+        return max(1, base + random.randint(0, 2))
+
+    def _ensure_patrol_points(self) -> None:
+        if self._patrol_points:
+            return
+        gamemap = getattr(self.entity, "gamemap", None)
+        if not gamemap:
+            return
+        spawn = getattr(self.entity, "spawn_coord", (self.entity.x, self.entity.y))
+        sx, sy = spawn
+        fighter = getattr(self.entity, "fighter", None)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+        candidates: set[Tuple[int, int]] = set()
+        attempts = 0
+        while len(candidates) < 3 and attempts < 40:
+            dx = random.randint(-4, 4)
+            dy = random.randint(-4, 4)
+            if dx == 0 and dy == 0:
+                attempts += 1
+                continue
+            nx, ny = sx + dx, sy + dy
+            if not gamemap.in_bounds(nx, ny):
+                attempts += 1
+                continue
+            if not self._is_walkable_for_ai(
+                nx,
+                ny,
+                can_pass_closed_doors=False,
+                can_open_doors=can_open_doors,
+            ):
+                attempts += 1
+                continue
+            candidates.add((nx, ny))
+            attempts += 1
+        if not candidates:
+            candidates.add(spawn)
+        self._patrol_points = [spawn] + list(candidates)
+
+    def _can_see_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, getattr(fighter, "fov", 0))
+        if radius <= 0:
+            return False
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+        visible = compute_fov(
+            transparent,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        return bool(visible[actor.x, actor.y])
+
+    def _can_hear_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, getattr(fighter, "foh", 0))
+        if radius <= 0:
+            return False
+        return self._can_hear_position(actor.x, actor.y, radius)
+
+    def _advance_to(self, dest: Tuple[int, int], *, ignore_senses: bool = False):
+        path = self.get_path_to(dest[0], dest[1], ignore_senses=ignore_senses)
+        if path:
+            dest_x, dest_y = path.pop(0)
+            try:
+                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+            except exceptions.Impossible:
+                pass
+        return WaitAction(self.entity).perform()
+
+    def _patrol(self):
+        self._ensure_patrol_points()
+        if self._hold_turns > 0:
+            self._hold_turns -= 1
+            return WaitAction(self.entity).perform()
+        if not self._patrol_points:
+            return WaitAction(self.entity).perform()
+
+        target = self._patrol_points[self._patrol_index % len(self._patrol_points)]
+        if (self.entity.x, self.entity.y) == target:
+            self._patrol_index = (self._patrol_index + 1) % len(self._patrol_points)
+            self._hold_turns = random.randint(0, 1)
+            return WaitAction(self.entity).perform()
+
+        return self._advance_to(target, ignore_senses=True)
+
+    def _handle_aggravated(
+        self,
+        target: Optional[Actor],
+        can_see: bool,
+        can_hear: bool,
+    ):
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return WaitAction(self.entity).perform()
+
+        if target and (can_see or can_hear):
+            self._search_target = (target.x, target.y)
+            self._search_turns = self._reset_search_turns()
+
+        if self._search_target is None:
+            fighter.aggravated = False
+            return WaitAction(self.entity).perform()
+
+        if not (target and (can_see or can_hear)):
+            self._search_turns -= 1
+            if self._search_turns <= 0:
+                fighter.aggravated = False
+                self._search_target = None
+                return self._patrol()
+
+        dest_x, dest_y = self._search_target
+        distance = max(abs(dest_x - self.entity.x), abs(dest_y - self.entity.y))
+        if target and can_see and distance <= 1:
+            if getattr(fighter, "stamina", 0) <= 0:
+                return WaitAction(self.entity).perform()
+            return MeleeAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+        return self._advance_to(self._search_target, ignore_senses=not can_see)
+
+    def perform(self) -> None:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return WaitAction(self.entity).perform()
+
+        target = self._select_target()
+        can_see = bool(target and self._can_see_actor(target))
+        can_hear = bool(target and not can_see and self._can_hear_actor(target))
+
+        if target and (can_see or can_hear):
+            fighter.aggravated = True
+
+        if getattr(fighter, "aggravated", False):
+            return self._handle_aggravated(target, can_see, can_hear)
+
+        return self._patrol()
+
+
 class SneakeEnemy(BaseAI):
     def __init__(self, entity: Actor):
         super().__init__(entity)
