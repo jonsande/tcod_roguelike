@@ -104,7 +104,7 @@ def main() -> None:
         screen_width,
         screen_height,
         tileset=tileset,
-        title=_("The Seeker"),
+        title=_("Retorno"),
         vsync=True,
         sdl_window_flags=window_flags,
     ) as context:

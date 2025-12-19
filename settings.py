@@ -11,7 +11,9 @@ FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
 # tiene también un considerable impacto en el rendimieto del juego (debido
 # fundamentalmente al número de criaturas por nivel y las demandas para el
 # procesamiento del pathfinding de estas).
-# Opciones disponibles: "STANDARD" (80x44) o "LARGE" (100x55).
+# Este comportamiento se puede modificar más abajo, desrelativizando los
+# parámetros del generador en la sección "Dungeon generation".
+# Opciones disponibles: "STANDARD" (80x44), "MEDIUM" (90X50) o "LARGE" (100x55).
 SCREEN_MODE = "MEDIUM"
 
 _BASE_SCREEN = {"width": 80, "height": 44, "map_width": 80, "map_height": 36}

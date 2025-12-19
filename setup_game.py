@@ -12,6 +12,7 @@ import tcod
 import threading
 import time
 from i18n import _
+import numpy as np
 
 import color
 from engine import Engine
@@ -43,6 +44,31 @@ if TYPE_CHECKING:
 # Load the background image and remove the alpha channel.
 #BACKGROUND_IMAGE = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
 BACKGROUND_IMAGE = tcod.image.load("data/graphics/menu.png")[:, :, :3]
+
+
+def _resize_background(image: np.ndarray, target_width: int, target_height: int) -> np.ndarray:
+    """Nearest-neighbor resize to match the console tile dimensions (semigraphics expects 2x pixels)."""
+    # Guard against empty or already matching sizes.
+    if target_width <= 0 or target_height <= 0:
+        return image
+    h, w, channels = image.shape
+    if w == target_width and h == target_height:
+        return image
+    # Compute nearest-neighbor indices without external dependencies.
+    x_idx = (np.linspace(0, w - 1, target_width)).astype(int)
+    y_idx = (np.linspace(0, h - 1, target_height)).astype(int)
+    return image[np.ix_(y_idx, x_idx, range(channels))]
+
+
+def get_background_for_console(console: tcod.Console) -> np.ndarray:
+    """Return a background image scaled to the console's expected semigraphics size."""
+    target_w = console.width * 2
+    target_h = console.height * 2
+    try:
+        return _resize_background(BACKGROUND_IMAGE, target_w, target_h)
+    except Exception:
+        # Fallback to original image if scaling fails.
+        return BACKGROUND_IMAGE
 
 
 _EQUIPMENT_SLOT_NAMES = {
@@ -224,7 +250,15 @@ class MainMenu(input_handlers.BaseEventHandler):
 
     def on_render(self, console: tcod.Console) -> None:
         """Render the main menu on a background image."""
-        console.draw_semigraphics(BACKGROUND_IMAGE, 0, 0)
+        # Sin reescalado
+        #console.draw_semigraphics(BACKGROUND_IMAGE, 0, 0)
+        # Con reescalado
+        console.draw_semigraphics(get_background_for_console(console), 0, 0)
+
+        def _scaled_y(base_y: int) -> int:
+            """Scale a reference Y (based on 44-tall screen) to current console."""
+            scaled = round(base_y / 44 * console.height)
+            return max(0, min(console.height - 3, scaled))
 
 #         console.print(
 #             6,
@@ -244,7 +278,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         console.print(
             console.width // 2,
-            console.height // 2 - 8,
+            _scaled_y(14),
             _("a roguelike"),
             #fg=color.menu_title,
             #fg=(155, 155, 33),
@@ -264,12 +298,14 @@ class MainMenu(input_handlers.BaseEventHandler):
         )
 
         menu_width = 24
+        menu_start_y = _scaled_y(20)
+        menu_spacing = max(1, round(console.height / 44))
         for i, text in enumerate(
             [_("[N] Play a new game"), _("[C] Continue last game"), _("[Q] Quit")]
         ):
             console.print(
                 console.width // 2,
-                console.height // 2 - 2 + i,
+                menu_start_y + i * menu_spacing,
                 text.ljust(menu_width),
                 #fg=color.menu_text,
                 fg=(200,200,200),
@@ -281,7 +317,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         console.print(
             console.width // 2,
-            28,
+            _scaled_y(28),
             _("A experimental roguelike made with libtcod and pygame.\nThanks to CO.AG for his awesome music\n and to the whole open-source community."),
             fg=(15,15,15),
             alignment=libtcodpy.CENTER,
