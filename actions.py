@@ -1412,7 +1412,6 @@ class MovementAction(ActionWithDirection):
             return WaitAction(self.entity).perform()
         can_pass_closed_doors = getattr(self.entity.fighter, "can_pass_closed_doors", False)
         can_open_doors = getattr(self.entity.fighter, "can_open_doors", False)
-        is_closed_door = game_map.is_closed_door(dest_x, dest_y)
 
         def _finalize_non_player_action() -> None:
             fighter = getattr(self.entity, "fighter", None)
@@ -1431,6 +1430,8 @@ class MovementAction(ActionWithDirection):
                 raise exceptions.Impossible("Debo recuperar el artefacto.")
             else:
                 raise exceptions.Impossible("That way is blocked.")
+
+        is_closed_door = game_map.is_closed_door(dest_x, dest_y)
         blocked_tile = not game_map.tiles["walkable"][dest_x, dest_y]
 
         # Intentar abrir puerta incluso si el tile es walkable.

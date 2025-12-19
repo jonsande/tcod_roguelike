@@ -25,6 +25,13 @@ if GRAPHIC_MODE == "ascii":
 
     # STANDARD
     tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    
+    # EXPERIMENTAL
+    ## Ventana 1920x10880
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/UbuntuMono-Regular.ttf", 16, 20)
+    ## Ventana 1366x768
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/UbuntuMono-Regular.ttf", 11, 14)
+
 
     # CUSTOM
     #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin_bob.ttf", 128, 128)

@@ -127,10 +127,18 @@ def _add_starting_items(player: "Actor") -> None:
 
 def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
-    #map_width = 70
-    #map_height = 44
+    
+    # STANDARD
     map_width = 80
     map_height = 36
+
+    # EXPERIMENTAL
+    # map_width = 100
+    # #map_height = 55
+    # map_height = 44
+    
+    #map_width = 70
+    #map_height = 44
 
     # Valores originales
     #room_max_size = 10
