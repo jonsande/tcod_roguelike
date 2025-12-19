@@ -88,7 +88,7 @@ def generate_town(
         WindEffect(
             width=map_width,
             height=map_height,
-            char="-",
+            char=" ",
             color=(103, 86, 36),
             density=0.009,
             speed_range=(48.0, 64.0),
