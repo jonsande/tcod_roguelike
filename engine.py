@@ -570,7 +570,7 @@ class Engine:
         if self.player.fighter.is_blind:
             radius = 1
         elif self.game_world.current_floor == 1:
-            radius = 90
+            radius = 102
         else:
             # Efecto "titilar" de la lámpara, farol, linterna.
             base_radius = self.player.fighter.effective_fov

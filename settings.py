@@ -338,7 +338,7 @@ PLAYER_STARTING_EQUIP_LIMITS = {
 }
 
 # -- Dungeon generation ------------------------------------------------
-# Forzar un estilo concreto de muro (1, 2 o 3). Usa None para dejarlo al azar.
+# Forzar un estilo concreto de muro (1, 2, 3 o 4). Usa None para dejarlo al azar.
 # TODO: si WALL_STYLE es None, ahora mismo se genera toda la mazmorra con un 
 # sólo estilo. Debería hacerse la tirada por cada nivel, de forma que pueda pasar
 # que en el nivel 2 el WALL_STYLE es 1 pero en el nivel 3 es 1, por ejemplo.

@@ -107,7 +107,7 @@ if GRAPHIC_MODE == "pseudo_ascii":
     # No se pueden generar diferentes baldosas por este medio,
     # Hay que hacerlo con items
 
-    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3) else random.randint(1,3)
+    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3,4) else random.randint(1,3)
 
     if wall_roulette == 1:
 
@@ -132,6 +132,25 @@ if GRAPHIC_MODE == "pseudo_ascii":
 
         light=(ord('√'), (255,255,184), (0,0,0))
         dark=(ord('√'), (39,7,47), (5,5,5))
+        #dark=(ord("√"), (0,0,0), (0,0,0)) # Modo Hardcore
+
+        wall = new_tile(
+            walkable=False,
+            transparent=False,
+            light=light,
+            dark=dark,
+            )
+        breakable_wall = new_tile(
+            walkable=True,
+            transparent=False,
+            light=light,
+            dark=dark,
+        )
+
+    elif wall_roulette == 3:
+
+        light=(ord('√'), (40,40,40), (0,0,0))
+        dark=(ord('√'), (25,25,25), (5,5,5))
         #dark=(ord("√"), (0,0,0), (0,0,0)) # Modo Hardcore
 
         wall = new_tile(
@@ -256,7 +275,7 @@ elif GRAPHIC_MODE == "ascii":
     # MUROS: √
     ## Randomizar color de muros para GRAPHIC_MODE == "ascii"
 
-    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3) else random.randint(1,3)
+    wall_roulette = WALL_STYLE if WALL_STYLE in (1,2,3,4) else random.randint(1,3)
 
     if wall_roulette == 1:
 
@@ -280,6 +299,23 @@ elif GRAPHIC_MODE == "ascii":
 
         light=(ord("#"), (255,255,184), (0,0,0))
         dark=(ord("#"), (39,7,47), (5,5,5))
+
+        wall = new_tile(
+            walkable=False,
+            transparent=False,
+            light=light,
+            dark=dark,
+            )
+        breakable_wall = new_tile(
+            walkable=True,
+            transparent=False,
+            light=light,
+            dark=dark,
+        )
+    elif wall_roulette == 3:
+
+        light=(ord('#'), (40,40,40), (0,0,0))
+        dark=(ord('#'), (25,25,25), (5,5,5))
 
         wall = new_tile(
             walkable=False,
