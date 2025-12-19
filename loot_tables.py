@@ -43,6 +43,7 @@ MONSTER_LOOT_TABLES: Dict[str, Sequence[str]] = {
     "Goblin": ("meat", "dagger", "leather_cap",),
     "Grey goblin": ("dagger", "short_sword"),
     "Orc": ("short_sword", "power_potion", "leather_armor", "iron_helmet", "poison_potion"),
+    "Orc servant": ("dagger"),
     "True Orc": ("long_sword", "spear", "short_sword", "leather_armor", "chain_mail", "orcish_war_helm", "cloak"),
     "Bandit": ("short_sword", "scout_hood", "precission_potion", "stamina_potion", "poison_potion", "dagger", "cloak"),
     "Sentinel": ("long_sword"),

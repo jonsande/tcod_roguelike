@@ -1626,7 +1626,7 @@ goblin = Actor(
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,
-        base_defense=3,
+        base_defense=2,
         base_to_hit=0,
         strength=0,
         recover_rate=50,
@@ -1737,7 +1737,7 @@ orc = Actor(
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=12, 
-        base_defense=4, 
+        base_defense=3, 
         base_to_hit=1,
         strength=2, 
         recover_rate=50,
@@ -1758,6 +1758,35 @@ orc = Actor(
 )
 orc.on_spawn = _setup_creature_equipment
 
+orc_servant = Actor(
+    char="o",
+    color=(205, 251, 43),
+    name="Orc servant",
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3]),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
+    fighter=Fighter(
+        hp=12, 
+        base_defense=3, 
+        base_to_hit=1,
+        strength=1, 
+        recover_rate=50,
+        recover_amount=0,
+        fov=5,
+        foh=4,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
+        aggressivity=0, 
+        stamina=3, 
+        max_stamina=3,
+        action_time_cost=12,
+        woke_ai_cls=HostileEnemyV3,
+        can_open_doors=True,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
+    ),
+    inventory=Inventory(capacity=3, loot_table_key="Orc servant", loot_amount=4),
+    level=Level(xp_given=5),
+)
+orc_servant.on_spawn = _setup_creature_equipment
+
 true_orc = Actor(
     char="o",
     color=(63, 220, 63),
@@ -1766,7 +1795,7 @@ true_orc = Actor(
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
-        base_defense=4, 
+        base_defense=3, 
         strength=3, 
         recover_rate=50,
         recover_amount=0,

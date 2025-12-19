@@ -1285,6 +1285,20 @@ class GroundItemPickupHandler(AskUserEventHandler):
             key = chr(ord("a") + index)
             console.print(x + 1, y + index + 1, f"({key}) {item.name}")
 
+    def _pickup_item_and_choose_next_handler(self, item: Item) -> BaseEventHandler:
+        """Pick the given item, advance the turn, and decide which handler stays active."""
+        action_performed = self.handle_action(PickupAction(self.engine.player, item))
+
+        if action_performed:
+            if not self.engine.player.is_alive:
+                return GameOverEventHandler(self.engine)
+            if self.engine.player.level.requires_level_up:
+                return LevelUpEventHandler(self.engine)
+
+        if self._items_here():
+            return self
+        return MainGameEventHandler(self.engine)
+
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         key = event.sym
 
@@ -1298,7 +1312,7 @@ class GroundItemPickupHandler(AskUserEventHandler):
         items = self._items_here()
         index = key - tcod.event.KeySym.a
         if 0 <= index < len(items):
-            return actions.PickupAction(self.engine.player, items[index])
+            return self._pickup_item_and_choose_next_handler(items[index])
         return None
 
 
