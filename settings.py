@@ -4,6 +4,127 @@ from random import randint
 LANGUAGE = "es"  # Idioma activo de la interfaz. Opciones: en, es.
 FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
 
+# -- SCREEN PRESETS -----------------------------------------------------
+# [EXPERIMENTAL] Permite elegir el tamaño de pantalla desde settings.py.
+# ADVERTENCIA!: Dado que con el tamaño "LARGE" aumenta el tamaño del mapa,
+# el número de habitaciones (y entidades) por nivel aumenta también. Ello
+# tiene también un considerable impacto en el rendimieto del juego (debido
+# fundamentalmente al número de criaturas por nivel y las demandas para el
+# procesamiento del pathfinding de estas).
+# Opciones disponibles: "STANDARD" (80x44) o "LARGE" (100x55).
+SCREEN_MODE = "MEDIUM"
+
+_BASE_SCREEN = {"width": 80, "height": 44, "map_width": 80, "map_height": 36}
+_SCREEN_PRESETS = {
+    "STANDARD": {"width": 80, "height": 44},
+    "MEDIUM": {"width": 90, "height": 50},
+    "LARGE": {"width": 100, "height": 55},
+}
+_BASE_HUD = {
+    "stats_row": 37,
+    "bar_total_width": 15,
+    "hp_label_x": 1,
+    "hp_value_x": 5,
+    "sp_label_x": 12,
+    "sp_value_x": 16,
+    "combat_label_x": 20,
+    "combat_hit_x": 30,
+    "combat_def_x": 40,
+    "fortify_x": 20,
+    "dungeon_level_first": (60, 37),
+    "dungeon_level_other": (69, 37),
+    "message_log": {"x": 1, "y": 39, "width": 60, "height": 4},
+    "monster_panel": {
+        "x_left": 0,
+        "y": 0,
+        "width": 38,
+        "height": 36,
+        "player_threshold": 39,
+    },
+}
+
+
+def _compute_screen_config(mode: str) -> dict:
+    preset = _SCREEN_PRESETS.get(mode.upper(), _SCREEN_PRESETS["STANDARD"])
+    screen_width = int(preset["width"])
+    screen_height = int(preset["height"])
+
+    scale_x = screen_width / _BASE_SCREEN["width"]
+    scale_y = screen_height / _BASE_SCREEN["height"]
+
+    def sx(value: int) -> int:
+        return int(round(value * scale_x))
+
+    def sy(value: int) -> int:
+        return int(round(value * scale_y))
+
+    map_width = max(1, sx(_BASE_SCREEN["map_width"]))
+    map_height = max(1, sy(_BASE_SCREEN["map_height"]))
+
+    base_log = _BASE_HUD["message_log"]
+    log_width = max(10, min(screen_width - sx(base_log["x"]), sx(base_log["width"])))
+    log_height = max(3, sy(base_log["height"]))
+    log_y = min(sy(base_log["y"]), max(0, screen_height - log_height))
+
+    mp_base = _BASE_HUD["monster_panel"]
+    mp_width = max(12, sx(mp_base["width"]))
+    mp_height = max(6, min(screen_height, sy(mp_base["height"])))
+    mp_y = min(sy(mp_base["y"]), max(0, screen_height - mp_height))
+    mp_threshold = sx(mp_base["player_threshold"])
+    mp_x_left = sx(mp_base["x_left"])
+    mp_x_right = max(0, screen_width - mp_width - 1)
+
+    hud = {
+        "stats_row": sy(_BASE_HUD["stats_row"]),
+        "bar_total_width": max(1, sx(_BASE_HUD["bar_total_width"])),
+        "hp_label_x": sx(_BASE_HUD["hp_label_x"]),
+        "hp_value_x": sx(_BASE_HUD["hp_value_x"]),
+        "sp_label_x": sx(_BASE_HUD["sp_label_x"]),
+        "sp_value_x": sx(_BASE_HUD["sp_value_x"]),
+        "combat_label_x": sx(_BASE_HUD["combat_label_x"]),
+        "combat_hit_x": sx(_BASE_HUD["combat_hit_x"]),
+        "combat_def_x": sx(_BASE_HUD["combat_def_x"]),
+        "fortify_x": sx(_BASE_HUD["fortify_x"]),
+        "dungeon_level_first": (
+            sx(_BASE_HUD["dungeon_level_first"][0]),
+            sy(_BASE_HUD["dungeon_level_first"][1]),
+        ),
+        "dungeon_level_other": (
+            sx(_BASE_HUD["dungeon_level_other"][0]),
+            sy(_BASE_HUD["dungeon_level_other"][1]),
+        ),
+        "message_log": {
+            "x": sx(base_log["x"]),
+            "y": log_y,
+            "width": log_width,
+            "height": log_height,
+        },
+        "monster_panel": {
+            "x_left": mp_x_left,
+            "x_right": mp_x_right,
+            "y": mp_y,
+            "width": mp_width,
+            "height": mp_height,
+            "player_threshold": mp_threshold,
+        },
+    }
+
+    return {
+        "screen_width": screen_width,
+        "screen_height": screen_height,
+        "map_width": map_width,
+        "map_height": map_height,
+        "hud": hud,
+    }
+
+
+SCREEN_CONFIG = _compute_screen_config(SCREEN_MODE)
+SCREEN_WIDTH = SCREEN_CONFIG["screen_width"]
+SCREEN_HEIGHT = SCREEN_CONFIG["screen_height"]
+MAP_WIDTH = SCREEN_CONFIG["map_width"]
+MAP_HEIGHT = SCREEN_CONFIG["map_height"]
+HUD_LAYOUT = SCREEN_CONFIG["hud"]
+
 # -- GRAPHICS ------------------------------------------------
 # NOTA: cargas data/graphics/bob20x20.png con tcod.tileset.CHARMAP_CP437, así que cada casilla del PNG se asigna a un código CP437 y no a una tecla física del teclado.
 # Como la hoja tiene 16 columnas, el índice del tile se calcula index = x + y * 16 (tomando x y y desde 0, con x=0 en la primera columna y y=0 en la primera fila). Ese índice se usa para buscar el código Unicode real: codepoint = tcod.tileset.CHARMAP_CP437[index] y glyph = chr(codepoint).
@@ -61,7 +182,7 @@ if GRAPHIC_MODE == "hardcore":
 # -- Visual transitions ------------------------------------------------
 # Controla la animación de fundido al usar las escaleras.
 STAIR_TRANSITION_ENABLED = True
-STAIR_TRANSITION_STEPS = 12
+STAIR_TRANSITION_STEPS = 8
 STAIR_TRANSITION_FRAME_TIME = 0.03  # segundos entre fotogramas
 
 # -- Window options -----------------------------------------------------
@@ -222,15 +343,39 @@ PLAYER_STARTING_EQUIP_LIMITS = {
 WALL_STYLE = None
 
 # Parámetros experimentales para generate_dungeon_v3().
-DUNGEON_V3_MIN_ROOMS = 8
-DUNGEON_V3_MAX_ROOMS = 20
-DUNGEON_V3_ROOM_MIN_SIZE = 3
-DUNGEON_V3_ROOM_MAX_SIZE = 8
-DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 220
-DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
-DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
-DUNGEON_V3_EXTRA_CONNECTIONS = 3
-DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+if SCREEN_MODE == "STANDARD":
+    DUNGEON_V3_MIN_ROOMS = 8
+    DUNGEON_V3_MAX_ROOMS = 20
+    DUNGEON_V3_ROOM_MIN_SIZE = 3
+    DUNGEON_V3_ROOM_MAX_SIZE = 8
+    DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 220
+    DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
+    DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
+    DUNGEON_V3_EXTRA_CONNECTIONS = 3
+    DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+
+elif SCREEN_MODE == "MEDIUM":
+    DUNGEON_V3_MIN_ROOMS = 10
+    DUNGEON_V3_MAX_ROOMS = 28
+    DUNGEON_V3_ROOM_MIN_SIZE = 3
+    DUNGEON_V3_ROOM_MAX_SIZE = 8
+    DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 520
+    DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
+    DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
+    DUNGEON_V3_EXTRA_CONNECTIONS = 3
+    DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+
+elif SCREEN_MODE == "LARGE":
+    DUNGEON_V3_MIN_ROOMS = 15
+    DUNGEON_V3_MAX_ROOMS = 32
+    DUNGEON_V3_ROOM_MIN_SIZE = 3
+    DUNGEON_V3_ROOM_MAX_SIZE = 8
+    DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 620
+    DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
+    DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
+    DUNGEON_V3_EXTRA_CONNECTIONS = 3
+    DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.50
+
 # Las llaves las genera y coloca _ensure_keys_for_locked_doors(), de game_map.py
 DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR = {
     "white": 4, # Tiene que ser 4 o más, de lo contrario se generarán llaves en el nivel 1 (en la superficie)

@@ -1084,6 +1084,7 @@ class Engine:
     def render(self, console: Console) -> None:
 
         dt = self._compute_frame_dt()
+        hud = settings.HUD_LAYOUT
         has_wind = any(
             isinstance(effect, WindEffect) and getattr(effect, "sound_enabled", True)
             for effect in getattr(self.game_map, "ambient_effects", ())
@@ -1102,16 +1103,17 @@ class Engine:
             maximum_value=self.player.fighter.max_hp,
             current_stamina=self.player.fighter.stamina,
             max_stamina=self.player.fighter.max_stamina,
-            total_width=15,
+            layout=hud,
         )
 
         # Log de mensajes que se imprimen en pantalla
+        message_log_layout = hud["message_log"]
         self.message_log.render(
             console=console,
-            x=1,
-            y=39,
-            width=60,
-            height=4,
+            x=message_log_layout["x"],
+            y=message_log_layout["y"],
+            width=message_log_layout["width"],
+            height=message_log_layout["height"],
             name_colors=self._get_message_name_colors(),
         )
 
@@ -1120,13 +1122,13 @@ class Engine:
             render_functions.render_dungeon_level(
                 console=console,
                 dungeon_level="The Entrance",
-                location=(60, 37),
+                location=hud["dungeon_level_first"],
             )
         else: 
             render_functions.render_dungeon_level(
             console=console,
             dungeon_level=self.game_world.current_floor - 1,
-            location=(69, 37),
+            location=hud["dungeon_level_other"],
             )
         
         if self.tile_info_pause_active:
@@ -1156,13 +1158,14 @@ class Engine:
             render_functions.render_combat_mode(
                 console=console, 
                 hit=self.player.fighter.to_hit, 
-                defense=self.player.fighter.defense
+                defense=self.player.fighter.defense,
+                layout=hud,
             )
 
         # Fortify indicator
         #if self.player.fighter.can_fortify == True and self.player.fighter.fortified == True:
         if self.player.fighter.fortified == True:
-            #render_functions.render_fortify_indicator(console)
+            #render_functions.render_fortify_indicator(console, layout=hud)
             pass
 
 

@@ -39,22 +39,8 @@ def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
 
 def main() -> None:
 
-    # STANDARD
-    screen_width = 80
-    screen_heigth = 44
-
-    # EXPERIMENTAL
-    # screen_width = 100
-    # #screen_heigth = 55
-    # screen_heigth = 55
-
-    #screen_width = 120
-    #screen_heigth = 54
-    
-    #screen_width = 95
-    #screen_heigth = 51
-    #screen_width = 70
-    #screen_heigth = 45
+    screen_width = settings.SCREEN_WIDTH
+    screen_height = settings.SCREEN_HEIGHT
 
     tileset = settings.tileset  
 
@@ -101,7 +87,7 @@ def main() -> None:
                 x, y = position.x, position.y  # type: ignore[attr-defined]
             except Exception:
                 return False
-        return 0 <= x < screen_width and 0 <= y < screen_heigth
+        return 0 <= x < screen_width and 0 <= y < screen_height
 
     def _refresh_mouse_inside_from_state() -> None:
         nonlocal mouse_inside_window
@@ -116,14 +102,14 @@ def main() -> None:
 
     with tcod.context.new_terminal(
         screen_width,
-        screen_heigth,
+        screen_height,
         tileset=tileset,
         title=_("The Seeker"),
         vsync=True,
         sdl_window_flags=window_flags,
     ) as context:
-        #root_console = tcod.Console(screen_width, screen_heigth, order="F")   # DEPRECATED
-        root_console = tcod.console.Console(screen_width, screen_heigth, order="F")
+        #root_console = tcod.Console(screen_width, screen_height, order="F")   # DEPRECATED
+        root_console = tcod.console.Console(screen_width, screen_height, order="F")
         try:
             while True:
                 root_console.clear()

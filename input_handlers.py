@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 from components.ai import Dummy
 from components.fighter import BreakableWallFighter
+import settings
 from settings import DEBUG_MODE
 
 MOVE_KEYS = {
@@ -582,21 +583,23 @@ class CombatControlHandler(AskUserEventHandler):
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
-        
-        if self.engine.player.x <= 39:
-            x = 42
+
+        layout = settings.HUD_LAYOUT["monster_panel"]
+        width = min(layout["width"], console.width)
+        height = min(layout["height"], console.height)
+        y = min(layout["y"], max(0, console.height - height))
+
+        # Place panel on the opposite side of the player for readability.
+        if self.engine.player.x <= layout["player_threshold"]:
+            x = min(layout["x_right"], max(0, console.width - width))
         else:
-            x = 0
-
-        y = 0
-
-        width = 38
+            x = max(0, min(layout["x_left"], console.width - width))
 
         console.draw_frame(
             x=x,
             y=y,
             width=width,
-            height=36,
+            height=height,
             title=self.TITLE,
             # Para que el fondo sea transparente o no:
             clear=True,

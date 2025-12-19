@@ -37,8 +37,8 @@ if TYPE_CHECKING:
 
 # console.draw_semigraphics no aplica ningún escalado automático: espera un array con 
 # tamaño (alto, ancho, RGB) que ya tenga el doble de resolución que el número de tiles 
-# del Console. Con la terminal actual (main.py (line 15) fija 80×44 tiles), la imagen 
-# que le pases desde setup_game.py (line 41) debería medir 160×88 píxeles
+# del Console. Con la terminal actual (controlada en settings.SCREEN_MODE, por defecto 80×44 tiles),
+# la imagen que le pases desde setup_game.py (line 41) debería medir 160×88 píxeles (200×110 si usas 100×55).
 
 # Load the background image and remove the alpha channel.
 #BACKGROUND_IMAGE = tcod.image.load("data/graphics/menu_background.png")[:, :, :3]
@@ -128,17 +128,8 @@ def _add_starting_items(player: "Actor") -> None:
 def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
     
-    # STANDARD
-    map_width = 80
-    map_height = 36
-
-    # EXPERIMENTAL
-    # map_width = 100
-    # #map_height = 55
-    # map_height = 44
-    
-    #map_width = 70
-    #map_height = 44
+    map_width = settings.MAP_WIDTH
+    map_height = settings.MAP_HEIGHT
 
     # Valores originales
     #room_max_size = 10

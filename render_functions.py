@@ -214,7 +214,12 @@ def _render_tile_info_block(
 
 
 def render_bar(
-    console: Console, current_value: int, maximum_value: int, current_stamina: int, max_stamina: int, total_width: int
+    console: Console,
+    current_value: int,
+    maximum_value: int,
+    current_stamina: int,
+    max_stamina: int,
+    layout: dict,
 ) -> None:
     #bar_width = int(float(current_value) / maximum_value * total_width)
 
@@ -243,46 +248,43 @@ def render_bar(
     #console.print(
     #    x=2, y=37, string=f"HP: {current_value}/{maximum_value}", fg=hp_color
     #)
-    console.print(
-        x=1, y=37, string="HP: ", fg=color.bar_text
-    )
+    stats_y = layout["stats_row"]
+
+    console.print(x=layout["hp_label_x"], y=stats_y, string="HP: ", fg=color.bar_text)
 
     console.print(
-        x=5, y=37, string=f"{current_value}/{maximum_value}", fg=hp_color
+        x=layout["hp_value_x"],
+        y=stats_y,
+        string=f"{current_value}/{maximum_value}",
+        fg=hp_color,
     )
 
     #console.print(
     #    x=13, y=37, string=f"ST: {current_stamina}/{max_stamina}", fg=stamina_color
     #)
 
-    console.print(
-        x=12, y=37, string="SP: ", fg=color.bar_text
-    )
+    console.print(x=layout["sp_label_x"], y=stats_y, string="SP: ", fg=color.bar_text)
 
     console.print(
-        x=16, y=37, string=f"{current_stamina}/{max_stamina}", fg=stamina_color
+        x=layout["sp_value_x"],
+        y=stats_y,
+        string=f"{current_stamina}/{max_stamina}",
+        fg=stamina_color,
     )
 
 
-def render_combat_mode(console: Console, hit, defense):
-    console.print(
-        x=20, y=37, string="IN MELEE", fg=color.red
-    )
-    console.print(
-        x=30, y=37, string=f"To-Hit: {hit}", fg=color.white
-    )
-    console.print(
-        x=40, y=37, string=f"Def: {defense}", fg=color.white
-    )
+def render_combat_mode(console: Console, hit, defense, layout: dict):
+    y = layout["stats_row"]
+    console.print(x=layout["combat_label_x"], y=y, string="IN MELEE", fg=color.red)
+    console.print(x=layout["combat_hit_x"], y=y, string=f"To-Hit: {hit}", fg=color.white)
+    console.print(x=layout["combat_def_x"], y=y, string=f"Def: {defense}", fg=color.white)
     # console.print(
     #     x=47, y=37, string=f"Pow: {power}", fg=color.white
     # )
 
 
-def render_fortify_indicator(console: Console):
-    console.print(
-        x=20, y=37, string=f"Press WAIT: +1 Def ", fg=color.orange
-    )
+def render_fortify_indicator(console: Console, layout: dict):
+    console.print(x=layout["fortify_x"], y=layout["stats_row"], string="Press WAIT: +1 Def ", fg=color.orange)
 
 
 def render_dungeon_level(
