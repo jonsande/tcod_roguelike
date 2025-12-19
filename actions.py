@@ -494,8 +494,8 @@ class ThrowItemAction(Action):
             stealth_allowed = attacking_from_hide or target.fighter.aggravated == False
             if stealth_allowed:
     
-                hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
-                hit_dice = round(hit_dice) + self.entity.fighter.luck
+                hit_dice = random.randint(1, 6) + self.entity.fighter.stealth + self.entity.fighter.to_hit + self.entity.fighter.luck
+                hit_dice = round(hit_dice)
                 
                 if hit_dice > target.fighter.defense - self.entity.fighter.stealth:
                     hits = True
@@ -1048,6 +1048,7 @@ class MeleeAction(ActionWithDirection):
         # Con cada ataque gastamos 1 de stamina
         self.entity.fighter.stamina -= 1
 
+        # CÁLCULO DE IMPACTOS
         hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
         hit_dice = round(hit_dice)
 

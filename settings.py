@@ -1041,7 +1041,7 @@ ENEMY_SPAWN_RULES = {
     "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 4, "weight_progression": [(4, 8), (5, 15), (6, 25), (11, 0)]},
-    "orc_servant": {"min_floor": 2, "weight_progression": [(2, 100), (3, 6), (4, 10), (6, 35), (9, 0)]},
+    "orc_servant": {"min_floor": 2, "weight_progression": [(2, 4), (3, 6), (4, 10), (6, 35), (9, 0)]},
     "true_orc": {"min_floor": 6, "weight_progression": [(7, 5), (8, 20), (12, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
