@@ -440,12 +440,7 @@ class ThrowItemAction(Action):
         if self.entity.distance(dest_x, dest_y) > max_distance:
             raise exceptions.Impossible("That target is too far away.")
 
-        path = self._compute_throw_path(self.entity.x, self.entity.y, dest_x, dest_y)
-        self._animate_throw(path)
-
-        target = self.target_actor
-
-        # Stamina check
+        # Stamina check before triggering any animations
         if self.entity.fighter.stamina <= 0:
             if self.entity is self.engine.player:
                 self.engine.message_log.add_message("You are exhausted!", color.red)
@@ -453,6 +448,11 @@ class ThrowItemAction(Action):
             else:
                 self.engine.message_log.add_message(f"{self.entity.name} is exhausted!", color.red)
             raise exceptions.Impossible("")
+
+        path = self._compute_throw_path(self.entity.x, self.entity.y, dest_x, dest_y)
+        self._animate_throw(path)
+
+        target = self.target_actor
 
         if self._is_potion(self.item):
             self._handle_potion_throw(target, dest_x, dest_y)
