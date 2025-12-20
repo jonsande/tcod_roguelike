@@ -1854,6 +1854,19 @@ class AdventurerAI(BaseAI):
             return self._wander()
 
         dest_x, dest_y = self.path[0]
+        if max(abs(dest_x - self.entity.x), abs(dest_y - self.entity.y)) > 1:
+            self.path = self._build_path(self.target) if self.target else []
+            self.stalled_turns = 0
+            if not self.path:
+                self.target = None
+                self._handle_player_contact()
+                return self._wander()
+            dest_x, dest_y = self.path[0]
+            if max(abs(dest_x - self.entity.x), abs(dest_y - self.entity.y)) > 1:
+                self.target = None
+                self.path = []
+                self._handle_player_contact()
+                return self._wander()
         if (dest_x, dest_y) == (self.entity.x, self.entity.y):
             self.path.pop(0)
             self.stalled_turns = 0
@@ -1927,44 +1940,7 @@ class AdventurerAI(BaseAI):
         return best
 
     def _build_path(self, destination: Tuple[int, int]) -> List[Tuple[int, int]]:
-        gm = self.engine.game_map
-        dest_x, dest_y = destination
-        if not gm.in_bounds(dest_x, dest_y):
-            return []
-
-        fighter = getattr(self.entity, "fighter", None)
-        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
-        can_open_doors = getattr(fighter, "can_open_doors", False)
-
-        cost = np.array(gm.tiles["walkable"], dtype=np.int8)
-        cost = np.where(cost, 1, 0).astype(np.int16)
-        if can_pass_closed_doors or can_open_doors:
-            door_mask = gm.tiles["dark"]["ch"] == tile_types.closed_door["dark"]["ch"]
-            cost[door_mask] = 1
-        # Evita calcular rutas por casillas ocupadas por entidades bloqueantes como cofres.
-        for entity in getattr(gm, "entities", []):
-            if entity is self.entity:
-                continue
-            if not getattr(entity, "blocks_movement", False):
-                continue
-            ex = getattr(entity, "x", None)
-            ey = getattr(entity, "y", None)
-            if ex is None or ey is None or not gm.in_bounds(ex, ey):
-                continue
-            name = getattr(entity, "name", "")
-            if (
-                name
-                and name.lower() == "door"
-                and (can_pass_closed_doors or can_open_doors)
-            ):
-                continue
-            cost[ex, ey] = 0
-
-        graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
-        pathfinder = tcod.path.Pathfinder(graph)
-        pathfinder.add_root((self.entity.x, self.entity.y))
-        path: List[List[int]] = pathfinder.path_to((dest_x, dest_y))[1:].tolist()
-        return [(step[0], step[1]) for step in path]
+        return self.get_path_to(destination[0], destination[1], ignore_senses=True)
 
     def _wander(self) -> None:
         directions = [
@@ -1999,6 +1975,11 @@ class AdventurerAI(BaseAI):
             self._combat_target = None
             self._handle_player_contact()
             return WaitAction(self.entity).perform()
+
+        dx = target_actor.x - self.entity.x
+        dy = target_actor.y - self.entity.y
+        if max(abs(dx), abs(dy)) <= 1:
+            return BumpAction(self.entity, dx, dy).perform()
 
         destination = (target_actor.x, target_actor.y)
         if self._combat_target != destination or not self._combat_path:
@@ -2169,6 +2150,9 @@ class AdventurerAI(BaseAI):
         self._aggressor = attacker
         self._combat_path = []
         self._combat_target = None
+        self.path = []
+        self.target = None
+        self.stalled_turns = 0
         self.waiting_campfire = None
         self._player_contact = False
 
