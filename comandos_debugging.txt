@@ -131,6 +131,14 @@ print(reachable)  # lista de centros de las salas accesibles sin llaves.
 
 self.engine.game_world.debug_print_key_locations()
 
+=== Estructura de ramas (branches) ===
+
+self.engine.game_world.debug_print_branch_structure()
+self.engine.game_world.debug_print_player_branch_location()
+
+Nota: en cavernas las escaleras de rama pueden colocarse en cualquier casilla transitable si
+BRANCH_CAVERN_STAIRS_ANYWHERE = True (settings.py). Si es False, se intentará colocar sólo en salas.
+
 
 === Localización de El Artefacto ===
 
@@ -195,8 +203,6 @@ Durante una sesión, ejecuta print(procgen.report_generation_stats()) (o pasa "i
 
 
 Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
-
-
 
 
 

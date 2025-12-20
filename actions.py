@@ -289,10 +289,12 @@ class TakeStairsAction(Action):
         Take the stairs, if any exist at the entity's location.
         """
 
-        at_downstairs = (
-            self.engine.game_map.downstairs_location
-            and (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location
+        stairs_location = (
+            (self.entity.x, self.entity.y)
+            if self.engine.game_map.is_downstairs_location(self.entity.x, self.entity.y)
+            else None
         )
+        at_downstairs = bool(stairs_location)
         at_upstairs = (
             self.engine.game_map.upstairs_location
             and (self.entity.x, self.entity.y) == self.engine.game_map.upstairs_location
@@ -335,10 +337,12 @@ class TakeStairsAction(Action):
             # Reinicia el contador para la generación de monstruos
             self.engine.spawn_monsters_counter = 0
 
-            if self.engine.game_world.current_floor >= len(self.engine.game_world.levels):
+            if not self.engine.game_world.get_downstairs_destination(stairs_location):
                 raise exceptions.Impossible("You can't descend any further.")
 
-            if not self.engine.perform_floor_transition(self.engine.game_world.advance_floor):
+            if not self.engine.perform_floor_transition(
+                lambda: self.engine.game_world.advance_floor(stairs_location=stairs_location)
+            ):
                 raise exceptions.Impossible("You can't descend any further.")
 
             self.engine.message_log.add_message(

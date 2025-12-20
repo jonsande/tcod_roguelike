@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set, Callable, Union
+from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set, Callable, Union, Dict
 
 import numpy as np  # type: ignore
 from tcod.console import Console
@@ -67,8 +67,16 @@ class GameMapTown:
             (width, height), fill_value=False, order="F"
         )  # Tiles the player has seen before
 
-        self.downstairs_location = (0, 0)
+        self.downstairs_location = None
         self.upstairs_location = None
+        self.downstairs_locations: List[Tuple[int, int]] = []
+        self.downstairs_exits: Dict[Tuple[int, int], "GameMap"] = {}
+        self.upstairs_target: Optional["GameMap"] = None
+        self.branch_id = 0
+        self.branch_depth = 0
+        self.branch_entry_floor = 0
+        self.branch_label = ""
+        self.effective_floor = 1
         self.center_rooms: List[Tuple[int, int]] = []
 
     @property
@@ -118,6 +126,20 @@ class GameMapTown:
                 return actor
 
         return None
+
+    def get_downstairs_locations(self) -> List[Tuple[int, int]]:
+        if self.downstairs_locations:
+            return list(self.downstairs_locations)
+        if self.downstairs_location:
+            return [self.downstairs_location]
+        return []
+
+    def get_primary_downstairs(self) -> Optional[Tuple[int, int]]:
+        locations = self.get_downstairs_locations()
+        return locations[0] if locations else None
+
+    def is_downstairs_location(self, x: int, y: int) -> bool:
+        return (x, y) in self.get_downstairs_locations()
 
     def in_bounds(self, x: int, y: int) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
@@ -214,7 +236,7 @@ class GameMapTown:
         return obstructions
 
     def _is_stairs_tile(self, x: int, y: int) -> bool:
-        if self.downstairs_location and (x, y) == self.downstairs_location:
+        if self.is_downstairs_location(x, y):
             return True
         if self.upstairs_location and (x, y) == self.upstairs_location:
             return True
@@ -297,8 +319,16 @@ class GameMap:
 
         #self.detectable = np.full((width, height), fill_value=False, order="F")
 
-        self.downstairs_location = (0, 0)
+        self.downstairs_location = None
         self.upstairs_location = None
+        self.downstairs_locations: List[Tuple[int, int]] = []
+        self.downstairs_exits: Dict[Tuple[int, int], "GameMap"] = {}
+        self.upstairs_target: Optional["GameMap"] = None
+        self.branch_id = 0
+        self.branch_depth = 0
+        self.branch_entry_floor = 0
+        self.branch_label = ""
+        self.effective_floor = 1
         self.center_rooms: List[Tuple[int, int]] = []
         self.room_tiles_map: dict[Tuple[int, int], List[Tuple[int, int]]] = {}
         #self.downstairs_location = []
@@ -350,6 +380,20 @@ class GameMap:
                 return actor
 
         return None
+
+    def get_downstairs_locations(self) -> List[Tuple[int, int]]:
+        if self.downstairs_locations:
+            return list(self.downstairs_locations)
+        if self.downstairs_location:
+            return [self.downstairs_location]
+        return []
+
+    def get_primary_downstairs(self) -> Optional[Tuple[int, int]]:
+        locations = self.get_downstairs_locations()
+        return locations[0] if locations else None
+
+    def is_downstairs_location(self, x: int, y: int) -> bool:
+        return (x, y) in self.get_downstairs_locations()
     
     def in_bounds(self, x: int, y: int) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
@@ -502,7 +546,7 @@ class GameMap:
         return obstructions
 
     def _is_stairs_tile(self, x: int, y: int) -> bool:
-        if self.downstairs_location and (x, y) == self.downstairs_location:
+        if self.is_downstairs_location(x, y):
             return True
         if self.upstairs_location and (x, y) == self.upstairs_location:
             return True
@@ -596,9 +640,127 @@ class GameWorld:
 
         self.current_floor = 1
         self.levels: List[GameMap] = []
-        self._debug_key_positions: List[Tuple[str, int, KeyLocation]] = []
+        self.branches: Dict[int, List[GameMap]] = {}
+        self.branch_entries: Dict[int, int] = {}
+        self.branch_lengths: Dict[int, int] = {}
+        self._debug_key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
         self._generate_world()
         self._sync_ambient_sound()
+
+    def _assign_branch_metadata(
+        self,
+        game_map: GameMap,
+        *,
+        branch_id: int,
+        branch_depth: int,
+        entry_floor: int,
+        label: str,
+        effective_floor: int,
+    ) -> None:
+        game_map.branch_id = branch_id
+        game_map.branch_depth = branch_depth
+        game_map.branch_entry_floor = entry_floor
+        game_map.branch_label = label
+        game_map.effective_floor = effective_floor
+
+    def _init_downstairs_data(self, game_map: GameMap) -> None:
+        game_map.downstairs_locations = []
+        game_map.downstairs_exits = {}
+        if game_map.downstairs_location:
+            game_map.downstairs_locations.append(game_map.downstairs_location)
+
+    def _select_branch_plan(self) -> List[Dict[str, int]]:
+        if settings.TOTAL_FLOORS <= 3:
+            return []
+        max_branches = max(0, int(getattr(settings, "MAX_SECONDARY_BRANCHES", 0)))
+        if max_branches <= 0:
+            return []
+        candidates = list(getattr(settings, "BRANCH_FLOORS", []) or [])
+        candidates = [floor for floor in candidates if 1 < floor < settings.TOTAL_FLOORS]
+        fixed_floors = set(getattr(settings, "FIXED_DUNGEON_LAYOUTS", {}).keys())
+        candidates = [floor for floor in candidates if floor not in fixed_floors]
+        if not candidates:
+            return []
+        candidates = candidates[:max_branches]
+
+        min_len = max(1, int(getattr(settings, "BRANCH_MIN_LENGTH", 1)))
+        max_len = max(min_len, int(getattr(settings, "BRANCH_MAX_LENGTH", min_len)))
+        plan: List[Dict[str, int]] = []
+        for idx, floor in enumerate(candidates, start=1):
+            length = random.randint(min_len, max_len)
+            plan.append({"id": idx, "entry_floor": floor, "length": length})
+        return plan
+
+    def _resolve_branch_generator(self, name: str):
+        from generators import generate_cavern, generate_dungeon_v3
+        name = str(name).strip().lower()
+        if name == "cavern":
+            return generate_cavern
+        if name == "dungeon_v3":
+            return generate_dungeon_v3
+        return None
+
+    def _select_branch_generator(self) -> Callable:
+        choices = getattr(settings, "BRANCH_GENERATORS", None) or []
+        resolved = [self._resolve_branch_generator(name) for name in choices]
+        resolved = [gen for gen in resolved if gen is not None]
+        if resolved:
+            return random.choice(resolved)
+        from generators import generate_dungeon_v3
+        return generate_dungeon_v3
+
+    def _place_branch_downstairs(self, game_map: GameMap) -> Optional[Tuple[int, int]]:
+        if getattr(game_map, "is_cavern", False) and getattr(settings, "BRANCH_CAVERN_STAIRS_ANYWHERE", True):
+            max_attempts = 200
+            for _ in range(max_attempts):
+                x = random.randint(1, game_map.width - 2)
+                y = random.randint(1, game_map.height - 2)
+                if not game_map.in_bounds(x, y):
+                    continue
+                if not game_map.tiles["walkable"][x, y]:
+                    continue
+                if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+                    continue
+                if game_map.is_downstairs_location(x, y):
+                    continue
+                if any(entity.x == x and entity.y == y for entity in game_map.entities):
+                    continue
+                if game_map.get_blocking_entity_at_location(x, y):
+                    continue
+                game_map.tiles[(x, y)] = tile_types.down_stairs
+                return (x, y)
+            return None
+
+        room_tiles_map = getattr(game_map, "room_tiles_map", {}) or {}
+        room_tiles = [coord for tiles in room_tiles_map.values() for coord in tiles]
+        if not room_tiles:
+            return None
+        random.shuffle(room_tiles)
+
+        for x, y in room_tiles:
+            if not game_map.in_bounds(x, y):
+                continue
+            if not game_map.tiles["walkable"][x, y]:
+                continue
+            if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
+                continue
+            if game_map.is_downstairs_location(x, y):
+                continue
+            if any(entity.x == x and entity.y == y for entity in game_map.entities):
+                continue
+            if game_map.get_blocking_entity_at_location(x, y):
+                continue
+            game_map.tiles[(x, y)] = tile_types.down_stairs
+            return (x, y)
+        return None
+
+    def _ensure_branch_stairs_access(self, game_map: GameMap, stairs: Tuple[int, int]) -> None:
+        entry_point = game_map.upstairs_location
+        if not entry_point:
+            return
+        from procgen import ensure_path_between, guarantee_downstairs_access
+        if not ensure_path_between(game_map, entry_point, stairs):
+            guarantee_downstairs_access(game_map, entry_point, stairs)
 
     def _generate_world(self) -> None:
         from generators import (
@@ -609,13 +771,23 @@ class GameWorld:
             generate_the_library_map,
             generate_three_doors_map,
         )
+        from procgen import set_generation_floor_context
+
+        self.levels = []
+        self.branches = {}
+        self.branch_entries = {}
+        self.branch_lengths = {}
+        branch_plan = self._select_branch_plan()
 
         keys_placed: Set[str] = set()
-        key_positions: List[Tuple[str, int, KeyLocation]] = []
+        key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
+
         for floor in range(1, settings.TOTAL_FLOORS + 1):
             place_player = floor == 1
             place_downstairs = floor < settings.TOTAL_FLOORS
             generator, kwargs = self._select_generator(floor)
+            label = f"M-{floor}"
+            set_generation_floor_context(label)
             game_map = generator(
                 **kwargs,
                 map_width=self.map_width,
@@ -626,6 +798,17 @@ class GameWorld:
                 place_downstairs=place_downstairs,
                 upstairs_location=None,
             )
+            set_generation_floor_context(None)
+
+            self._assign_branch_metadata(
+                game_map,
+                branch_id=0,
+                branch_depth=0,
+                entry_floor=floor,
+                label=label,
+                effective_floor=floor,
+            )
+            self._init_downstairs_data(game_map)
 
             if place_player:
                 self.engine.game_map = game_map
@@ -635,12 +818,104 @@ class GameWorld:
 
             locked_colors = getattr(game_map, "locked_door_colors", set())
             if locked_colors:
-                self._ensure_keys_for_locked_doors(floor, locked_colors, keys_placed, key_positions)
+                self._ensure_keys_for_locked_doors(
+                    floor, locked_colors, keys_placed, key_positions
+                )
+
+        # Enlazar salidas del tronco principal.
+        for idx in range(len(self.levels) - 1):
+            current_map = self.levels[idx]
+            next_map = self.levels[idx + 1]
+            main_stairs = current_map.downstairs_location
+            if main_stairs:
+                current_map.downstairs_exits[main_stairs] = next_map
+                next_map.upstairs_target = current_map
+
+        # Generar ramas secundarias.
+        for entry in branch_plan:
+            branch_id = entry["id"]
+            entry_floor = entry["entry_floor"]
+            length = entry["length"]
+            entry_map = self.levels[entry_floor - 1]
+
+            branch_maps: List[GameMap] = []
+            previous_map: GameMap = entry_map
+            for depth in range(1, length + 1):
+                generator = self._select_branch_generator()
+                effective_floor = entry_floor + depth
+                label = f"B{branch_id}-{depth}"
+                place_downstairs = depth < length
+
+                set_generation_floor_context(label)
+                if generator is generate_dungeon_v3:
+                    prev_lock_chance = settings.DUNGEON_V3_LOCKED_DOOR_CHANCE
+                    settings.DUNGEON_V3_LOCKED_DOOR_CHANCE = 0.0
+                else:
+                    prev_lock_chance = None
+
+                game_map = generator(
+                    map_width=self.map_width,
+                    map_height=self.map_height,
+                    engine=self.engine,
+                    floor_number=effective_floor,
+                    place_player=False,
+                    place_downstairs=place_downstairs,
+                    upstairs_location=None,
+                )
+
+                if prev_lock_chance is not None:
+                    settings.DUNGEON_V3_LOCKED_DOOR_CHANCE = prev_lock_chance
+                set_generation_floor_context(None)
+
+                self._assign_branch_metadata(
+                    game_map,
+                    branch_id=branch_id,
+                    branch_depth=depth,
+                    entry_floor=entry_floor,
+                    label=label,
+                    effective_floor=effective_floor,
+                )
+                self._init_downstairs_data(game_map)
+
+                game_map.upstairs_target = previous_map
+                if previous_map is not entry_map:
+                    if previous_map.downstairs_location:
+                        previous_map.downstairs_exits[previous_map.downstairs_location] = game_map
+
+                branch_maps.append(game_map)
+                previous_map = game_map
+
+            if branch_maps:
+                branch_stairs = self._place_branch_downstairs(entry_map)
+                if branch_stairs:
+                    self.branches[branch_id] = branch_maps
+                    self.branch_entries[branch_id] = entry_floor
+                    self.branch_lengths[branch_id] = len(branch_maps)
+                    entry_map.downstairs_locations.append(branch_stairs)
+                    entry_map.downstairs_exits[branch_stairs] = branch_maps[0]
+                    self._ensure_branch_stairs_access(entry_map, branch_stairs)
+                    branch_maps[0].upstairs_target = entry_map
+                elif settings.DEBUG_MODE:
+                    print(f"DEBUG: No se pudo colocar escalera de rama en M-{entry_floor}.")
 
         self._debug_key_positions = key_positions
         self.current_floor = 1
         if settings.DEBUG_MODE:
             self.debug_print_key_locations()
+            self.debug_print_branch_structure()
+
+    def _get_floor_label(self, floor: Union[int, str]) -> str:
+        if isinstance(floor, str):
+            return floor
+        if isinstance(floor, int) and 1 <= floor <= len(self.levels):
+            label = getattr(self.levels[floor - 1], "branch_label", None)
+            return label or str(floor)
+        return str(floor)
+
+    def _iter_all_maps(self) -> Iterator[GameMap]:
+        yield from self.levels
+        for branch_maps in self.branches.values():
+            yield from branch_maps
 
     def debug_print_key_locations(self) -> None:
         """Imprime en consola las llaves generadas y su ubicación por piso."""
@@ -648,15 +923,15 @@ class GameWorld:
         seen = {(color, floor, pos) for color, floor, pos in positions}
 
         # Añadimos cualquier llave que exista actualmente en los mapas, por si se generaron fuera del registro inicial.
-        for idx, game_map in enumerate(self.levels):
-            floor = idx + 1
+        for game_map in self._iter_all_maps():
+            floor_label = getattr(game_map, "branch_label", None) or "?"
             for entity in game_map.entities:
                 if isinstance(entity, Item):
                     id_name = getattr(entity, "id_name", "")
                     if id_name.endswith("_key"):
                         color = id_name.replace("_key", "")
                         pos = (entity.x, entity.y)
-                        entry = (color, floor, pos)
+                        entry = (color, floor_label, pos)
                         if entry not in seen:
                             positions.append(entry)
                             seen.add(entry)
@@ -667,14 +942,44 @@ class GameWorld:
 
         print("DEBUG: Llaves generadas:")
         for color, floor, pos in positions:
+            floor_label = self._get_floor_label(floor)
             if isinstance(pos, tuple):
                 location_desc = f"en {pos}"
             else:
                 location_desc = pos
-            print(f"  {color} key -> piso {floor} {location_desc}")
+            print(f"  {color} key -> piso {floor_label} {location_desc}")
 
         # Actualizamos el registro interno para futuras llamadas.
         self._debug_key_positions = positions
+
+    def debug_print_branch_structure(self) -> None:
+        """Imprime en consola la estructura de ramas generadas."""
+        if not self.branches:
+            print("DEBUG: No hay ramas secundarias en este mundo.")
+            return
+
+        print("DEBUG: Ramas secundarias:")
+        for branch_id, maps in sorted(self.branches.items()):
+            entry_floor = self.branch_entries.get(branch_id, "?")
+            length = self.branch_lengths.get(branch_id, len(maps))
+            labels = [getattr(game_map, "branch_label", "?") for game_map in maps]
+            labels_str = ", ".join(labels) if labels else "sin niveles"
+            print(
+                f"  B{branch_id}: entrada en piso M-{entry_floor}, longitud {length}, niveles: {labels_str}"
+            )
+
+    def debug_print_player_branch_location(self) -> None:
+        """Imprime en consola la rama y el nivel actual del jugador."""
+        current_map = self.engine.game_map
+        label = getattr(current_map, "branch_label", "?")
+        effective = getattr(current_map, "effective_floor", "?")
+        if getattr(current_map, "branch_id", 0) == 0:
+            print(f"DEBUG: Jugador en rama principal ({label}), nivel efectivo {effective}.")
+        else:
+            entry_floor = getattr(current_map, "branch_entry_floor", "?")
+            print(
+                f"DEBUG: Jugador en rama secundaria {label} (entrada M-{entry_floor}), nivel efectivo {effective}."
+            )
 
     def _sync_ambient_sound(self) -> None:
         ambient_sound.play_for_floor(self.current_floor)
@@ -731,14 +1036,24 @@ class GameWorld:
         # El generador estándar es generate_dungeon_v3.
         return generate_dungeon_v3, {}
 
-    def _find_spawn_location(self, game_map: GameMap, *, prefer_downstairs: bool = False) -> Tuple[int, int]:
+    def _find_spawn_location(
+        self,
+        game_map: GameMap,
+        *,
+        prefer_downstairs: bool = False,
+        prefer_location: Optional[Tuple[int, int]] = None,
+    ) -> Tuple[int, int]:
         """Return a valid spawn location for entering an existing floor."""
         def is_valid(coord: Tuple[int, int]) -> bool:
             x, y = coord
             return game_map.in_bounds(x, y) and game_map.tiles["walkable"][x, y]
 
-        if prefer_downstairs and game_map.downstairs_location and is_valid(game_map.downstairs_location):
-            return game_map.downstairs_location
+        if prefer_location and is_valid(prefer_location):
+            return prefer_location
+
+        primary_downstairs = game_map.get_primary_downstairs()
+        if prefer_downstairs and primary_downstairs and is_valid(primary_downstairs):
+            return primary_downstairs
 
         if game_map.upstairs_location and is_valid(game_map.upstairs_location):
             return game_map.upstairs_location
@@ -751,26 +1066,39 @@ class GameWorld:
         # Fallback to the map center if no walkable tile was found.
         return game_map.width // 2, game_map.height // 2
 
+    def get_downstairs_destination(
+        self, stairs_location: Optional[Tuple[int, int]]
+    ) -> Optional[GameMap]:
+        current_map = self.engine.game_map
+        if stairs_location is None:
+            stairs_location = current_map.get_primary_downstairs()
+        if not stairs_location:
+            return None
+        return getattr(current_map, "downstairs_exits", {}).get(stairs_location)
+
     def advance_floor(
         self,
+        *,
+        stairs_location: Optional[Tuple[int, int]] = None,
         spawn_selector: Optional[Callable[[GameMap], Tuple[int, int]]] = None,
     ) -> bool:
         """Move the player to the next pre-generated floor, if available.
 
+        `stairs_location` selects which downstairs to use when multiple exist.
         `spawn_selector`, when provided, chooses the coordinates where the player will
         appear on the target map. Defaults to the standard spawn logic.
         """
-        if self.current_floor >= len(self.levels):
+        next_map = self.get_downstairs_destination(stairs_location)
+        if not next_map:
             return False
 
-        self.current_floor += 1
-        next_map = self.levels[self.current_floor - 1]
         if spawn_selector:
             spawn_x, spawn_y = spawn_selector(next_map)
         else:
             spawn_x, spawn_y = self._find_spawn_location(next_map)
         self.engine.player.place(spawn_x, spawn_y, next_map)
         self.engine.game_map = next_map
+        self.current_floor = getattr(next_map, "effective_floor", self.current_floor)
         self._update_center_rooms(next_map)
         self.engine.update_fov()
         self._sync_ambient_sound()
@@ -778,14 +1106,22 @@ class GameWorld:
 
     def retreat_floor(self) -> bool:
         """Move the player to the previous pre-generated floor, if available."""
-        if self.current_floor <= 1:
+        current_map = self.engine.game_map
+        previous_map = getattr(current_map, "upstairs_target", None)
+        if previous_map is None:
             return False
 
-        self.current_floor -= 1
-        previous_map = self.levels[self.current_floor - 1]
-        spawn_x, spawn_y = self._find_spawn_location(previous_map, prefer_downstairs=True)
+        return_location = None
+        for coord, target in getattr(previous_map, "downstairs_exits", {}).items():
+            if target is current_map:
+                return_location = coord
+                break
+        spawn_x, spawn_y = self._find_spawn_location(
+            previous_map, prefer_downstairs=True, prefer_location=return_location
+        )
         self.engine.player.place(spawn_x, spawn_y, previous_map)
         self.engine.game_map = previous_map
+        self.current_floor = getattr(previous_map, "effective_floor", self.current_floor)
         self._update_center_rooms(previous_map)
         self.engine.update_fov()
         self._sync_ambient_sound()
@@ -853,7 +1189,7 @@ class GameWorld:
                 continue
             if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
                 continue
-            if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+            if game_map.is_downstairs_location(x, y):
                 continue
             if game_map.get_blocking_entity_at_location(x, y):
                 continue
@@ -958,6 +1294,10 @@ class GameWorld:
             if not game_map.in_bounds(x, y):
                 continue
             if not game_map.tiles["walkable"][x, y]:
+                continue
+            if game_map.is_downstairs_location(x, y):
+                continue
+            if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
                 continue
             if game_map.get_blocking_entity_at_location(x, y):
                 continue

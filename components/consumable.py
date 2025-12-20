@@ -1057,7 +1057,7 @@ class DescendScrollConsumable(ScrollConsumable):
     def _activate_scroll(self, action: actions.ItemAction) -> Optional[Dict[str, object]]:
         consumer = action.entity
         game_world = self.engine.game_world
-        if game_world.current_floor >= len(game_world.levels):
+        if not game_world.get_downstairs_destination(None):
             raise Impossible("You can't descend any further.")
 
         def random_spawn(next_map):

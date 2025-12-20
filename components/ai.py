@@ -1675,8 +1675,10 @@ class Neutral(BaseAI):
             self.entity.ai = woke_ai
             return woke_ai.perform()
 
-        target_x = self.engine.game_map.downstairs_location[0]
-        target_y = self.engine.game_map.downstairs_location[1]
+        stairs = self.engine.game_map.get_primary_downstairs()
+        if not stairs:
+            return WaitAction(self.entity).perform()
+        target_x, target_y = stairs
 
         if self.entity.x == target_x and self.entity.y == target_y:
             self._last_hp = current_hp
@@ -1839,7 +1841,7 @@ class AdventurerAI(BaseAI):
             return WaitAction(self.entity).perform()
 
         if self._stairs_visible():
-            stairs = self.engine.game_map.downstairs_location
+            stairs = self.engine.game_map.get_primary_downstairs()
             if stairs:
                 self.target = stairs
                 self.path = self._build_path(stairs)
@@ -1849,7 +1851,7 @@ class AdventurerAI(BaseAI):
         elif self.target is None or self.target == self.current_room:
             self._select_new_room()
 
-        stairs = self.engine.game_map.downstairs_location
+        stairs = self.engine.game_map.get_primary_downstairs()
         if stairs and (self.entity.x, self.entity.y) == stairs:
             return self.entity.fighter.desintegrate()
 
@@ -2018,7 +2020,7 @@ class AdventurerAI(BaseAI):
 
     def _stairs_visible(self) -> bool:
         gamemap = self.engine.game_map
-        stairs = gamemap.downstairs_location
+        stairs = gamemap.get_primary_downstairs()
         if not stairs:
             return False
         radius = getattr(self.entity.fighter, "fov", 0)

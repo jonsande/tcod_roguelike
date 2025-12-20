@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set
+from typing import Any, Dict, Iterator, List, Tuple, TYPE_CHECKING, Optional, Set, Union
 from collections import Counter, defaultdict, deque
 from dataclasses import dataclass
 import heapq
@@ -74,6 +74,19 @@ def _get_spawn_display_name(entity: Entity) -> str:
     return getattr(entity, "id_name", getattr(entity, "name", "<Unknown>"))
 
 
+_generation_floor_context: Optional[str] = None
+
+
+def set_generation_floor_context(label: Optional[str]) -> None:
+    """Set a floor label to use for generation stats (e.g., branch labels)."""
+    global _generation_floor_context
+    _generation_floor_context = label
+
+
+def get_generation_floor_context() -> Optional[str]:
+    return _generation_floor_context
+
+
 class GenerationTracker:
     """Keeps track of how many entities spawned per floor."""
 
@@ -83,10 +96,10 @@ class GenerationTracker:
         self._procedural_totals: Dict[str, Counter] = {
             cat: Counter() for cat in self._categories
         }
-        self._per_floor: Dict[str, Dict[int, Counter]] = {
+        self._per_floor: Dict[str, Dict[Union[int, str], Counter]] = {
             cat: defaultdict(Counter) for cat in self._categories
         }
-        self._procedural_per_floor: Dict[str, Dict[int, Counter]] = {
+        self._procedural_per_floor: Dict[str, Dict[Union[int, str], Counter]] = {
             cat: defaultdict(Counter) for cat in self._categories
         }
         self._labels: Dict[str, Dict[str, str]] = {cat: {} for cat in self._categories}
@@ -98,7 +111,7 @@ class GenerationTracker:
     def record(
         self,
         category: Optional[str],
-        floor: int,
+        floor: Union[int, str],
         key: str,
         *,
         procedural: bool,
@@ -106,11 +119,15 @@ class GenerationTracker:
     ) -> None:
         if category not in self._totals:
             return
+        floor_key: Union[int, str] = floor
+        context_label = get_generation_floor_context()
+        if context_label:
+            floor_key = context_label
         self._totals[category][key] += 1
-        self._per_floor[category][floor][key] += 1
+        self._per_floor[category][floor_key][key] += 1
         if procedural:
             self._procedural_totals[category][key] += 1
-            self._procedural_per_floor[category][floor][key] += 1
+            self._procedural_per_floor[category][floor_key][key] += 1
 
     def get_total(self, category: str, key: str, *, procedural_only: bool = False) -> int:
         if category not in self._totals:
@@ -120,6 +137,23 @@ class GenerationTracker:
         return self._totals[category][key]
 
     def format_report(self, category: Optional[str] = None) -> str:
+        def _sort_floor_key(value: Union[int, str]) -> Tuple[int, int, str]:
+            if isinstance(value, int):
+                return (0, value, "")
+            label = str(value)
+            if label.startswith("M-"):
+                try:
+                    return (0, int(label.split("-", 1)[1]), label)
+                except ValueError:
+                    return (0, 0, label)
+            if label.startswith("B"):
+                try:
+                    branch_part, depth_part = label[1:].split("-", 1)
+                    return (1, int(branch_part), int(depth_part))
+                except ValueError:
+                    return (1, 0, label)
+            return (2, 0, label)
+
         categories = [category] if category else list(self._categories)
         lines: List[str] = []
         for cat in categories:
@@ -130,7 +164,7 @@ class GenerationTracker:
             if not floors:
                 lines.append("  (sin datos)")
                 continue
-            for floor in sorted(floors.keys()):
+            for floor in sorted(floors.keys(), key=_sort_floor_key):
                 lines.append(f"  Nivel {floor}:")
                 floor_counter = floors[floor]
                 procedural_counter = self._procedural_per_floor[cat].get(floor, {})
@@ -234,7 +268,7 @@ def _can_spawn_item_procedurally(key: str, pending: Optional[Counter] = None) ->
 
 def record_entity_spawned(
     entity: Entity,
-    floor: int,
+    floor: Union[int, str],
     category: str,
     *,
     key: Optional[str] = None,
@@ -249,7 +283,9 @@ def record_entity_spawned(
     )
 
 
-def record_loot_items(loot: List[Entity], floor: int, *, procedural: bool, source: str) -> None:
+def record_loot_items(
+    loot: List[Entity], floor: Union[int, str], *, procedural: bool, source: str
+) -> None:
     for item in loot:
         record_entity_spawned(
             item, floor, "items", procedural=procedural, source=source
@@ -1082,7 +1118,7 @@ def build_step_by_step_hot_path(
         else:
             start = (0, 0)
     if goal is None:
-        goal = getattr(dungeon, "downstairs_location", None) or start
+        goal = dungeon.get_primary_downstairs() or start
 
     path = _compute_step_by_step_hot_path(
         dungeon,
@@ -1281,7 +1317,7 @@ def _draw_hot_path(
             continue
         if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
             continue
-        if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+        if dungeon.is_downstairs_location(x, y):
             continue
         dungeon.tiles["dark"]["fg"][x, y] = dark_color
         dungeon.tiles["light"]["fg"][x, y] = light_color
@@ -1367,7 +1403,7 @@ def _maybe_place_entry_feature(
 
     if dungeon.upstairs_location and coord == dungeon.upstairs_location:
         return
-    if dungeon.downstairs_location and coord == dungeon.downstairs_location:
+    if dungeon.is_downstairs_location(coord[0], coord[1]):
         return
     if any(ent.x == coord[0] and ent.y == coord[1] for ent in dungeon.entities):
         return
@@ -1617,7 +1653,7 @@ def _can_place_entity(dungeon: GameMap, x: int, y: int) -> bool:
         return False
     if not dungeon.tiles["walkable"][x, y]:
         return False
-    if (x, y) == dungeon.downstairs_location:
+    if dungeon.is_downstairs_location(x, y):
         return False
     if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
         return False
@@ -2206,9 +2242,9 @@ def place_column_if_possible(dungeon: GameMap, x: int, y: int) -> bool:
         return False
     if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
         return False
-    if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+    if dungeon.is_downstairs_location(x, y):
         return False
-    if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+    if dungeon.is_downstairs_location(x, y):
         return False
     if dungeon.get_blocking_entity_at_location(x, y):
         return False
@@ -2654,7 +2690,7 @@ def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_num
                 continue
             if not dungeon.tiles["walkable"][x, y]:
                 continue
-            if dungeon.downstairs_location and (x, y) == dungeon.downstairs_location:
+            if dungeon.is_downstairs_location(x, y):
                 continue
             if dungeon.upstairs_location and (x, y) == dungeon.upstairs_location:
                 continue

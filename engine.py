@@ -758,41 +758,42 @@ class Engine:
     def bugfix_downstairs(self):
 
         from entity import Decoration
-        if not self.game_map.downstairs_location:
+        stairs_locations = self.game_map.get_downstairs_locations()
+        if not stairs_locations:
             return
 
-        x, y = self.game_map.downstairs_location
-        down_exists = False
-        for entity in list(self.game_map.entities):
-            if entity.x != x or entity.y != y:
-                continue
+        for x, y in stairs_locations:
+            down_exists = False
+            for entity in list(self.game_map.entities):
+                if entity.x != x or entity.y != y:
+                    continue
 
-            name = getattr(entity, "name", None)
-            if not name:
-                continue
-            name_lower = name.lower()
-            if isinstance(entity, Decoration) and name_lower == "downstairs":
-                if down_exists:
+                name = getattr(entity, "name", None)
+                if not name:
+                    continue
+                name_lower = name.lower()
+                if isinstance(entity, Decoration) and name_lower == "downstairs":
+                    if down_exists:
+                        self.game_map.entities.discard(entity)
+                    else:
+                        down_exists = True
+                    continue
+
+                if isinstance(entity, Decoration):
                     self.game_map.entities.discard(entity)
-                else:
-                    down_exists = True
-                continue
 
-            if isinstance(entity, Decoration):
-                self.game_map.entities.discard(entity)
+            if not down_exists:
+                stairs = Decoration(
+                    x=x,
+                    y=y,
+                    char='>',
+                    color=(50,50,40),
+                    name="Downstairs")
+                stairs.spawn(self.game_map, stairs.x, stairs.y)
 
-        if not down_exists:
-            stairs = Decoration(
-                x=x,
-                y=y,
-                char='>',
-                color=(50,50,40),
-                name="Downstairs")
-            stairs.spawn(self.game_map, stairs.x, stairs.y)
-
-        # Make sure the tile itself remains a stairs tile (can be overwritten when carving paths).
-        if not np.array_equal(self.game_map.tiles[x, y], tile_types.down_stairs):
-            self.game_map.tiles[x, y] = tile_types.down_stairs
+            # Make sure the tile itself remains a stairs tile (can be overwritten when carving paths).
+            if not np.array_equal(self.game_map.tiles[x, y], tile_types.down_stairs):
+                self.game_map.tiles[x, y] = tile_types.down_stairs
 
     def bugfix_upstairs(self):
         """Restore the upstairs tile if it was overwritten (e.g. by room carving)."""
@@ -810,7 +811,7 @@ class Engine:
             print(f"DEBUG: DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}", color.red)
 
         # En el último piso no hay escaleras de bajada; usa las de subida si es necesario.
-        spawn_location = getattr(self.game_map, "downstairs_location", None) or getattr(self.game_map, "upstairs_location", None)
+        spawn_location = self.game_map.get_primary_downstairs() or getattr(self.game_map, "upstairs_location", None)
         if not spawn_location:
             return
 

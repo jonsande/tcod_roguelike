@@ -14,7 +14,7 @@ FALLBACK_LANGUAGE = "en"  # Idioma al que se recurre si falta una cadena.
 # Este comportamiento se puede modificar más abajo, desrelativizando los
 # parámetros del generador en la sección "Dungeon generation".
 # Opciones disponibles: "STANDARD" (80x44), "MEDIUM" (90X50) o "LARGE" (100x55).
-SCREEN_MODE = "MEDIUM"
+SCREEN_MODE = "STANDARD"
 
 _BASE_SCREEN = {"width": 80, "height": 44, "map_width": 80, "map_height": 36}
 _SCREEN_PRESETS = {
@@ -147,8 +147,8 @@ if GRAPHIC_MODE == "ascii":
     tileset_cod = "ascii"
 
     # STANDARD
-    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
-    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 112, 128)
+    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 112, 128)
     
 
     # EXPERIMENTAL
@@ -420,6 +420,20 @@ DUNGEON_V3_ENTRY_FEATURE_PROBS = {
 TOTAL_FLOORS = 16 # Debido al diseño del juego, 16 niveles son 15 (pues la superficie es el verdadero nivel 1)
 MAX_DOORS_BY_LEVEL = 8
 MAX_BREAKABLE_WALLS = 6
+
+# -- Dungeon branches --------------------------------------------------------
+# Pisos (1-indexed) del tronco principal donde pueden generarse ramas secundarias.
+# No se generan ramas en el último nivel ni en niveles fijos.
+BRANCH_FLOORS = [randint(4,7), randint(8,15)]
+# Número máximo de ramas secundarias por mundo.
+MAX_SECONDARY_BRANCHES = 2
+# Longitud mínima/máxima de cada rama (en niveles).
+BRANCH_MIN_LENGTH = 1
+BRANCH_MAX_LENGTH = 3
+# Generadores permitidos en ramas secundarias (elige entre: "dungeon_v3", "cavern").
+BRANCH_GENERATORS = ["dungeon_v3"]
+# Si True, las escaleras de ramas en cavernas se pueden colocar en cualquier casilla transitable.
+BRANCH_CAVERN_STAIRS_ANYWHERE = True
 
 # -- Fixed dungeon floors ----------------------------------------------------
 # Cada entrada permite asignar una planta a una plantilla fija definida en fixed_maps.py

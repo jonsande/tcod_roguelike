@@ -182,7 +182,7 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
         y = random.randint(1, dungeon.height - 2)
         if (
             dungeon.tiles["walkable"][x, y]
-            and (not dungeon.downstairs_location or (x, y) != dungeon.downstairs_location)
+            and not dungeon.is_downstairs_location(x, y)
             and (not dungeon.upstairs_location or (x, y) != dungeon.upstairs_location)
         ):
             entity_factories.debris_a.spawn(dungeon, x, y)
@@ -255,6 +255,7 @@ def generate_cavern(
 ) -> GameMap:
     entities = [engine.player] if place_player else []
     dungeon = GameMap(engine, map_width, map_height, entities=entities)
+    dungeon.is_cavern = True
     dungeon.tiles = np.full((map_width, map_height), fill_value=tile_types.wall, order="F")
 
     fill_probability = fill_probability if fill_probability is not None else settings.CAVERN_FILL_PROBABILITY

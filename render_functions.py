@@ -130,7 +130,7 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     tile_descriptions: List[str] = []
     if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
         tile_descriptions.append("There are upstairs")
-    if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+    if game_map.is_downstairs_location(x, y):
         tile_descriptions.append("There are downstairs")
 
     return ", ".join(_unique_names(names) + tile_descriptions)
@@ -151,7 +151,7 @@ def get_items_and_features_at_location(x: int, y: int, game_map: GameMap) -> str
     tile_descriptions: List[str] = []
     if game_map.upstairs_location and (x, y) == game_map.upstairs_location:
         tile_descriptions.append("There are upstairs")
-    if game_map.downstairs_location and (x, y) == game_map.downstairs_location:
+    if game_map.is_downstairs_location(x, y):
         tile_descriptions.append("There are downstairs")
 
     return ", ".join(_unique_names(item_names) + tile_descriptions)
