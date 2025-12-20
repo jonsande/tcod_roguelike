@@ -409,10 +409,17 @@ class ActionWithDirection(Action):
 
 
 class ThrowItemAction(Action):
-    def __init__(self, entity: Actor, item: Item, target_xy: Tuple[int, int]) -> None:
+    def __init__(
+        self,
+        entity: Actor,
+        item: Item,
+        target_xy: Tuple[int, int],
+        ranged_weapon: Optional[Item] = None,
+    ) -> None:
         super().__init__(entity)
         self.item = item
         self.target_xy = target_xy
+        self.ranged_weapon = ranged_weapon
 
     @property
     def target_actor(self) -> Optional[Actor]:
@@ -423,10 +430,96 @@ class ThrowItemAction(Action):
         from components.ai import Dummy
         return isinstance(obj, Dummy)
 
+    def _max_distance(self) -> int:
+        if self.ranged_weapon:
+            equipped_weapon = getattr(self.entity.equipment, "weapon", None)
+            if equipped_weapon is not self.ranged_weapon:
+                raise exceptions.Impossible("Necesitas tener el arma a distancia equipada.")
+            equippable = getattr(self.ranged_weapon, "equippable", None)
+            if equippable:
+                ranged_range = getattr(equippable, "ranged_range", 0)
+                if ranged_range:
+                    return ranged_range
+        return 4 + self.entity.fighter.strength
+
+    def _projectile_damage(self, target: Actor) -> Optional[int]:
+        dice = getattr(self.item, "projectile_dice", None)
+        if not dice or not target or not getattr(target, "fighter", None):
+            return None
+        try:
+            count, sides = dice
+        except Exception:
+            return None
+        count = max(1, int(count))
+        sides = max(1, int(sides))
+        total = sum(random.randint(1, sides) for _ in range(count))
+        total += getattr(self.item, "projectile_bonus", 0)
+        if self.ranged_weapon:
+            equippable = getattr(self.ranged_weapon, "equippable", None)
+            if equippable and getattr(equippable, "ranged_strength_bonus", False):
+                total += getattr(self.entity.fighter, "strength", 0)
+        total -= target.fighter.armor_value
+        return round(total)
+
+    def _ranged_to_hit_bonus(self) -> int:
+        if not self.ranged_weapon:
+            return 0
+        equippable = getattr(self.ranged_weapon, "equippable", None)
+        if not equippable:
+            return 0
+        return getattr(equippable, "ranged_to_hit_bonus", 0)
+
+    def _ranged_weapon_penalty_refund(self) -> int:
+        """Remove melee-only to-hit penalties from the ranged weapon when shooting."""
+        if not self.ranged_weapon:
+            return 0
+        equippable = getattr(self.ranged_weapon, "equippable", None)
+        if not equippable:
+            return 0
+        return getattr(equippable, "to_hit_penalty", 0)
+
+    def _handle_projectile_recovery(self, target: Actor, damage: int) -> None:
+        if getattr(self.item, "projectile_type", None) != "arrow":
+            return
+        if damage <= 0 or not target:
+            return
+        target_fighter = getattr(target, "fighter", None)
+        is_slime = bool(getattr(target_fighter, "is_slime", False))
+        destroy_chance = getattr(self.item, "projectile_destroy_chance_on_hit", 0.0)
+        destroyed = random.random() < destroy_chance
+        visible_target = bool(self.engine.game_map.visible[target.x, target.y])
+
+        if destroyed:
+            if visible_target:
+                self.engine.message_log.add_message("La flecha se rompe.", color.impossible)
+            self.engine.game_map.entities.discard(self.item)
+            self.item.parent = None
+            return
+
+        # Remove from the map before storing.
+        self.engine.game_map.entities.discard(self.item)
+
+        if is_slime:
+            inventory = getattr(target, "inventory", None)
+            if inventory is None:
+                return
+            if self.item not in inventory.items:
+                inventory.items.append(self.item)
+            self.item.parent = inventory
+            return
+
+        if target_fighter is None:
+            return
+        if self.item not in target_fighter.embedded_projectiles:
+            target_fighter.embedded_projectiles.append(self.item)
+        self.item.parent = target
+
     def perform(self) -> None:
         
         if self.item.throwable == False:
             raise exceptions.Impossible("You can't throw this")
+        if getattr(self.item, "projectile_type", None) and not self.ranged_weapon:
+            raise exceptions.Impossible("No puedes disparar eso a mano.")
 
         dest_x, dest_y = self.target_xy
 
@@ -436,7 +529,7 @@ class ThrowItemAction(Action):
         if not self.engine.game_map.visible[dest_x, dest_y]:
             raise exceptions.Impossible("You cannot target a location you cannot see.")
 
-        max_distance = 4 + self.entity.fighter.strength
+        max_distance = self._max_distance()
         if self.entity.distance(dest_x, dest_y) > max_distance:
             raise exceptions.Impossible("That target is too far away.")
 
@@ -522,7 +615,8 @@ class ThrowItemAction(Action):
             # Ataque ordinario (no stealth)
             else:
 
-                hit_dice = random.randint(1, 6) + (self.entity.fighter.to_hit * self.entity.fighter.weapon_proficiency)
+                effective_to_hit = self.entity.fighter.to_hit + self._ranged_weapon_penalty_refund()
+                hit_dice = random.randint(1, 6) + (effective_to_hit * self.entity.fighter.weapon_proficiency) + self._ranged_to_hit_bonus()
                 hit_dice = round(hit_dice)
                 
                 if hit_dice > target.fighter.defense:
@@ -583,12 +677,19 @@ class ThrowItemAction(Action):
 
                 # THROWING DAMAGE CALCULATION
                 equippable = getattr(self.item, "equippable", None)
+                projectile_damage = self._projectile_damage(target)
                 is_weapon = bool(
                     equippable
                     and getattr(equippable, "equipment_type", None)
                     and equippable.equipment_type.name == "WEAPON"
                 )
-                if is_weapon:
+                if projectile_damage is not None:
+
+                    damage = projectile_damage
+                    if attacker_visible or target_visible:
+                        print(f"{bcolors.WARNING}--> Projectile damage roll: {damage}{bcolors.ENDC}")
+
+                elif is_weapon:
 
                     strength = self.entity.fighter.strength
                     weapon_dmg_dice_info = equippable.weapon_dmg_dice_info
@@ -663,6 +764,9 @@ class ThrowItemAction(Action):
 
                 # Si impacta y hace daño...
                 if damage > 0:
+
+                    # Handle projectile persistence before target possibly dies.
+                    self._handle_projectile_recovery(target, damage)
 
                     if attacker_visible or target_visible:
                         print(f"{attack_desc} for {damage} dmg points.")

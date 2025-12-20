@@ -181,6 +181,11 @@ class Item(Entity):
         id_info: Optional[str] = None,
         info: str = "NO INFO",
         dynamic_info_factory: Optional[Callable[[], str]] = None,
+        projectile_dice: Optional[Tuple[int, int]] = None,
+        projectile_bonus: int = 0,
+        projectile_type: Optional[str] = None,
+        projectile_destroy_chance_on_hit: float = 0.0,
+        bundle_range: Optional[Tuple[int, int]] = None,
     ):
         super().__init__(
             x=x,
@@ -213,6 +218,11 @@ class Item(Entity):
         self.info = info
         self._dynamic_info_factory = dynamic_info_factory
         self._dynamic_info_assigned = False
+        self.projectile_dice = projectile_dice
+        self.projectile_bonus = projectile_bonus
+        self.projectile_type = projectile_type
+        self.projectile_destroy_chance_on_hit = projectile_destroy_chance_on_hit
+        self.bundle_range = bundle_range
 
     def _assign_dynamic_info(self) -> None:
         """Generate contextual info once when a factory is provided."""

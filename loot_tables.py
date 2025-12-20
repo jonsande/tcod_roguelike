@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import copy
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from entity import Item
@@ -172,6 +173,20 @@ def register_loot_items(mapping: Mapping[str, Item], *, fallback_key: Optional[s
     for key, item in mapping.items():
         register_loot_item(key, item, fallback=(fallback_key == key if fallback_key else None))
 
+def _materialize_item(proto: Item) -> List[Item]:
+    """Return one or more instances of a loot prototype, honoring bundle ranges."""
+    bundle = getattr(proto, "bundle_range", None)
+    if not bundle:
+        return [copy.deepcopy(proto)]
+    try:
+        low, high = bundle
+    except Exception:
+        return [copy.deepcopy(proto)]
+    low = max(1, int(low))
+    high = max(low, int(high))
+    count = random.randint(low, high)
+    return [copy.deepcopy(proto) for _ in range(count)]
+
 
 def build_monster_inventory(monster_type: str, amount: int) -> List[Item]:
     """Return a randomized list of items for the requested creature."""
@@ -194,11 +209,14 @@ def build_monster_inventory(monster_type: str, amount: int) -> List[Item]:
     picks = min(amount, len(available_items))
     if picks <= 0:
         return []
-    return random.sample(available_items, picks)
+    result: List[Item] = []
+    for proto in random.sample(available_items, picks):
+        result.extend(_materialize_item(proto))
+    return result
 
 
-def roll_special_drop(monster_type: str) -> Optional[Item]:
-    """Return an optional extra loot item configured for the given creature."""
+def roll_special_drop(monster_type: str) -> Optional[List[Item]]:
+    """Return a list of extra loot items configured for the given creature."""
     config = SPECIAL_DROP_TABLES.get(monster_type)
     if not config:
         return None
@@ -222,5 +240,6 @@ def roll_special_drop(monster_type: str) -> Optional[Item]:
     for key, weight in weighted_entries:
         cumulative += weight
         if pick <= cumulative:
-            return _ITEM_REGISTRY[key]
+            item = _ITEM_REGISTRY[key]
+            return _materialize_item(item)
     return None

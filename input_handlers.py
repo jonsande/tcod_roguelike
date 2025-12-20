@@ -1222,6 +1222,18 @@ class InventoryThrowHandler(InventoryEventHandler):
 
     TITLE = "Select an item to throw"
 
+    def _inventory_entries(
+        self,
+        filter_fn: Optional[Callable[[Item], bool]] = None,
+        skip: Optional[Item] = None,
+    ):
+        def combined(item: Item) -> bool:
+            if getattr(item, "projectile_type", None):
+                return False
+            return filter_fn(item) if filter_fn else True
+
+        return super()._inventory_entries(filter_fn=combined, skip=skip)
+
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """User selects an item to throw, then select target position."""
         return SingleRangedAttackHandler(self.engine, lambda pos: ThrowItemAction(self.engine.player, item, pos))
@@ -1679,6 +1691,10 @@ class MainGameEventHandler(EventHandler):
             return CombatControlHandler(self.engine)
         #elif key == tcod.event.K_f:
         #    return SingleRangedAttackHandler(self.engine)
+        elif key == tcod.event.KeySym.f:
+            ranged_handler = self._maybe_fire_ranged_weapon(player)
+            if ranged_handler:
+                return ranged_handler
         elif key == tcod.event.KeySym.q:
             return ToogleLightAction(player)
         # Lanzar item del inventario
@@ -1716,6 +1732,41 @@ class MainGameEventHandler(EventHandler):
         if isinstance(blocker, (Chest, TableContainer, BookShelfContainer)):
             return ChestLootHandler(self.engine, blocker)
         return None
+
+    def _find_projectile(self, projectile_type: str) -> Optional["Item"]:
+        for item in self.engine.player.inventory.items:
+            if getattr(item, "projectile_type", None) == projectile_type:
+                return item
+        return None
+
+    def _maybe_fire_ranged_weapon(self, player: Actor) -> Optional[ActionOrHandler]:
+        weapon = getattr(player.equipment, "weapon", None)
+        equippable = getattr(weapon, "equippable", None)
+        weapon_range = getattr(equippable, "ranged_range", 0) if equippable else 0
+
+        if not weapon or weapon_range <= 0:
+            self.engine.message_log.add_message(
+                "Necesitas un arma a distancia equipada.",
+                color.impossible,
+            )
+            return None
+
+        arrow = self._find_projectile("arrow")
+        if not arrow:
+            self.engine.message_log.add_message(
+                "No tienes flechas.",
+                color.impossible,
+            )
+            return None
+
+        self.engine.message_log.add_message(
+            "Selecciona un objetivo a distancia.",
+            color.needs_target,
+        )
+        return SingleRangedAttackHandler(
+            self.engine,
+            lambda pos: ThrowItemAction(player, arrow, pos, ranged_weapon=weapon),
+        )
 
 
 class GameOverEventHandler(EventHandler):

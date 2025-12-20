@@ -342,6 +342,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.slime_generation = slime_generation
         self.can_pass_closed_doors = can_pass_closed_doors
         self.can_open_doors = can_open_doors
+        self.embedded_projectiles: list["Item"] = []
         self.is_hidden = False
         self._hidden_wait_turns = 0
 
@@ -980,9 +981,18 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     def drop_loot(self):
         inventory_component = getattr(self.parent, "inventory", None)
+        # Drop any projectiles that were embedded in this creature, regardless of capacity.
+        if getattr(self, "embedded_projectiles", None):
+            for proj in list(self.embedded_projectiles):
+                try:
+                    self.embedded_projectiles.remove(proj)
+                except ValueError:
+                    pass
+                proj.place(self.parent.x, self.parent.y, self.gamemap)
+
         if not inventory_component:
             return 0
-        if inventory_component.capacity <= 0:
+        if inventory_component.capacity <= 0 and not inventory_component.items:
             return 0
 
         items_to_drop = list(getattr(inventory_component, "items", []) or [])
@@ -995,7 +1005,8 @@ class Fighter(FireStatusMixin, BaseComponent):
 
         special_loot = loot_tables.roll_special_drop(getattr(self.parent, "name", ""))
         if special_loot:
-            special_loot.spawn(self.gamemap, self.parent.x, self.parent.y)
+            for extra in special_loot:
+                extra.spawn(self.gamemap, self.parent.x, self.parent.y)
 
         return 0
 
@@ -1614,16 +1625,14 @@ class Door(FireStatusMixin, BaseComponent):
             if not inventory_component:
                 return 0
 
-            if inventory_component.capacity <= 0:
-                return 0
-
             items_to_drop = list(getattr(inventory_component, "items", []) or [])
             for item in items_to_drop:
                 item.spawn(self.gamemap, self.parent.x, self.parent.y)
 
             special_loot = loot_tables.roll_special_drop(getattr(self.parent, "name", ""))
             if special_loot:
-                special_loot.spawn(self.gamemap, self.parent.x, self.parent.y)
+                for extra in special_loot:
+                    extra.spawn(self.gamemap, self.parent.x, self.parent.y)
 
             return 0
 

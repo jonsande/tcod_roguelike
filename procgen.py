@@ -14,6 +14,7 @@ from entity_factories import *
 import uniques
 import settings
 from entity import TableContainer, BookShelfContainer
+import loot_tables
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -1835,7 +1836,8 @@ def _build_old_man_bonus_loot() -> List[Entity]:
         prototype = getattr(entity_factories, item_key, None)
         if prototype is None:
             continue
-        bonus_loot.append(copy.deepcopy(prototype))
+        copies = loot_tables._materialize_item(prototype)
+        bonus_loot.extend(copies)
         pending_counts[item_key] += 1
 
     return bonus_loot
@@ -1850,19 +1852,29 @@ def _spawn_entity_template(
     context: str,
     category: Optional[str] = None,
     rule_name: Optional[str] = None,
+    use_bundle: bool = False,
 ) -> None:
     placed = False
+    copies: List[Entity]
+    if use_bundle:
+        try:
+            copies = loot_tables._materialize_item(entity)
+        except Exception:
+            copies = [entity]
+    else:
+        copies = [entity]
     for _ in range(20):
         x, y = location_provider()
         if not _can_place_entity(dungeon, x, y):
             continue
-        entity.spawn_coord = (x, y)
-        spawned = entity.spawn(dungeon, x, y)
-        _maybe_fill_container_loot(spawned, floor_number)
-        if category and rule_name:
-            record_entity_spawned(
-                spawned, floor_number, category, key=rule_name, procedural=True, source=context
-            )
+        for copy_entity in copies:
+            copy_entity.spawn_coord = (x, y)
+            spawned = copy_entity.spawn(dungeon, x, y)
+            _maybe_fill_container_loot(spawned, floor_number)
+            if category and rule_name:
+                record_entity_spawned(
+                    spawned, floor_number, category, key=rule_name, procedural=True, source=context
+                )
         if settings.DEBUG_MODE and __debug__:
             print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
         placed = True
@@ -1918,6 +1930,7 @@ def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) 
             context,
             "items",
             entry["name"],
+            use_bundle=True,
         )
 
     for entity in debris:
@@ -1969,7 +1982,8 @@ def _build_loot_for_floor(
         prototype = getattr(entity_factories, key, None)
         if not prototype:
             continue
-        loot.append(copy.deepcopy(prototype))
+        copies = loot_tables._materialize_item(prototype)
+        loot.extend(copies)
         pending_counts[key] += 1
     return loot
 

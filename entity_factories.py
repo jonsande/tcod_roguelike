@@ -977,6 +977,32 @@ spear_plus = Item(
 )
 loot_tables.register_loot_item("spear_plus", spear_plus)
 
+arrow = Item(
+    char=")",
+    color=(188, 170, 110),
+    name="Arrow",
+    id_name="Arrow",
+    throwable=True,
+    projectile_dice=(1, 4),
+    projectile_bonus=2,
+    projectile_type="arrow",
+    projectile_destroy_chance_on_hit=0.5,
+    bundle_range=(2, 6),
+    info="A straight arrow with a sharp iron tip. Damage: 1d4+2.",
+)
+loot_tables.register_loot_item("arrow", arrow)
+
+long_bow = Item(
+    char="{",
+    color=(150, 110, 70),
+    name="Long bow",
+    id_name="Long bow",
+    equippable=equippable.LongBow(),
+    stackable=False,
+    info="A tall bow with great draw strength. Needs arrows and must be equipped to fire up to 8 tiles away. Ranged: +1 to hit, adds your Strength to damage. Melee: unwieldy (-3 to hit, 0 damage).",
+)
+loot_tables.register_loot_item("long_bow", long_bow)
+
 tunneling_staff = Item(
     char="|",
     color=(170, 120, 60),

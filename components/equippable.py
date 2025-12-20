@@ -36,6 +36,9 @@ class Equippable(BaseComponent):
         base_defense_bonus: int = 0,
         luck_bonus: int = 0,
         cursed: bool = False,
+        ranged_range: int = 0,
+        ranged_strength_bonus: bool = False,
+        ranged_to_hit_bonus: int = 0,
     ):
         self.equipment_type = equipment_type
 
@@ -58,6 +61,9 @@ class Equippable(BaseComponent):
         self.base_defense_bonus = base_defense_bonus
         self.luck_bonus = luck_bonus
         self.cursed = cursed
+        self.ranged_range = ranged_range
+        self.ranged_strength_bonus = ranged_strength_bonus
+        self.ranged_to_hit_bonus = ranged_to_hit_bonus
     
     @property
     def weapon_dmg_dice(self) -> int:
@@ -223,6 +229,19 @@ class SpearPlus(Equippable):
             defense_bonus=2,
             to_hit_bonus=2,
             )
+
+class LongBow(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.WEAPON,
+            min_dmg=0,
+            max_dmg=0,
+            dmg_bonus=0,
+            to_hit_penalty=3,
+            ranged_range=8,
+            ranged_strength_bonus=True,
+            ranged_to_hit_bonus=1,
+        )
 
 class TunnelingStaff(Equippable):
     def __init__(self) -> None:
