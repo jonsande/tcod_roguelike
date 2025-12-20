@@ -131,6 +131,10 @@ COFRES
 - [DESCARTADO] Una vez abiertos no se pueden cerrar (arreglar esto).
 - [ ] Tenemos que implementar la mecánica para introducir objetos dentro de un cofre. Es decir, para transferir objetos del inventario al cofre abierto.
 
+COFRES ESPECIALES (O ÚNICOS)
+- [ ] Cofres especiales (con contenidos especiales, fijos o no) para colocar en ciertas habitaciones en particular o niveles o ramas. Por ejemplo, que al final de una rama secundaria haya una probabilidad de que se genere un cofre especial con algún objeto muy valioso o especial o único.
+- [ ] Se pueden hacer también librerías especiales.
+
 MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [ ] Rediseñar de un modo coherente las mesas. Ahora mismo son un fighter de la clase Door. Esto es muy raro. Unificar criterios y buscar una forma más elegante e intuitiva de gestionar el ser de las tablas.
 - [x] Librerías con libros y/o pergaminos.

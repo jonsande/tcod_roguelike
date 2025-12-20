@@ -781,6 +781,7 @@ class GameWorld:
 
         keys_placed: Set[str] = set()
         key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
+        locked_colors_by_floor: List[Tuple[int, Set[str]]] = []
 
         for floor in range(1, settings.TOTAL_FLOORS + 1):
             place_player = floor == 1
@@ -816,11 +817,9 @@ class GameWorld:
 
             self.levels.append(game_map)
 
-            locked_colors = getattr(game_map, "locked_door_colors", set())
+            locked_colors = set(getattr(game_map, "locked_door_colors", set()) or set())
             if locked_colors:
-                self._ensure_keys_for_locked_doors(
-                    floor, locked_colors, keys_placed, key_positions
-                )
+                locked_colors_by_floor.append((floor, locked_colors))
 
         # Enlazar salidas del tronco principal.
         for idx in range(len(self.levels) - 1):
@@ -897,6 +896,12 @@ class GameWorld:
                     branch_maps[0].upstairs_target = entry_map
                 elif settings.DEBUG_MODE:
                     print(f"DEBUG: No se pudo colocar escalera de rama en M-{entry_floor}.")
+
+        # Colocar llaves ahora que se conocen las ramas.
+        for floor, locked_colors in locked_colors_by_floor:
+            self._ensure_keys_for_locked_doors(
+                floor, locked_colors, keys_placed, key_positions
+            )
 
         self._debug_key_positions = key_positions
         self.current_floor = 1
@@ -1141,7 +1146,7 @@ class GameWorld:
         current_floor: int,
         locked_colors: Set[str],
         keys_placed: Set[str],
-        key_positions: List[Tuple[str, int, KeyLocation]],
+        key_positions: List[Tuple[str, Union[int, str], KeyLocation]],
     ) -> None:
         """Si hay puertas con cerradura en este nivel, asegura que exista al menos una llave previa."""
         if current_floor <= 1:
@@ -1154,19 +1159,48 @@ class GameWorld:
             # # es siempre uno más que el que se marca en pantalla, lo cual estaba dando
             # # problemas en la generación de llaves.
             adjusted_min = max(1, min_floor - 2)
-            candidate_indexes = [idx for idx in range(max(1, adjusted_min) - 1, current_floor - 1)]
+            candidate_indexes = [
+                idx for idx in range(max(1, adjusted_min) - 1, current_floor - 1)
+            ]
             if not candidate_indexes:
                 continue
+
+            candidate_floors = [idx + 1 for idx in candidate_indexes]
+            branch_candidates = [
+                branch_id
+                for branch_id, entry_floor in self.branch_entries.items()
+                if entry_floor in candidate_floors
+            ]
+            branch_chance = max(0.0, min(1.0, getattr(settings, "KEY_BRANCH_SPAWN_CHANCE", 0.0)))
+            if branch_candidates and random.random() < branch_chance:
+                branch_id = random.choice(branch_candidates)
+                branch_maps = self.branches.get(branch_id, [])
+                if branch_maps:
+                    target_map = random.choice(branch_maps)
+                    pos = self._place_key_on_map(target_map, color)
+                    if pos:
+                        if settings.DEBUG_MODE:
+                            print(
+                                f"DEBUG: Llave {color} colocada en rama {target_map.branch_label}."
+                            )
+                        key_positions.append((color, target_map.branch_label, pos))
+                        keys_placed.add(color)
+                        continue
+
             target_idx = random.choice(candidate_indexes)
-            pos = self._place_key_on_floor(target_idx, color)
+            target_map = self.levels[target_idx]
+            pos = self._place_key_on_map(target_map, color)
             if pos:
-                key_positions.append((color, target_idx + 1, pos))
+                key_positions.append((color, target_map.branch_label, pos))
             keys_placed.add(color)
 
     def _place_key_on_floor(self, idx: int, color: str) -> Optional[KeyLocation]:
         if idx < 0 or idx >= len(self.levels):
             return None
         game_map = self.levels[idx]
+        return self._place_key_on_map(game_map, color)
+
+    def _place_key_on_map(self, game_map: GameMap, color: str) -> Optional[KeyLocation]:
         prototype = getattr(entity_factories, f"{color}_key", None)
         if not prototype:
             return None

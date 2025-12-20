@@ -407,7 +407,10 @@ KEY_CARRIER_ALLOWED_MONSTERS = [
 ]
 
 # Probabilidad de que la llave aparezca dentro de un cofre existente en la planta.
-KEY_CHEST_SPAWN_CHANCE = 0.25
+KEY_CHEST_SPAWN_CHANCE = 0.75
+# Si existe una rama secundaria accesible desde pisos anteriores válidos, probabilidad
+# de que la llave se coloque en esa rama en lugar del tronco principal.
+KEY_BRANCH_SPAWN_CHANCE = 0.99
 
 DUNGEON_V3_FIXED_ROOMS_ENABLED = True
 DUNGEON_V3_ENTRY_FEATURE_PROBS = {
@@ -424,11 +427,11 @@ MAX_BREAKABLE_WALLS = 6
 # -- Dungeon branches --------------------------------------------------------
 # Pisos (1-indexed) del tronco principal donde pueden generarse ramas secundarias.
 # No se generan ramas en el último nivel ni en niveles fijos.
-BRANCH_FLOORS = [randint(4,7), randint(8,15)]
+BRANCH_FLOORS = [randint(3,6), randint(7,14)]
 # Número máximo de ramas secundarias por mundo.
 MAX_SECONDARY_BRANCHES = 2
 # Longitud mínima/máxima de cada rama (en niveles).
-BRANCH_MIN_LENGTH = 1
+BRANCH_MIN_LENGTH = 2
 BRANCH_MAX_LENGTH = 3
 # Generadores permitidos en ramas secundarias (elige entre: "dungeon_v3", "cavern").
 BRANCH_GENERATORS = ["dungeon_v3"]
