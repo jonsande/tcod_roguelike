@@ -17,6 +17,8 @@ import settings
 import dialog_settings
 from audio import update_campfire_audio
 
+# Lazy cache to avoid circular import at module load time.
+_BREAKABLE_WALL_FIGHTER = None
 if TYPE_CHECKING:
     from entity import Actor
 
@@ -310,10 +312,24 @@ class BaseAI(Action):
         for entity in self.entity.gamemap.entities:
             if not entity.blocks_movement or not cost[entity.x, entity.y]:
                 continue
-            if (
-                (can_pass_closed_doors or can_open_doors)
-                and getattr(getattr(entity, "name", ""), "lower", lambda: "")() == "door"
-            ):
+            name = getattr(getattr(entity, "name", ""), "lower", lambda: "")()
+            if name == "door":
+                if can_pass_closed_doors or can_open_doors:
+                    continue
+                # Para criaturas que no pueden abrir/pasar, las puertas son muros.
+                cost[entity.x, entity.y] = 0
+                continue
+            fighter = getattr(entity, "fighter", None)
+            global _BREAKABLE_WALL_FIGHTER
+            if _BREAKABLE_WALL_FIGHTER is None:
+                try:
+                    from components.fighter import BreakableWallFighter  # Local import to avoid circular dependency.
+                    _BREAKABLE_WALL_FIGHTER = BreakableWallFighter
+                except Exception:
+                    _BREAKABLE_WALL_FIGHTER = False
+            if _BREAKABLE_WALL_FIGHTER and isinstance(fighter, _BREAKABLE_WALL_FIGHTER):
+                # Los muros rompibles son infranqueables si no se pueden destruir.
+                cost[entity.x, entity.y] = 0
                 continue
             # Add to the cost of a blocked position.
             # A lower number means more enemies will crowd behind each other in
@@ -492,16 +508,8 @@ class HostileEnemyPlus(BaseAI):
         
         """
         # Camino hacia el jugador       
-        self.path = self.get_path_to(target.x, target.y)
-        # Camino hacia la posición de origen
-        self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-        # Camino hacia las escaleras
-        stairs_location = getattr(self.engine.game_map, "downstairs_location", None)
-        if stairs_location:
-            self.path_to_stairs = self.get_path_to(stairs_location[0], stairs_location[1])
-        else:
-            self.path_to_stairs = []
-
+        self.path = []
+        self.path_to_origin: List[Tuple[int, int]] = []
 
         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
         if self.entity.fighter.aggravated == False:
@@ -513,6 +521,7 @@ class HostileEnemyPlus(BaseAI):
 
 
         if distance > 1 and distance <= engage_rng:
+            self.path = self.get_path_to(target.x, target.y)
 
             if self.entity.fighter.aggravated == False:
                 self.entity.fighter.aggravated = True
@@ -673,7 +682,7 @@ class HostileEnemy(BaseAI):
         # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
         # y que ese rango y valores sean independiente del FOV del PJ
 
-        self.path = self.get_path_to(target.x, target.y)
+        self.path = []
         # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
         # la persecución (con un dandint(0,) es todavaía más probable que abandone
         # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
@@ -706,6 +715,8 @@ class HostileEnemy(BaseAI):
             # Esta condición es para evitar el error IndexError: pop from empty list
             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
             # como entidades
+            if not self.path:
+                self.path = self.get_path_to(target.x, target.y)
             if not self.path:
                 return WaitAction(self.entity).perform()
             else:
@@ -894,8 +905,6 @@ class HostileEnemyV3(BaseAI):
             self_invisible = False
             self_visible = True
 
-        self.path = self.get_path_to(target.x, target.y)
-
         orig_target_stealth = getattr(target.fighter, "stealth", 0)
         target_stealth = orig_target_stealth
         target_luck = getattr(target.fighter, "luck", 0)
@@ -978,6 +987,8 @@ class HostileEnemyV3(BaseAI):
         #             print(debug_msg)
 
         if engage_rng >= 0 and distance > 1 and distance <= engage_rng:
+            if not self.path:
+                self.path = self.get_path_to(target.x, target.y)
             if self.entity.fighter.aggravated == False:
                 self.entity.fighter.aggravated = True
                 if self_visible:

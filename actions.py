@@ -1518,6 +1518,10 @@ class MovementAction(ActionWithDirection):
         can_pass_closed_doors = getattr(self.entity.fighter, "can_pass_closed_doors", False)
         can_open_doors = getattr(self.entity.fighter, "can_open_doors", False)
 
+        # Evita saltos de casillas (p.ej. al descartar el primer paso de una ruta).
+        if max(abs(move_dx), abs(move_dy)) > 1:
+            raise exceptions.Impossible("That way is blocked.")
+
         def _finalize_non_player_action() -> None:
             fighter = getattr(self.entity, "fighter", None)
             if fighter and self.entity is not self.engine.player:

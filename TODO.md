@@ -168,7 +168,22 @@ HUD - USER INTERFACE - ETC
 - [ ] Instrucciones que se carguen de un html, con colores.
 - [x] Si una criatura está dormida, debe indicarse en la descripción de inspección. Si está despierta pero ignorando al jugador, estaría bien que lo dijera también.
 - [ ] Posibilidad de fuentes diferentes en el panel inferior de mensajes, en las ventanas popup, etc. Ver tema fuentes en cogmind: https://www.gridsagegames.com/blog/2014/09/cogmind-fonts/
-- [ ] Tras morir, mensaje de confirmación y fundido a negro. Ir a una pantalla con algún arte (una lápida o restos de huesos o lo que sea). P.D.: Es más interesante una pantalla en la que aparezca el número de turnos sobrevivido, el inventario, el nivel al que se ha llegado, etc. (tomar como modelo el obituario de The warlock of finetop mountain roguelike).
+- [ ] Tras morir, mensaje de confirmación y fundido a negro. Ir a una pantalla con algún arte (una lápida o restos de huesos o lo que sea). P.D.: Es más interesante una pantalla en la que aparezca el número de turnos sobrevivido, el inventario, el nivel al que se ha llegado, etc. (tomar como modelo el obituario de The warlock of finetop mountain roguelike). Ejemplo:
+
+A great adventurer has fallen
+Abelardo the adventurer was killed by a orc archer.
+He survived X turns.
+He killed X creatures.
+Stats
+As darkness surrounds Abelardo, the last sound he hears is laughter.
+He entered Firetop mountain.
+He found the orcish barracks.
+Equipment
+[...]
+Messajes (últimos mensajes)
+[...]
+Output to Abelardo.txt
+
 - [x] Intro. Pantalla de introducción (anulable con tecla ESC). Una transición de tres o cuatro pantallas, con un texto introductorio, y con gráficos ascii a partir de la segunda o tercera pantall. Línea de la historia: elegido por tu tribu para recuperar un antiguo artefacto perdido. En sueños se ha visto el artefacto guardado en un ¿cofre? en el fondo de una ancestral mazmorra (de la que nadie conoce su origen). Texto útil:
 
 «Está escrito en el templo: ...e incontables niños retornarán a la noche primigenia.»
@@ -279,8 +294,6 @@ VARIOS
 
 
 BUGS
-
-BUG: Cuando no queda stamina, al lanzar una daga, se genera la animación de lanzamiento.
 
 bug: los enemigos ciegos siguen persiguiéndote. Deberían quedarse quietos. O moverse al tuntún.
 

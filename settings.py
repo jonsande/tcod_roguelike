@@ -265,8 +265,8 @@ STEALTH_DISABLED = True
 
 # -- Análisis y configuración de rendimiento ----------------------------
 # Telemetría ligera de rendimiento por turno (se muestra cada N turnos).
-PERF_PROFILER_ENABLED = False
-PERF_PROFILER_REPORT_INTERVAL = 30
+PERF_PROFILER_ENABLED = True
+PERF_PROFILER_REPORT_INTERVAL = 20
 # Si está activo, cada mensaje del log también se imprime en stdout.
 LOG_ECHO_TO_STDOUT = True
 

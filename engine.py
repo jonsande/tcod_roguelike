@@ -28,7 +28,12 @@ import color
 import render_functions
 from entity import Actor
 from render_order import RenderOrder
-from audio import update_campfire_audio, preload_campfire_audio, update_wind_audio
+from audio import (
+    preload_campfire_audio,
+    preload_wind_audio,
+    update_campfire_audio,
+    update_wind_audio,
+)
 from visual_effects import WindEffect
 
 if TYPE_CHECKING:
@@ -174,6 +179,8 @@ class Engine:
         # Así, cuando se entra junto a un fuego la primera reproducción ya está 
         # lista y no se produce un parón en el juego.
         preload_campfire_audio()
+        # Prepara también el bucle de viento del primer nivel para evitar cortes.
+        preload_wind_audio()
         self._animation_queue: List[List[AnimationFrame]] = []
         self._active_context: Optional[Context] = None
         self._root_console: Optional[Console] = None

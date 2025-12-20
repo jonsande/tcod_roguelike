@@ -119,6 +119,7 @@ _current_campfire_track: Optional[str] = None
 _campfire_preloaded = False
 _wind_loop_channel: Optional["pygame.mixer.Channel"] = None
 _current_wind_track: Optional[str] = None
+_wind_preloaded = False
 
 _PICKUP_SOUND_CONFIG = {
     "potion": {
@@ -438,6 +439,28 @@ def preload_campfire_audio() -> None:
             continue
         _load_sound(track)
     _campfire_preloaded = True
+
+
+def preload_wind_audio() -> None:
+    """Load the configured wind tracks so the first loop doesn't hiccup."""
+    global _wind_preloaded
+    if _wind_preloaded:
+        return
+    if not getattr(audio_cfg, "WIND_SOUND_ENABLED", False):
+        return
+    if not _ensure_mixer_initialized(allow_when_disabled=True) or pygame is None:
+        return
+
+    tracks = getattr(audio_cfg, "WIND_SOUNDS", []) or []
+    single = getattr(audio_cfg, "WIND_SOUND", None)
+    candidates = list(tracks)
+    if single:
+        candidates.append(single)
+    for track in candidates:
+        if not isinstance(track, str):
+            continue
+        _load_sound(track)
+    _wind_preloaded = True
 
 
 def _categorize_pickup_item(item: Optional["Item"]) -> str:
