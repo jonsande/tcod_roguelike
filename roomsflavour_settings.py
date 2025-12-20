@@ -1,0 +1,53 @@
+# Room flavour entries: list of dicts with 'name' and optional 'description'.
+# Names can repeat; descriptions are shown the first time the player enters the room.
+ROOM_FLAVOUR = [
+    {"name": "Boring chamber", "weight": 60,},
+    {
+        "name": "Wet chamber",
+        "description": "El suelo rezuma humedad y el aire huele a hierro viejo.",
+        "weight": 1,
+    },
+    {
+        "name": "Blue moss chamber",
+        "description": "Un musgo azulado cubre las paredes y el techo.",
+        "weight": 1,
+    },
+    {
+        "name": "Collapsed hall",
+        "description": "Restos de piedra y madera crujen bajo tus pasos.",
+        "weight": 1,
+    },
+    {
+        "name": "Echoing rotunda",
+        "description": "Las gotas caen con un ritmo lento y repetitivo.",
+        "weight": 1,
+    },
+    {
+        "name": "Soot-stained vault",
+        "description": "Huellas de humo cubren el techo y ennegrecen las paredes.",
+        "weight": 1,
+    },
+    {"name": "Dusty vault", "weight": 1},
+    {"name": "Silent cell", "weight": 1,},
+    {"name": "Ritual nook", "weight": 1,},
+    {"name": "Stale storeroom", "weight": 1,},
+    {"name": "Rusty antechamber", "weight": 1,},
+    {"name": "Fungal gallery", "weight": 1,},
+    {"name": "Cracked sanctuary", "weight": 1,},
+    {"name": "Cold basin", "weight": 1,},
+    {"name": "Chill grotto", "weight": 1,},
+    {"name": "Low ceiling hall", "weight": 1,},
+    {"name": "Gravel chamber", "weight": 1,},
+    {"name": "Whispering alcove", "weight": 1,},
+    {"name": "Broken portico", "weight": 1,},
+    {"name": "Salt-streaked room", "weight": 1,},
+    {"name": "Shattered vault", "weight": 1,},
+    {"name": "Tarnished parlor", "weight": 1,},
+    {"name": "Spore-lined tunnel", "weight": 1,},
+    {"name": "Ashen annex", "weight": 1,},
+    {"name": "Flooded vestibule", "weight": 1,},
+    {"name": "Hollow refectory", "weight": 1,},
+    {"name": "Wind-cut chamber", "weight": 1,},
+    {"name": "Pale larder", "weight": 1,},
+    {"name": "Bitter cistern", "weight": 1,},
+]

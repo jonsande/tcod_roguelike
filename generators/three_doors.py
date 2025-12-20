@@ -362,6 +362,7 @@ def generate_three_doors_map(
         dungeon.tiles[entry_point] = tile_types.up_stairs
 
     rooms.append(new_room)
+    dungeon.room_tiles_map = {new_room.center: list(new_room.iter_floor_tiles())}
 
     if place_downstairs and dungeon.downstairs_location and entry_point:
         if not ensure_path_between(dungeon, entry_point, dungeon.downstairs_location):

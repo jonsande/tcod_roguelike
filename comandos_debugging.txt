@@ -139,6 +139,10 @@ self.engine.game_world.debug_print_player_branch_location()
 Nota: en cavernas las escaleras de rama pueden colocarse en cualquier casilla transitable si
 BRANCH_CAVERN_STAIRS_ANYWHERE = True (settings.py). Si es False, se intentará colocar sólo en salas.
 
+=== Nombres de habitaciones ===
+
+self.engine.game_world.debug_print_room_names()
+
 
 === Localización de El Artefacto ===
 
@@ -203,6 +207,5 @@ Durante una sesión, ejecuta print(procgen.report_generation_stats()) (o pasa "i
 
 
 Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
-
 
 

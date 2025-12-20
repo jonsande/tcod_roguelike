@@ -1663,6 +1663,8 @@ class MovementAction(ActionWithDirection):
                 self.engine.register_noise(self.entity, level=1, duration=1, tag=tag)
         if player_moved and self.entity is self.engine.player:
             play_player_footstep()
+            if getattr(self.engine.game_map, "register_player_room_entry", None):
+                self.engine.game_map.register_player_room_entry(self.entity)
         # Especial de slimes
         elif player_moved and getattr(self.entity.fighter, "is_slime", False):
             inventory = getattr(self.entity, "inventory", None)

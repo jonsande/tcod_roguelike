@@ -75,6 +75,12 @@ def generate_town(
         dungeon.downstairs_location = None
 
     rooms.append(new_room)
+    room_tiles = [
+        (x, y)
+        for x in range(new_room.x1 + 1, new_room.x2)
+        for y in range(new_room.y1 + 1, new_room.y2)
+    ]
+    dungeon.room_tiles_map = {new_room.center: room_tiles}
 
     maybe_place_chest(dungeon, floor_number, rooms)
     maybe_place_table(dungeon, floor_number, rooms)

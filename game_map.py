@@ -60,6 +60,7 @@ class GameMapTown:
         self.ambient_effects: List[object] = []
         #self.tiles = np.full((width, height), fill_value=tile_types.town_wall, order="F")
         self.tiles = np.full((width, height), fill_value=tile_types.town_floor, order="F")
+        self.is_town = True
         self.visible = np.full(
             (width, height), fill_value=False, order="F"
         )  # Tiles the player can currently see
@@ -78,6 +79,19 @@ class GameMapTown:
         self.branch_label = ""
         self.effective_floor = 1
         self.center_rooms: List[Tuple[int, int]] = []
+        self.room_tiles_map: dict[Tuple[int, int], List[Tuple[int, int]]] = {}
+        self.room_names_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
+        self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        self.room_seen: Set[Tuple[int, int]] = set()
+        self.current_room_center: Optional[Tuple[int, int]] = None
+        self.room_names_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
+        self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        self.room_seen: Set[Tuple[int, int]] = set()
+        self.current_room_center: Optional[Tuple[int, int]] = None
 
     @property
     def gamemap(self) -> GameMap:
@@ -126,6 +140,41 @@ class GameMapTown:
                 return actor
 
         return None
+
+    def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        return self.room_center_by_tile.get((x, y))
+
+    def register_player_room_entry(self, actor: Actor) -> None:
+        if getattr(self, "is_town", False):
+            self.current_room_center = None
+            return
+        center = self.get_room_center_for_tile(actor.x, actor.y)
+        if not center:
+            self.current_room_center = None
+            return
+        self.current_room_center = center
+        if center in self.room_seen:
+            return
+        self.room_seen.add(center)
+        description = self.room_desc_by_center.get(center)
+        if description:
+            self.engine.message_log.add_message(description, color.white)
+
+    def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        return self.room_center_by_tile.get((x, y))
+
+    def register_player_room_entry(self, actor: Actor) -> None:
+        center = self.get_room_center_for_tile(actor.x, actor.y)
+        if not center:
+            self.current_room_center = None
+            return
+        self.current_room_center = center
+        if center in self.room_seen:
+            return
+        self.room_seen.add(center)
+        description = self.room_desc_by_center.get(center)
+        if description:
+            self.engine.message_log.add_message(description, color.white)
 
     def get_downstairs_locations(self) -> List[Tuple[int, int]]:
         if self.downstairs_locations:
@@ -331,6 +380,12 @@ class GameMap:
         self.effective_floor = 1
         self.center_rooms: List[Tuple[int, int]] = []
         self.room_tiles_map: dict[Tuple[int, int], List[Tuple[int, int]]] = {}
+        self.room_names_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
+        self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
+        self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        self.room_seen: Set[Tuple[int, int]] = set()
+        self.current_room_center: Optional[Tuple[int, int]] = None
         #self.downstairs_location = []
 
     @property
@@ -380,6 +435,22 @@ class GameMap:
                 return actor
 
         return None
+
+    def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        return self.room_center_by_tile.get((x, y))
+
+    def register_player_room_entry(self, actor: Actor) -> None:
+        center = self.get_room_center_for_tile(actor.x, actor.y)
+        if not center:
+            self.current_room_center = None
+            return
+        self.current_room_center = center
+        if center in self.room_seen:
+            return
+        self.room_seen.add(center)
+        description = self.room_desc_by_center.get(center)
+        if description:
+            self.engine.message_log.add_message(description, color.white)
 
     def get_downstairs_locations(self) -> List[Tuple[int, int]]:
         if self.downstairs_locations:
@@ -644,8 +715,108 @@ class GameWorld:
         self.branch_entries: Dict[int, int] = {}
         self.branch_lengths: Dict[int, int] = {}
         self._debug_key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
+        self._room_flavour_entries = self._load_room_flavour_entries()
         self._generate_world()
         self._sync_ambient_sound()
+
+    def _load_room_flavour_entries(self) -> List[Dict[str, Optional[str]]]:
+        try:
+            import roomsflavour_settings as roomsflavour
+        except Exception:
+            return []
+
+        raw = getattr(roomsflavour, "ROOM_FLAVOUR", None)
+        if raw is None:
+            raw = getattr(roomsflavour, "ROOM_FLAVOUR_ENTRIES", None)
+        raw = raw or []
+
+        entries: List[Dict[str, Optional[str]]] = []
+        for entry in raw:
+            if isinstance(entry, str):
+                name = entry.strip()
+                if name:
+                    entries.append({"name": name, "description": None, "weight": 1.0})
+                continue
+            if isinstance(entry, dict):
+                name = str(entry.get("name", "")).strip()
+                if not name:
+                    continue
+                description = entry.get("description")
+                description = str(description).strip() if description is not None else None
+                weight = entry.get("weight", 1.0)
+                try:
+                    weight_value = float(weight)
+                except (TypeError, ValueError):
+                    weight_value = 1.0
+                if weight_value <= 0:
+                    weight_value = 1.0
+                entries.append(
+                    {"name": name, "description": description or None, "weight": weight_value}
+                )
+        return entries
+
+    def _assign_room_flavours(self, game_map: GameMap) -> None:
+        if getattr(game_map, "is_town", False):
+            return
+        room_tiles_map = getattr(game_map, "room_tiles_map", {}) or {}
+        if not room_tiles_map:
+            return
+
+        entries = self._room_flavour_entries
+        if not entries:
+            entries = [{"name": "Unknown chamber", "description": None, "weight": 1.0}]
+
+        weights = [entry.get("weight", 1.0) for entry in entries]
+        name_counts: Dict[str, int] = {}
+        room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+
+        for center, tiles in room_tiles_map.items():
+            choice = random.choices(entries, weights=weights, k=1)[0]
+            name = choice["name"]
+            description = choice.get("description")
+            count = name_counts.get(name, 0) + 1
+            name_counts[name] = count
+            label = getattr(game_map, "branch_label", "").strip()
+            suffix = f"{label}-{count}" if label else str(count)
+            room_id = f"{name} {suffix}"
+            game_map.room_names_by_center[center] = name
+            game_map.room_ids_by_center[center] = room_id
+            game_map.room_desc_by_center[center] = description
+            for tile in tiles:
+                room_center_by_tile[tile] = center
+
+        game_map.room_center_by_tile = room_center_by_tile
+
+    def debug_print_room_names(self) -> None:
+        """Imprime en consola la lista de habitaciones generadas."""
+        entries: List[Tuple[str, Tuple[int, int], str]] = []
+        for game_map in self._iter_all_maps():
+            label = getattr(game_map, "branch_label", "?")
+            for center, room_id in getattr(game_map, "room_ids_by_center", {}).items():
+                entries.append((label, center, room_id))
+
+        if not entries:
+            print("DEBUG: No hay habitaciones registradas.")
+            return
+
+        def sort_key(entry: Tuple[str, Tuple[int, int], str]) -> Tuple[int, int, int, str]:
+            label = entry[0]
+            if label.startswith("M-"):
+                try:
+                    return (0, int(label.split("-", 1)[1]), 0, label)
+                except ValueError:
+                    return (0, 0, 0, label)
+            if label.startswith("B"):
+                try:
+                    branch_part, depth_part = label[1:].split("-", 1)
+                    return (1, int(branch_part), int(depth_part), label)
+                except ValueError:
+                    return (1, 0, 0, label)
+            return (2, 0, 0, label)
+
+        print("DEBUG: Habitaciones generadas:")
+        for label, center, room_id in sorted(entries, key=sort_key):
+            print(f"  {room_id} -> piso {label}, centro {center}")
 
     def _assign_branch_metadata(
         self,
@@ -810,10 +981,13 @@ class GameWorld:
                 effective_floor=floor,
             )
             self._init_downstairs_data(game_map)
+            self._assign_room_flavours(game_map)
 
             if place_player:
                 self.engine.game_map = game_map
                 self._update_center_rooms(game_map)
+                if getattr(game_map, "register_player_room_entry", None):
+                    game_map.register_player_room_entry(self.engine.player)
 
             self.levels.append(game_map)
 
@@ -875,6 +1049,7 @@ class GameWorld:
                     effective_floor=effective_floor,
                 )
                 self._init_downstairs_data(game_map)
+                self._assign_room_flavours(game_map)
 
                 game_map.upstairs_target = previous_map
                 if previous_map is not entry_map:
