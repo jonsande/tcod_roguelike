@@ -556,7 +556,6 @@ class GameMap:
         self.ambient_effects.append(effect)
 
 
-
 class GameWorld:
     """
     Holds the settings for the GameMap, and generates new maps when moving down the stairs.

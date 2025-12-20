@@ -147,8 +147,10 @@ if GRAPHIC_MODE == "ascii":
     tileset_cod = "ascii"
 
     # STANDARD
-    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    #tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 128, 128)
+    tileset = tcod.tileset.load_truetype_font("data/graphics/PxPlus_IBM_CGAthin.ttf", 112, 128)
     
+
     # EXPERIMENTAL
     ## Ventana 1920x10880
     #tileset = tcod.tileset.load_truetype_font("data/graphics/UbuntuMono-Regular.ttf", 16, 20)
@@ -265,7 +267,7 @@ STEALTH_DISABLED = True
 
 # -- Análisis y configuración de rendimiento ----------------------------
 # Telemetría ligera de rendimiento por turno (se muestra cada N turnos).
-PERF_PROFILER_ENABLED = True
+PERF_PROFILER_ENABLED = False
 PERF_PROFILER_REPORT_INTERVAL = 20
 # Si está activo, cada mensaje del log también se imprime en stdout.
 LOG_ECHO_TO_STDOUT = True
@@ -364,7 +366,7 @@ elif SCREEN_MODE == "MEDIUM":
     DUNGEON_V3_MIN_ROOMS = 10
     DUNGEON_V3_MAX_ROOMS = 28
     DUNGEON_V3_ROOM_MIN_SIZE = 3
-    DUNGEON_V3_ROOM_MAX_SIZE = 12
+    DUNGEON_V3_ROOM_MAX_SIZE = 11
     DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 520
     DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
     DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35
@@ -375,7 +377,7 @@ elif SCREEN_MODE == "LARGE":
     DUNGEON_V3_MIN_ROOMS = 15
     DUNGEON_V3_MAX_ROOMS = 32
     DUNGEON_V3_ROOM_MIN_SIZE = 3
-    DUNGEON_V3_ROOM_MAX_SIZE = 14
+    DUNGEON_V3_ROOM_MAX_SIZE = 12
     DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS = 620
     DUNGEON_V3_PADDING = 1  # Espacio mínimo entre salas
     DUNGEON_V3_EXTRA_CONNECTION_CHANCE = 0.35

@@ -78,6 +78,9 @@ HABILIDADES ESPECIALES
 - [ ] Atacar a una casilla de distancia (con lanza).
 - [ ] Ganar bonus en ataque diagonal. (Parece que actualmente los enemigos buscan siempre ortogonal. Esto es trabajo ganado. Se trataría de añadir ciertos bonus a los ataques diagonales, y diseñar la manera de conseguir posicionarse en diagonal).
 
+PERKS
+- [ ] Heridas, cojera, epilepsia, visiones, u otras cosas, útiles/buenas o no.
+
 PERGAMINOS
 - [DESCARTADO] Limitar la distancia a la que se pueden "lanzar" los pergaminos. [P.D. Está naturalmente limitada por la limitación de visión]
 - [x] Pergamino de descender de nivel.
@@ -227,6 +230,7 @@ CUEVAS
 
 WORLD GENERATION
 - [ ] Ramas (branches). En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa. Algunas branches deberías ser obligatorias: en ellas habrá una llave sin la cual no se puede avanzar en la rama principal.
+- [ ] Habitaciones con etiquetas. Para generar descripciones y eventos y creación de historia. Habrá etiquetas comunes ("cámara húmeda", "celda vacía", etc.) y etiquetas únicas. Ciertos eventos se dispararán sólo en las habitaciones con etiquetas únicas. Habrá tmb habitaciones que el PJ deberá investigar o pasar por, etc.
 
 DUNGEON GENERATION
 - [ ] Crear algún generador diferente.
