@@ -16,13 +16,14 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [-] Slimes! Los slimes deben poder atravesar puertas. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
-- [ ] Cuando los slimes se regeneran a la vista del jugador, debe salir un mensaje indicándolo. De otro modo los jugadores no entenderán por qué no pueden matar a un slime (cuando lo hacen incorrectamente).
-- [!] Una forma de simplificar el pathfinding de los slimes. Que lleven un registro de las casillas visitadas; después el slime simplemente intenta moverse a una casilla aleatoria de las que tiene a su alrededor y no está visitada. Así evitamos usar el pathfinding.
+- [ ] Mimics. Mimic cofre.
+- [x] Slimes. Los slimes deben poder atravesar puertas [DESCARTADO; complica mucho e innecesariamente las cosas, por obstrucción de caminos; mejor se quedan en su habitación]. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
+- [x] Cuando los slimes se regeneran a la vista del jugador, debe salir un mensaje indicándolo. De otro modo los jugadores no entenderán por qué no pueden matar a un slime (cuando lo hacen incorrectamente).
+- [x] Una forma de simplificar el pathfinding de los slimes. Que lleven un registro de las casillas visitadas; después el slime simplemente intenta moverse a una casilla aleatoria de las que tiene a su alrededor y no está visitada. Así evitamos usar el pathfinding.
 - [!] Las criaturas deben huir con hp bajos.
 - [x] Mecánica para que las criaturas se equipen con el arma que tengan en su inventario (ver el ejemplo de los goblins).
 - [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
-- [-] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes. Actualmente, aunque establezca en entity_factories que los atributos de una criatura (por ejemplo, el base_defense de un goblin, el hp de un monkey, o la stamina de un orc) se generen aleatoriamente, por ejemplo mediante un randint(2,5) o similar, parece que todas las instancias generadas de esa clase de criatura comparten el mismo valor para esos atributos. O sea, que en si en una tirada de randint(7,12) para establecer los puntos hp de un goblin sale 12, todos los goblins generados tienen 12 puntos de hp (comprueba que es correcto lo que digo). ¿Por qué sucede esto? Me gustaría cambiar este funcionamiento. Me gustaría que cada instancia pudiera tener un valor diferente, de modo que se generasen (siguiendo con el ejemplo) algunos goblins con 12 puntos de hp, pero otros con 7, o con 9, etc. ¿Es posible? [P.D. Creo que está parcialmente implementado, pero hay que comprobarlo. Lo que sí está implementado es que la generacín de inventario ahora es exclusiva de cada instancia; antes sucedía que todas las instancias de la clase tenían el mismo inventario resultante de su loot_table].
+- [x] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes.
 
 IA
 - [ ] Ampliar el AI HostileEnemy: las criaturas con una BaseAI de tipo HostileEnemy que no hayas sido todavía agraviadas nunca (aggravated), deben tener un comportamiento "oscilante". Es decir, moverse aleatoriamente (pero sin abrir puertas, ni atacar, ni hacer bump sobre nadie ni nada) a alguna casilla de su alrededor cada cierto tiempo (cada 1d6 turnos). Por otra parte, una criatura con una BaseAI de tipo HostileEnemy que haya sido agraviada (aggravated) alguna vez, dejará de estar agraviada si se cumplen la siguiente condición: el personaje que lo agravió queda fuera de su campo de visión (fov) durante 12 + 1d20 turnos. [NOTA: el sistema "oscilante" es útil para hacer más interesante el stealth, pues de otro modo es casi imposible pillar por sorpresa a un enemigo, a no ser que esté dormido.]
@@ -60,7 +61,7 @@ EFECTOS SONOROS / SONIDO
 - [-] Más sonidos (algunos personalizados, que marquen alguna diferencia) de pisadas, risas, armas, fuego.
 
 EFECTOS VISUALES
-- [ ] Efecto de partículas (viento) en movimiento en el nivel de superficie.
+- [x] Efecto de partículas (viento) en movimiento en el nivel de superficie.
 - [x] Efecto explosión bola de fuego.
 - [x] Efectos especiales fogatas.
 - [x] Efectos luz adventurers.
@@ -132,7 +133,7 @@ COFRES
 - [ ] Tenemos que implementar la mecánica para introducir objetos dentro de un cofre. Es decir, para transferir objetos del inventario al cofre abierto.
 
 COFRES ESPECIALES (O ÚNICOS)
-- [ ] Cofres especiales (con contenidos especiales, fijos o no) para colocar en ciertas habitaciones en particular o niveles o ramas. Por ejemplo, que al final de una rama secundaria haya una probabilidad de que se genere un cofre especial con algún objeto muy valioso o especial o único.
+- [!] Cofres especiales (con contenidos especiales, fijos o no) para colocar en ciertas habitaciones en particular o niveles o ramas. Por ejemplo, que al final de una rama secundaria haya una probabilidad de que se genere un cofre especial con algún objeto muy valioso o especial o único.
 - [ ] Se pueden hacer también librerías especiales.
 
 MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
@@ -141,12 +142,12 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
-- [ ] Guantes! Alguno mágico, que te suba el to-hit, o la suerte.
-- [ ] Botas!
-- [ ] Mushroms!
-- [x] Cascos! Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
-- [-] Capas! Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
-- [ ] Bastones mágicos!
+- [ ] Guantes. Alguno mágico, que te suba el to-hit, o la suerte.
+- [ ] Botas.
+- [ ] Mushroms.
+- [x] Cascos. Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
+- [-] Capas. Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
+- [ ] Bastones mágicos.
 - [!] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
 - [x] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas.
@@ -199,21 +200,21 @@ Output to Abelardo.txt
 
 - [ ] Animación de carga al generar una nueva partida.
 - [x] Posibilidad de ejecutar el juego en pantalla completa.
-- [!] Pantalla de ayuda, con descripción de teclas y comandos.
-- [!] Arreglar el combat panel.
+- [x] Pantalla de ayuda, con descripción de teclas y comandos.
+- [x] Arreglar el combat panel.
 - [ ] Idioma inglés y español.
 - [ ] Rediseñar el combat panel.
 - [x] Las ventanas que se abren con información tienen que aplicar formato al texto (respetar los límites de la ventana, etc.).
 - [x] Que los mensajes repetidos iguales se apilen, al modo de nethack, con un multiplicador, y así no se consuman más líneas.
 - [ ] Mejorar la presentación de texto largo en las ventanas popup (justificado, colores, saltos de línea, etc.)
-- [ ] Pantalla de ayuda con el documento de instrucciones de cómo funciona el combate, el sigilo, etc.
+- [x] Pantalla de ayuda con el documento de instrucciones de cómo funciona el combate, el sigilo, etc.
 - [ ] Mejorar sistema de inventario.
 - [x] Info de objetos.
 - [ ] Rellenar la info de objetos.
 - [ ] Etiqueta "poisoned" en el panel de abajo para cuando se está envenenado. Y etiqueta confused.
 
 SALAS ESPECIALES
-- [ ] Tiendas!
+- [ ] Tiendas.
 
 EVENTOS ESPECIALES
 - [ ] Misiones.
@@ -233,8 +234,8 @@ CUEVAS
 - [x] Las cuevas parece que se consideran un única habitación, de modo que se generan con muchos menos monstruos.
 
 WORLD GENERATION
-- [ ] Ramas (branches). En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa. Algunas branches deberías ser obligatorias: en ellas habrá una llave sin la cual no se puede avanzar en la rama principal.
-- [ ] Habitaciones con etiquetas. Para generar descripciones y eventos y creación de historia. Habrá etiquetas comunes ("cámara húmeda", "celda vacía", etc.) y etiquetas únicas. Ciertos eventos se dispararán sólo en las habitaciones con etiquetas únicas. Habrá tmb habitaciones que el PJ deberá investigar o pasar por, etc.
+- [x] Ramas (branches). En algunos niveles debe haber más de una escalera de bajada. Debe haber una rama principal y otras accesorias, que te proporcionan objetos valiosos o información valiosa. Algunas branches deberías ser obligatorias: en ellas habrá una llave sin la cual no se puede avanzar en la rama principal.
+- [!] Habitaciones con etiquetas. Para generar descripciones y eventos y creación de historia. Habrá etiquetas comunes ("cámara húmeda", "celda vacía", etc.) y etiquetas únicas. Ciertos eventos se dispararán sólo en las habitaciones con etiquetas únicas. Habrá tmb habitaciones que el PJ deberá investigar o pasar por, etc.
 
 DUNGEON GENERATION
 - [ ] Crear algún generador diferente.

@@ -814,6 +814,10 @@ FIXED_ROOM_CHANCES = {
     "room_07": [(2, 0.01), (8, 0.00), (9, 0.01)],
 }
 
+UNIQUE_ROOMS_CHANCES = {
+    "blue_chest_room": [(2, 0.01), (4, 0.50), (9, 0.75)],
+}
+
 # -- Procedural room shapes ---------------------------------------------------
 # Probabilidades relativas de que una sala se genere como círculo, elipse o cruz (rectángulo siempre pesa 1.0).
 ROOM_SHAPE_WEIGHTS = {
