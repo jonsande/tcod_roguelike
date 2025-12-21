@@ -1814,6 +1814,7 @@ def _place_town_old_man_chest(
             continue
         chest_entity = entity_factories.chest.spawn(dungeon, chest_x, chest_y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
+        entity_factories.maybe_turn_chest_into_mimic(chest_entity)
         record_loot_items(
             loot_random, floor_number, procedural=True, source="old_man_chest"
         )
@@ -2197,6 +2198,7 @@ def maybe_place_chest(
         chest_entity = entity_factories.chest.spawn(dungeon, x, y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
         record_loot_items(loot, floor_number, procedural=True, source="chest")
+        entity_factories.maybe_turn_chest_into_mimic(chest_entity)
         # if settings.DEBUG_MODE:
         #     if __debug__:
         #         print(f"DEBUG: Generando... Chest en x={x} y={y}")

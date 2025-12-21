@@ -19,6 +19,7 @@ from components.ai import (
     AdventurerAI,
     OldManAI,
     WardenAI,
+    MimicSleepAI,
 )
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -48,6 +49,7 @@ from settings import (
     ADVENTURER_CORPSE_COLOR,
     ADVENTURER_CORPSE_NAME,
     PROFICIENCY_LEVELS,
+    MIMIC_CHEST_CHANCE,
 )
 
 KEY_COLORS = ("black", "red", "white", "gray")
@@ -120,6 +122,33 @@ chest = Chest(
     name="Chest",
     inventory=Inventory(capacity=12, items=[]),
 )
+
+
+def maybe_turn_chest_into_mimic(chest_entity: Chest):
+    """Replace a chest with a sleeping mimic, transferring its contents."""
+    if not chest_entity or not getattr(chest_entity, "gamemap", None):
+        return None
+    if getattr(chest_entity, "is_unique_room_chest", False):
+        return None
+    chance = max(0.0, min(1.0, MIMIC_CHEST_CHANCE))
+    if chance <= 0 or random.random() > chance:
+        return None
+
+    gamemap = chest_entity.gamemap
+    if getattr(gamemap, "is_town", False):
+        return None
+    mimic_entity = mimic.spawn(gamemap, chest_entity.x, chest_entity.y)
+    mimic_entity.char = chest_entity.char
+    mimic_entity.color = chest_entity.color
+    items = list(getattr(chest_entity.inventory, "items", []))
+    chest_entity.inventory.items = []
+    if len(items) > mimic_entity.inventory.capacity:
+        mimic_entity.inventory.capacity = len(items)
+    for item in items:
+        item.parent = mimic_entity.inventory
+        mimic_entity.inventory.items.append(item)
+    gamemap.entities.remove(chest_entity)
+    return mimic_entity
 
 
 def fill_chest_with_items(chest_entity: Chest, items: List[Item]) -> None:
@@ -1440,6 +1469,32 @@ player_hp = 999 if GOD_MODE else 32
 player_max_stamina = 999 if GOD_MODE else 3
 player_satiety = 999 if GOD_MODE else 28
 player_stealth = 100 if GOD_MODE_STEALTH else 1
+
+mimic = Actor(
+    char=chest.char,
+    color=chest.color,
+    name="Chest",
+    ai_cls=MimicSleepAI,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=16,
+        base_defense=3,
+        strength=1,
+        recover_rate=50,
+        recover_amount=1,
+        fov=1,
+        foh=5,
+        weapon_proficiency=PROFICIENCY_LEVELS["Novice"],
+        aggressivity=0,
+        stamina=3,
+        max_stamina=3,
+        action_time_cost=12,
+        natural_weapon=NaturalWeapon(name="Bite", min_dmg=1, max_dmg=10),
+    ),
+    inventory=Inventory(capacity=12),
+    level=Level(xp_given=12),
+)
+mimic.id_name = "Mimic"
 
 player = Actor(
     char="@",

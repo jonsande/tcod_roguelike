@@ -412,6 +412,24 @@ class ActionWithDirection(Action):
         raise NotImplementedError()
 
 
+class ReachMeleeAction(ActionWithDirection):
+    def __init__(self, entity: Actor, dx: int, dy: int, reach: int) -> None:
+        super().__init__(entity, dx, dy)
+        self.reach = reach
+
+    def perform(self) -> None:
+        if self.entity.distance(*self.dest_xy) > self.reach:
+            raise exceptions.Impossible("El objetivo está fuera de alcance.")
+        weapon = getattr(self.entity.equipment, "weapon", None)
+        equippable = getattr(weapon, "equippable", None)
+        weapon_reach = getattr(equippable, "reach", 0) if equippable else 0
+        if not weapon or weapon_reach < 1:
+            raise exceptions.Impossible("Necesitas un arma con alcance para atacar.")
+        if not self.target_actor:
+            raise exceptions.Impossible("Nothing to attack.")
+        return MeleeAction(self.entity, self.dx, self.dy).perform()
+
+
 class ThrowItemAction(Action):
     def __init__(
         self,
@@ -577,6 +595,13 @@ class ThrowItemAction(Action):
 
         target_ai = getattr(target, "ai", None)
         target_is_dummy = self.is_dummy_object(target_ai)
+        if target_ai:
+            try:
+                from components.ai import MimicSleepAI
+                if isinstance(target_ai, MimicSleepAI):
+                    target_ai.on_attacked(self.entity)
+            except Exception:
+                pass
 
 
         # CÁLCULO DE IMPACTOS

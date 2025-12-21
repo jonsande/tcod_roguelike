@@ -553,6 +553,11 @@ CHEST_SPAWN_CHANCES = [
     (8, 0.60),
 ]
 
+# Probabilidad de que un cofre se convierta en mimic tras generarse (0-1).
+MIMIC_CHEST_CHANCE = 0.08
+# Turnos sin detectar al jugador antes de que el mimic vuelva a dormirse.
+MIMIC_SLEEP_LOST_TURNS = 5
+
 # Probabilidad independiente para generar mesas con botín.
 TABLE_SPAWN_CHANCES = [
     (2, 0.30),

@@ -1652,6 +1652,123 @@ class SleepingEnemy(BaseAI):
             else:
                 return PassAction(self.entity).perform()
      
+class MimicSleepAI(BaseAI):
+    """Dormant mimic that looks like a chest until it wakes."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+
+    def _reveal(self) -> None:
+        if getattr(self.entity, "mimic_awake", False):
+            return
+        setattr(self.entity, "mimic_awake", True)
+        fighter = getattr(self.entity, "fighter", None)
+        if fighter:
+            fighter.aggravated = True
+        reveal_name = getattr(self.entity, "id_name", None) or "Mimic"
+        self.entity.name = reveal_name
+        engine = getattr(self, "engine", None)
+        if engine:
+            engine.message_log.add_message(
+                "El cofre cobra vida y abre sus fauces.",
+                color.orange,
+            )
+        self.entity.ai = MimicHostileAI(self.entity)
+
+    def on_attacked(self, attacker: "Actor") -> None:
+        self._reveal()
+
+    def perform(self) -> None:
+        target = self._select_target()
+        if not target:
+            return PassAction(self.entity).perform()
+        dx = target.x - self.entity.x
+        dy = target.y - self.entity.y
+        distance = max(abs(dx), abs(dy))
+        if distance <= 1:
+            self._reveal()
+            return MeleeAction(self.entity, dx, dy).perform()
+        return PassAction(self.entity).perform()
+
+
+class MimicHostileAI(BaseAI):
+    """Active mimic that only pursues if it can see or hear a target."""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self.path: List[Tuple[int, int]] = []
+        self._lost_contact_turns: int = 0
+
+    def _can_see_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, getattr(fighter, "fov", 0))
+        if radius <= 0:
+            return False
+
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+
+        visible = compute_fov(
+            transparent,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        return bool(visible[actor.x, actor.y])
+
+    def _can_hear_actor(self, actor: Actor) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        hearing_radius = getattr(fighter, "foh", 0)
+        if hearing_radius <= 0:
+            return False
+        return self._can_hear_position(actor.x, actor.y, hearing_radius)
+
+    def perform(self) -> None:
+        target = self._select_target()
+        if not target:
+            return WaitAction(self.entity).perform()
+
+        dx = target.x - self.entity.x
+        dy = target.y - self.entity.y
+        distance = max(abs(dx), abs(dy))
+        if distance <= 1:
+            return MeleeAction(self.entity, dx, dy).perform()
+
+        can_see = self._can_see_actor(target)
+        can_hear = self._can_hear_actor(target)
+        if not can_see and not can_hear:
+            self._lost_contact_turns += 1
+            self.path = []
+            sleep_turns = max(1, getattr(settings, "MIMIC_SLEEP_LOST_TURNS", 5))
+            if self._lost_contact_turns >= sleep_turns:
+                self.entity.name = "Chest"
+                setattr(self.entity, "mimic_awake", False)
+                fighter = getattr(self.entity, "fighter", None)
+                if fighter:
+                    fighter.aggravated = False
+                self.entity.ai = MimicSleepAI(self.entity)
+                return PassAction(self.entity).perform()
+            return WaitAction(self.entity).perform()
+
+        self._lost_contact_turns = 0
+
+        if not self.path:
+            self.path = self.get_path_to(target.x, target.y, ignore_senses=True)
+        if not self.path:
+            return WaitAction(self.entity).perform()
+
+        dest_x, dest_y = self.path.pop(0)
+        return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
 class Neutral(BaseAI):
 
     # Actualmente un personaje con IA "Neutral" camina derecho

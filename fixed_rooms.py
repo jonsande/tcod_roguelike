@@ -208,6 +208,7 @@ class BlueChestRoom(UniqueRoomBase):
             items.append(copy.deepcopy(item_proto))
         if items:
             entity_factories.fill_container_with_items(chest_entity, items)
+        entity_factories.maybe_turn_chest_into_mimic(chest_entity)
 
 
 UNIQUE_ROOMS = {

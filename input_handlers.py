@@ -1697,6 +1697,11 @@ class MainGameEventHandler(EventHandler):
                 return ranged_handler
         elif key == tcod.event.KeySym.q:
             return ToogleLightAction(player)
+        # Ataque con alcance (arma con alcance >= 2)
+        elif key == tcod.event.KeySym.TAB:
+            reach_handler = self._maybe_reach_attack(player)
+            if reach_handler:
+                return reach_handler
         # Lanzar item del inventario
         elif key == tcod.event.KeySym.t:
             # Selecciona el ítem primero, luego el objetivo.
@@ -1766,6 +1771,57 @@ class MainGameEventHandler(EventHandler):
         return SingleRangedAttackHandler(
             self.engine,
             lambda pos: ThrowItemAction(player, arrow, pos, ranged_weapon=weapon),
+        )
+
+    def _maybe_reach_attack(self, player: Actor) -> Optional[ActionOrHandler]:
+        weapon = getattr(player.equipment, "weapon", None)
+        equippable = getattr(weapon, "equippable", None)
+        weapon_reach = getattr(equippable, "reach", 0) if equippable else 0
+
+        if not weapon or weapon_reach < 1:
+            self.engine.message_log.add_message(
+                "Necesitas un arma con alcance para atacar.",
+                color.impossible,
+            )
+            return None
+
+        targets: List[Actor] = []
+        for actor in self.engine.game_map.actors:
+            if actor is player:
+                continue
+            if not getattr(actor, "fighter", None):
+                continue
+            if player.distance(actor.x, actor.y) <= weapon_reach:
+                targets.append(actor)
+
+        if not targets:
+            self.engine.message_log.add_message(
+                "No hay criaturas en alcance.",
+                color.impossible,
+            )
+            return None
+
+        if len(targets) == 1:
+            target = targets[0]
+            return actions.ReachMeleeAction(
+                player,
+                target.x - player.x,
+                target.y - player.y,
+                weapon_reach,
+            )
+
+        self.engine.message_log.add_message(
+            "Selecciona un objetivo en alcance.",
+            color.needs_target,
+        )
+        return SingleRangedAttackHandler(
+            self.engine,
+            lambda pos: actions.ReachMeleeAction(
+                player,
+                pos[0] - player.x,
+                pos[1] - player.y,
+                weapon_reach,
+            ),
         )
 
 

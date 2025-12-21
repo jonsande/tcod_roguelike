@@ -39,6 +39,7 @@ class Equippable(BaseComponent):
         ranged_range: int = 0,
         ranged_strength_bonus: bool = False,
         ranged_to_hit_bonus: int = 0,
+        reach: int = 0,
     ):
         self.equipment_type = equipment_type
 
@@ -64,6 +65,7 @@ class Equippable(BaseComponent):
         self.ranged_range = ranged_range
         self.ranged_strength_bonus = ranged_strength_bonus
         self.ranged_to_hit_bonus = ranged_to_hit_bonus
+        self.reach = reach
     
     @property
     def weapon_dmg_dice(self) -> int:
@@ -216,6 +218,7 @@ class Spear(Equippable):
             dmg_bonus=0,
             defense_bonus=1,
             to_hit_bonus=1,
+            reach=2,
             )
 
 
@@ -228,6 +231,7 @@ class SpearPlus(Equippable):
             dmg_bonus=2,
             defense_bonus=2,
             to_hit_bonus=2,
+            reach=1,
             )
 
 class LongBow(Equippable):
