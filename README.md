@@ -29,40 +29,42 @@ Developed in Python using the tcod and pygame libraries. Inspired by the excelle
 ## Controls
 
 ### Vi keys
-k - Up<br />
-j - Down<br />
-h - Left<br />
-l - Right<br />
-y - Up&Left<br />
-u - Up&Right<br />
-b - Down&Left<br />
-n - Down&Right<br />
+k     - Up<br />
+j     - Down<br />
+h     - Left<br />
+l     - Right<br />
+y     - Up&Left<br />
+u     - Up&Right<br />
+b     - Down&Left<br />
+n     - Down&Right<br />
 
-. - Wait<br />
+.     - Wait<br />
 
 ### NumPad
-8 - Up<br />
-2 - Down<br />
-4 - Left<br />
-6 - Right<br />
-7 - Up&Left<br />
-9 - Up&Right<br />
-1 - Down&Left<br />
-3 - Down&Right<br />
+8      - Up<br />
+2     - Down<br />
+4     - Left<br />
+6     - Right<br />
+7     - Up&Left<br />
+9     - Up&Right<br />
+1     - Down&Left<br />
+3     - Down&Right<br />
 
-5 - Wait<br />
+5     - Wait<br />
 
 ### Other
-i - Examine inventory<br />
-g - Pickup item<br />
-d - Drop item<br />
-a - Use/wear/wield item (from inventory)<br />
-t - Throw item<br />
-x - Look around<br />
+i     - Examine inventory<br />
+g     - Pickup item<br />
+d     - Drop item<br />
+a     - Use/wear/wield item (from inventory)<br />
+t     - Throw item<br />
+f     - Fire weapon<br />
+TAB   - Reach attack (with spears, etc.)<br />
+x     - Look around<br />
 SPACE - Interact (take stairs)<br />
-q - On/Off lantern<br />
-c - Character information<br />
-p - Enemies info panel<br />
-v - Message log<br />
+q     - On/Off lantern<br />
+c     - Character information<br />
+p     - Enemies info panel<br />
+v     - Message log<br />
 
 BACKSPACE - Debug Console<br />

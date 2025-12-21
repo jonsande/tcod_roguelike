@@ -106,7 +106,7 @@ the_idol_room = (
 
 ## LA CÁRCEL
 
-prisioner_room = (
+prisioner_vault = (
     "################",
     "#.@#.@#.@#.@#.@#",
     "##+#+##+##+##+##",

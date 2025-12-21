@@ -20,9 +20,10 @@ INSTRUCCIONES DEL JUEGO
 3.2. CÁLCULO DE IMPACTOS (MECÁNICA «TO-HIT»)
 3.3. CÁLCULO DE DAÑO
 3.4. TABLAS ORIENTATIVAS DE REFERENCIA (incompletas)
-3.5. COMBATE A DISTANCIA
-3.6. CONSEJOS VARIOS
-3.7. PANEL DE COMBATE
+3.5. ATAQUE CON ALCANCE (MELEE)
+3.6. COMBATE A DISTANCIA
+3.7. CONSEJOS VARIOS
+3.8. PANEL DE COMBATE
 
 
 1. MECÁNICAS GENERALES
@@ -264,18 +265,31 @@ Redibir daño:                 -     |  reset   |  reset
 - Como observará el lector, las posibilidades de atacar e impactar a un Cave bat son muy bajas si el PJ carece del equipamiento apropiado y/o no se planifica el golpe cuidadosamente. En este escenario una táctica sensata podría ser invertir uno o dos turnos buscando el golpe oportundo (WaitAction), y obtener así un bonus de +1 o +2 al To-Hit (suponiendo que en el proceso no sea dañado por el Cave bat, cosa poco probable). Con un bonus +2 al To-Hit por maniobra de combate, más un bonus +1 por portar una dagga ordinaria, el PJ lograría un impacto obteniendo 3 o más en 1d6, lo cuál es ya una probabilidad lo bastante alta como para (dados los pocos puntos de vida de un Cave bat) librarse de la criatura fácilmente.
 
 
-3.5. COMBATE A DISTANCIA
+3.5. ATAQUE CON ALCANCE (MELEE)
 
-- Actualmente, es posible (y en ocasiones muy útil) lanzar dagas contra un enemigo pulsando la tecla 't' (del inglés 'throw') y seleccionando una daga del inventario.
+- Algunas armas cuerpo a cuerpo tienen alcance. Por defecto el alcance es 0 (solo adyacentes).
+
+- La lanza (y la lanza mejorada) tiene alcance 1.
+
+- Para realizar un ataque con alcance, pulsa TAB. Si hay una criatura a distancia igual o menor que el alcance del arma equipada, atacarás a esa criatura con el arma equipada.
+
+- Si hay mas de una criatura en alcance, aparecera el cursor de seleccion de objetivo.
 
 
-3.6. CONSEJOS VARIOS
+3.6. COMBATE A DISTANCIA
+
+- En el estado actual del juego es posible lanzar dagas (y otros objetos, como pociones) contra un enemigo pulsando la tecla 't' (del inglés 'throw') y seleccionando una daga del inventario.
+
+- Si dispones de un arco (u otra arma de tipo a distancia) y flechas (o los proyectiles adecuados al tipo de arma) en tu inventario puedes disparar pulsando la tecla 'f'.
+
+
+3.7. CONSEJOS VARIOS
 
 - En combate, es buena táctica retroceder para ganar bonificación a la defensa. Pero ¡cuidado! ¡Evita quedar atrapado contra una espada y una pared! El espacio de maniobra es un recurso muy valioso en el combate.
 - Una vez se posee el bonus defensivo suficiente, puede merecer la pena pasar un turno para ganar un punto a to-hit. O puede ser preferible atacar directamente. Debes valorar la situación en cada caso.
 
 
-3.7. PANEL DE COMBATE
+3.8. PANEL DE COMBATE
 
 - Si la opción Panel de Combate se encuntra activa en en el archivo settings, puedes abrir el panel de combate pulsando la tecla 'p'.
 
