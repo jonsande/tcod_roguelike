@@ -268,8 +268,8 @@ class PrisionerVault(UniqueRoomBase):
     door_symbol = "+"
     door_lock_color = "square"
     prisioner_symbol = "@"
-    key_min_floor = 2
-    key_max_floor = 2
+    key_min_floor = 4
+    key_max_floor = key_min_floor + 3
 
     def apply(self, dungeon, room) -> None:
         super().apply(dungeon, room)
