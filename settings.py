@@ -815,7 +815,7 @@ FIXED_ROOM_CHANCES = {
 }
 
 UNIQUE_ROOMS_CHANCES = {
-    "blue_chest_room": [(2, 0.01), (4, 0.50), (9, 0.75)],
+    "blue_chest_room": [(2, 0.05), (4, 0.75), (16, 0.0)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------

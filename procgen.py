@@ -35,6 +35,25 @@ ROOM_SHAPE_WEIGHTS = settings.ROOM_SHAPE_WEIGHTS
 ROOM_MIN_SIZE_SHAPES = settings.ROOM_MIN_SIZE_SHAPES
 ROOM_DECORATION_CHANCE = settings.ROOM_DECORATION_CHANCE
 FIXED_ROOM_CHANCES = settings.FIXED_ROOM_CHANCES
+UNIQUE_ROOMS_CHANCES = settings.UNIQUE_ROOMS_CHANCES
+
+_unique_rooms_used: Set[str] = set()
+
+
+def reset_unique_room_registry() -> None:
+    _unique_rooms_used.clear()
+
+
+def mark_unique_room_used(name: str) -> None:
+    _unique_rooms_used.add(name)
+
+
+def is_unique_room_used(name: str) -> bool:
+    return name in _unique_rooms_used
+
+
+def _get_unique_room_class(name: str):
+    return getattr(fixed_rooms, "UNIQUE_ROOMS", {}).get(name)
 
 # Escombros máximos por planta
 max_debris_by_floor = settings.MAX_DEBRIS_BY_FLOOR
@@ -1911,13 +1930,13 @@ def _spawn_entity_template(
                 record_entity_spawned(
                     spawned, floor_number, category, key=rule_name, procedural=True, source=context
                 )
-        if settings.DEBUG_MODE and __debug__:
-            print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
-        placed = True
+        # if settings.DEBUG_MODE and __debug__:
+        #     print(f"DEBUG: Generando... {debug_name} en x={x} y={y}")
+        # placed = True
         break
-    if settings.DEBUG_MODE:
-        if not placed and __debug__:
-            print(f"DEBUG: Failed to place {debug_name} en {context}")
+    # if settings.DEBUG_MODE:
+    #     if not placed and __debug__:
+    #         print(f"DEBUG: Failed to place {debug_name} en {context}")
 
 
 def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) -> None:
@@ -2095,13 +2114,13 @@ def maybe_place_table(
         table_entity = entity_factories.table.spawn(dungeon, x, y)
         entity_factories.fill_container_with_items(table_entity, loot)
         record_loot_items(loot, floor_number, procedural=True, source="table")
-        if settings.DEBUG_MODE:
-            if __debug__:
-                print(f"DEBUG: Generando... Table en x={x} y={y}")
+        # if settings.DEBUG_MODE:
+        #     if __debug__:
+        #         print(f"DEBUG: Generando... Table en x={x} y={y}")
         return
-    if settings.DEBUG_MODE:
-        if __debug__:
-            print(f"DEBUG: Failed to place table en floor {floor_number}")
+    # if settings.DEBUG_MODE:
+    #     if __debug__:
+    #         print(f"DEBUG: Failed to place table en floor {floor_number}")
 
 
 def maybe_place_bookshelf(
@@ -2136,13 +2155,13 @@ def maybe_place_bookshelf(
         bookshelf_entity = entity_factories.bookshelf.spawn(dungeon, x, y)
         entity_factories.fill_container_with_items(bookshelf_entity, loot)
         record_loot_items(loot, floor_number, procedural=True, source="bookshelf")
-        if settings.DEBUG_MODE:
-            if __debug__:
-                print(f"DEBUG: Generando... Bookshelf en x={x} y={y}")
+        # if settings.DEBUG_MODE:
+        #     if __debug__:
+        #         print(f"DEBUG: Generando... Bookshelf en x={x} y={y}")
         return
-    if settings.DEBUG_MODE:
-        if __debug__:
-            print(f"DEBUG: Failed to place bookshelf en floor {floor_number}")
+    # if settings.DEBUG_MODE:
+    #     if __debug__:
+    #         print(f"DEBUG: Failed to place bookshelf en floor {floor_number}")
 
 
 def maybe_place_chest(
@@ -2176,13 +2195,13 @@ def maybe_place_chest(
         chest_entity = entity_factories.chest.spawn(dungeon, x, y)
         entity_factories.fill_chest_with_items(chest_entity, loot)
         record_loot_items(loot, floor_number, procedural=True, source="chest")
-        if settings.DEBUG_MODE:
-            if __debug__:
-                print(f"DEBUG: Generando... Chest en x={x} y={y}")
+        # if settings.DEBUG_MODE:
+        #     if __debug__:
+        #         print(f"DEBUG: Generando... Chest en x={x} y={y}")
         return
-    if settings.DEBUG_MODE:
-        if __debug__:
-            print(f"DEBUG: Failed to place chest en floor {floor_number}")
+    # if settings.DEBUG_MODE:
+    #     if __debug__:
+    #         print(f"DEBUG: Failed to place chest en floor {floor_number}")
 
 
 def tunnel_between(
@@ -2207,11 +2226,100 @@ def tunnel_between(
         yield x, y
 
 
-def carve_tunnel_path(dungeon: GameMap, start: Tuple[int, int], end: Tuple[int, int]) -> None:
-    for index, (x, y) in enumerate(tunnel_between(start, end)):
+def _build_l_path(start: Tuple[int, int], end: Tuple[int, int], corner: Tuple[int, int]) -> List[Tuple[int, int]]:
+    coords: List[Tuple[int, int]] = []
+    x1, y1 = start
+    cx, cy = corner
+    x2, y2 = end
+    coords.extend(tuple(pt) for pt in tcod.los.bresenham((x1, y1), (cx, cy)).tolist())
+    coords.extend(tuple(pt) for pt in tcod.los.bresenham((cx, cy), (x2, y2)).tolist())
+    return coords
+
+
+def _path_is_clear(path: List[Tuple[int, int]], forbidden: Set[Tuple[int, int]]) -> bool:
+    if not forbidden:
+        return True
+    for x, y in path[1:-1]:
+        if (x, y) in forbidden:
+            return False
+    return True
+
+
+def _find_tunnel_path(
+    dungeon: GameMap,
+    start: Tuple[int, int],
+    end: Tuple[int, int],
+    forbidden: Set[Tuple[int, int]],
+) -> List[Tuple[int, int]]:
+    from collections import deque
+
+    if start == end:
+        return [start]
+    queue = deque([start])
+    came_from: Dict[Tuple[int, int], Optional[Tuple[int, int]]] = {start: None}
+
+    def neighbors(x: int, y: int) -> Iterator[Tuple[int, int]]:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if not dungeon.in_bounds(nx, ny):
+                continue
+            yield nx, ny
+
+    while queue:
+        x, y = queue.popleft()
+        if (x, y) == end:
+            break
+        for nx, ny in neighbors(x, y):
+            if (nx, ny) in came_from:
+                continue
+            if (nx, ny) in forbidden and (nx, ny) != end:
+                continue
+            came_from[(nx, ny)] = (x, y)
+            queue.append((nx, ny))
+
+    if end not in came_from:
+        if getattr(settings, "DEBUG_MODE", False):
+            print(
+                f"DEBUG: No tunnel path avoiding unique rooms between {start} and {end}."
+            )
+        return [start]
+
+    path: List[Tuple[int, int]] = []
+    cursor: Optional[Tuple[int, int]] = end
+    while cursor is not None:
+        path.append(cursor)
+        cursor = came_from.get(cursor)
+    path.reverse()
+    return path
+
+
+def carve_tunnel_path(
+    dungeon: GameMap,
+    start: Tuple[int, int],
+    end: Tuple[int, int],
+    *,
+    forbidden: Optional[Set[Tuple[int, int]]] = None,
+) -> List[Tuple[int, int]]:
+    path: List[Tuple[int, int]]
+    if forbidden:
+        corner_a = (end[0], start[1])
+        corner_b = (start[0], end[1])
+        path_a = _build_l_path(start, end, corner_a)
+        path_b = _build_l_path(start, end, corner_b)
+        if _path_is_clear(path_a, forbidden):
+            path = path_a
+        elif _path_is_clear(path_b, forbidden):
+            path = path_b
+        else:
+            path = _find_tunnel_path(dungeon, start, end, forbidden)
+    else:
+        path = list(tunnel_between(start, end))
+
+    for index, (x, y) in enumerate(path):
         if index == 0:
             continue
         dungeon.tiles[x, y] = tile_types.floor
+    return path
 
 
 def carve_room(dungeon: GameMap, room: RectangularRoom) -> None:
@@ -2357,7 +2465,13 @@ def add_room_decorations(dungeon: GameMap, room: RectangularRoom) -> None:
             break
 
 
-def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[str, ...]) -> bool:
+def carve_fixed_room(
+    dungeon: GameMap,
+    room: RectangularRoom,
+    template: Tuple[str, ...],
+    *,
+    room_name: Optional[str] = None,
+) -> bool:
     room_height = len(template)
     room_width = max((len(row) for row in template), default=0)
 
@@ -2368,6 +2482,7 @@ def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[st
     offset_y = room.y1
     template_tiles: Set[Tuple[int, int]] = set()
     door_positions: Set[Tuple[int, int]] = set()
+    markers: Dict[str, List[Tuple[int, int]]] = {}
     for y, row in enumerate(template):
         for x, ch in enumerate(row):
             tx = offset_x + x
@@ -2384,9 +2499,18 @@ def carve_fixed_room(dungeon: GameMap, room: RectangularRoom, template: Tuple[st
                 dungeon.tiles[tx, ty] = tile_types.closed_door
                 spawn_door_entity(dungeon, tx, ty)
                 door_positions.add((tx, ty))
+            elif ch == "E":
+                dungeon.tiles[tx, ty] = tile_types.floor
+                markers.setdefault(ch, []).append((tx, ty))
+            else:
+                dungeon.tiles[tx, ty] = tile_types.floor
+                markers.setdefault(ch, []).append((tx, ty))
     room.is_fixed_room = True
     room.allowed_door_coords = door_positions
     room.fixed_room_tiles = template_tiles
+    room.fixed_room_markers = markers
+    if room_name:
+        room.fixed_room_name = room_name
     cx, cy = room.center
     dungeon.tiles[cx, cy] = tile_types.floor
     return True
@@ -2641,8 +2765,38 @@ def _remove_invalid_fixed_room_doors(
     return removed
 
 
-def get_fixed_room_choice(current_floor: int) -> Optional[Tuple[str, Tuple[str, ...]]]:
-    candidates: List[Tuple[str, Tuple[str, ...]]] = []
+def apply_unique_room_features(
+    dungeon: GameMap,
+    room: RectangularRoom,
+    room_name: str,
+) -> None:
+    room_cls = _get_unique_room_class(room_name)
+    if not room_cls:
+        return
+    instance = room_cls()
+    instance.apply(dungeon, room)
+
+
+def get_fixed_room_choice(
+    current_floor: int,
+) -> Optional[Tuple[str, Tuple[str, ...], bool]]:
+    candidates: List[Tuple[str, Tuple[str, ...], bool]] = []
+    unique_candidates: List[Tuple[str, Tuple[str, ...], bool]] = []
+
+    for name, rules in UNIQUE_ROOMS_CHANCES.items():
+        if name in _unique_rooms_used:
+            continue
+        chance = 0.0
+        for min_floor, value in rules:
+            if current_floor >= min_floor:
+                chance = value
+        if chance <= 0:
+            continue
+        if random.random() < chance:
+            room_cls = _get_unique_room_class(name)
+            template = getattr(room_cls, "template", None) if room_cls else None
+            if template:
+                unique_candidates.append((name, template, True))
     for name, rules in FIXED_ROOM_CHANCES.items():
         chance = 0.0
         for min_floor, value in rules:
@@ -2653,7 +2807,10 @@ def get_fixed_room_choice(current_floor: int) -> Optional[Tuple[str, Tuple[str, 
         if random.random() < chance:
             template = getattr(fixed_rooms, name, None)
             if template:
-                candidates.append((name, template))
+                candidates.append((name, template, False))
+
+    if unique_candidates:
+        return random.choice(unique_candidates)
 
     if not candidates:
         return None

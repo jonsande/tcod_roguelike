@@ -771,9 +771,13 @@ class GameWorld:
         room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
 
         for center, tiles in room_tiles_map.items():
-            choice = random.choices(entries, weights=weights, k=1)[0]
-            name = choice["name"]
-            description = choice.get("description")
+            if center in game_map.room_names_by_center:
+                name = game_map.room_names_by_center[center]
+                description = game_map.room_desc_by_center.get(center)
+            else:
+                choice = random.choices(entries, weights=weights, k=1)[0]
+                name = choice["name"]
+                description = choice.get("description")
             count = name_counts.get(name, 0) + 1
             name_counts[name] = count
             label = getattr(game_map, "branch_label", "").strip()
@@ -781,7 +785,8 @@ class GameWorld:
             room_id = f"{name} {suffix}"
             game_map.room_names_by_center[center] = name
             game_map.room_ids_by_center[center] = room_id
-            game_map.room_desc_by_center[center] = description
+            if description is not None:
+                game_map.room_desc_by_center[center] = description
             for tile in tiles:
                 room_center_by_tile[tile] = center
 
@@ -942,13 +947,14 @@ class GameWorld:
             generate_the_library_map,
             generate_three_doors_map,
         )
-        from procgen import set_generation_floor_context
+        from procgen import set_generation_floor_context, reset_unique_room_registry
 
         self.levels = []
         self.branches = {}
         self.branch_entries = {}
         self.branch_lengths = {}
         branch_plan = self._select_branch_plan()
+        reset_unique_room_registry()
 
         keys_placed: Set[str] = set()
         key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
