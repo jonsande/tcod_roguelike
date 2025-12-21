@@ -1248,6 +1248,29 @@ class GameWorld:
                 f"DEBUG: Jugador en rama secundaria {label} (entrada M-{entry_floor}), nivel efectivo {effective}."
             )
 
+    def debug_print_player_room_name(self) -> None:
+        """Imprime en consola el nombre de la habitación actual del jugador."""
+        game_map = self.engine.game_map
+        player = self.engine.player
+        if not getattr(game_map, "get_room_center_for_tile", None):
+            print("DEBUG: No se puede determinar la habitación actual.")
+            return
+        center = game_map.get_room_center_for_tile(player.x, player.y)
+        if not center:
+            print("DEBUG: Jugador no está en una habitación.")
+            return
+        name = getattr(game_map, "room_names_by_center", {}).get(center)
+        room_id = getattr(game_map, "room_ids_by_center", {}).get(center)
+        label = getattr(game_map, "branch_label", "?")
+        if name and room_id:
+            print(f"DEBUG: Jugador en habitación '{name}' ({room_id}), piso {label}.")
+        elif name:
+            print(f"DEBUG: Jugador en habitación '{name}', piso {label}.")
+        elif room_id:
+            print(f"DEBUG: Jugador en habitación {room_id}, piso {label}.")
+        else:
+            print(f"DEBUG: Jugador en habitación sin nombre, centro {center}, piso {label}.")
+
     def _sync_ambient_sound(self) -> None:
         ambient_sound.play_for_floor(self.current_floor)
 

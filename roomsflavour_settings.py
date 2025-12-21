@@ -4,7 +4,7 @@ ROOM_FLAVOUR = [
     {"name": "Boring chamber", "weight": 20,},
     {
         "name": "Wet chamber",
-        "description": "El suelo rezuma humedad y el aire huele a hierro viejo.",
+        "description": "La piedra del suelo está húmeda y el aire huele a hierro viejo.",
         "weight": 1,
     },
     {
@@ -19,12 +19,17 @@ ROOM_FLAVOUR = [
     },
     {
         "name": "Echoing rotunda",
-        "description": "Las gotas caen con un ritmo lento y repetitivo.",
+        "description": "Caen gotas del techo con un ritmo lento y repetitivo.",
         "weight": 1,
     },
     {
         "name": "Soot-stained vault",
         "description": "Huellas de humo cubren el techo y ennegrecen las paredes.",
+        "weight": 1,
+    },
+    {
+        "name": "Strange chamber",
+        "description": "No te gusta el aspecto de esta cámara.",
         "weight": 1,
     },
     {"name": "Dusty vault", "weight": 1},

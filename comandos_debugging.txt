@@ -13,6 +13,7 @@ DEBUGGING COMMANDS
 - Localización de El Artefacto
 - Listado de todos los monstruos e items generados (organizados por planta)
 - Cómo abrir una consola python con el save de una partida guardada
+- Imprimir el nombre de la habitación actual del jugador.
 
 
 === Cómo saber la posición de las casillas/tiles que forman parte de una habitación ===
@@ -202,10 +203,13 @@ procgen.guarantee_downstairs_access(
 
 engine.save_as("savegame.sav")
 
-
 Durante una sesión, ejecuta print(procgen.report_generation_stats()) (o pasa "items"/"monsters") para ver los contadores por nivel y verifica que los límites se respetan; usa procgen.reset_generation_stats() antes de empezar otra run si quieres datos limpios.
 
-
 Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
+
+
+=== imprimir el nombre de la habitación actual del jugador
+
+self.engine.game_world.debug_print_player_room_name()
 
 

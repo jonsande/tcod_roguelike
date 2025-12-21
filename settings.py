@@ -407,7 +407,7 @@ KEY_CARRIER_ALLOWED_MONSTERS = [
 ]
 
 # Probabilidad de que la llave aparezca dentro de un cofre existente en la planta.
-KEY_CHEST_SPAWN_CHANCE = 0.75
+KEY_CHEST_SPAWN_CHANCE = 0.50
 # Si existe una rama secundaria accesible desde pisos anteriores válidos, probabilidad
 # de que la llave se coloque en esa rama en lugar del tronco principal.
 KEY_BRANCH_SPAWN_CHANCE = 0.99
