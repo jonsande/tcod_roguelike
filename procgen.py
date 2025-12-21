@@ -2094,6 +2094,10 @@ def maybe_place_table(
     chance = get_floor_value(table_spawn_chances, floor_number, 0.0)
     if chance <= 0 or random.random() > chance:
         return
+    if rooms:
+        rooms = [room for room in rooms if not getattr(room, "is_unique_room", False)]
+        if not rooms:
+            return
 
     def pick_location() -> Optional[Tuple[int, int]]:
         if rooms:
@@ -2135,6 +2139,10 @@ def maybe_place_bookshelf(
     chance = get_floor_value(bookshelf_spawn_chances, floor_number, 0.0)
     if chance <= 0 or random.random() > chance:
         return
+    if rooms:
+        rooms = [room for room in rooms if not getattr(room, "is_unique_room", False)]
+        if not rooms:
+            return
 
     def pick_location() -> Optional[Tuple[int, int]]:
         if rooms:
@@ -2175,6 +2183,10 @@ def maybe_place_chest(
     chance = get_floor_value(chest_spawn_chances, floor_number, 0.0)
     if chance <= 0 or random.random() > chance:
         return
+    if rooms:
+        rooms = [room for room in rooms if not getattr(room, "is_unique_room", False)]
+        if not rooms:
+            return
 
     def pick_location() -> Optional[Tuple[int, int]]:
         if rooms:
@@ -2504,6 +2516,9 @@ def carve_fixed_room(
                 spawn_door_entity(dungeon, tx, ty)
                 door_positions.add((tx, ty))
                 markers.setdefault(ch, []).append((tx, ty))
+            elif ch == "-":
+                dungeon.tiles[tx, ty] = tile_types.closed_door
+                spawn_door_entity(dungeon, tx, ty)
             elif ch == "E":
                 dungeon.tiles[tx, ty] = tile_types.floor
                 markers.setdefault(ch, []).append((tx, ty))
@@ -2782,6 +2797,21 @@ def apply_unique_room_features(
     instance.apply(dungeon, room)
 
 
+def _select_unique_room_template(template_candidate) -> Optional[Tuple[str, ...]]:
+    if not template_candidate:
+        return None
+    if isinstance(template_candidate, (list, tuple)):
+        if template_candidate and all(isinstance(row, str) for row in template_candidate):
+            return tuple(template_candidate)
+        if template_candidate and all(
+            isinstance(entry, (list, tuple)) for entry in template_candidate
+        ):
+            chosen = random.choice(template_candidate)
+            if chosen and all(isinstance(row, str) for row in chosen):
+                return tuple(chosen)
+    return None
+
+
 def get_unique_room_choice(
     current_floor: int,
 ) -> Optional[Tuple[str, Tuple[str, ...], bool]]:
@@ -2797,7 +2827,9 @@ def get_unique_room_choice(
             continue
         if random.random() < chance:
             room_cls = _get_unique_room_class(name)
-            template = getattr(room_cls, "template", None) if room_cls else None
+            template = _select_unique_room_template(
+                getattr(room_cls, "template", None) if room_cls else None
+            )
             if template:
                 unique_candidates.append((name, template, True))
     if unique_candidates:
@@ -2817,7 +2849,7 @@ def get_fixed_room_choice(
         if chance <= 0:
             continue
         if random.random() < chance:
-            template = getattr(fixed_rooms, name, None)
+            template = _select_unique_room_template(getattr(fixed_rooms, name, None))
             if template:
                 candidates.append((name, template, False))
 

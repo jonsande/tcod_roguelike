@@ -68,9 +68,15 @@ room_07 = (
 
 # UNIQUE ROOMS
 
-## THE STUDY
+## "E" Entry points (connections)
+## "C" Chest
 ## "M" Mesa
 ## "@" Personaje
+## "+" Por defecto, puerta cerrada ordinaria (sin llave). Para que esté cerrada con llave
+## hay que especificarlo en el método apply de cada unique room
+## "-" Puerta cerrada ordinaria (sin llave).
+
+## THE STUDY
 
 the_study = (
     "#####",
@@ -106,24 +112,64 @@ the_idol_room = (
 
 ## LA CÁRCEL
 
-prisioner_vault = (
-    "################",
-    "#.@#.@#.@#.@#.@#",
-    "##+#+##+##+##+##",
-    "E..............E",
-    "##+#+##+##+##+##",
-    "#.@#.@#.@#.@#.@#",
-    "################",
-)
+prisioner_vault = [
+    (
+        "#################",
+        "##.@#.@#.@#.@#.@#",
+        "###+#+##+##+##+##",
+        "E-..............#",
+        "###+#+##+##+##+##",
+        "##.@#.@#.@#.@#.@#",
+        "#################",
+    ),
+    (
+        "#################",
+        "#.@#.@#.@#.@#.@##",
+        "##+#+##+##+##+###",
+        "#..............-E",
+        "##+#+##+##+##+###",
+        "#.@#.@#.@#.@#.@##",
+        "#################",
+    ),
+    (
+        "###E###",
+        "###-###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "#######",
+    ),
+    (
+        "#######",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###.###",
+        "#@#.#@#",
+        "#.+.+.#",
+        "###-###",
+        "###E###",
+    ), 
+]
 
 ## LA BODEGA
 
 ## LABORATORIO
 
 ## BLUE CHEST ROOM
-## "E" Entry points (connections)
-## "C" Chest
-## "+" Door
 
 blue_chest_room = (
     "#####E#####",
@@ -145,6 +191,7 @@ class UniqueRoomBase:
     template = ()
     name = ""
     description = None
+    key_color = None
 
     def apply(self, dungeon, room) -> None:
         room.is_unique_room = True
@@ -167,6 +214,7 @@ class BlueChestRoom(UniqueRoomBase):
     template = blue_chest_room
     name = "Blue chest room"
     description = "La cámara se encuentra sellada con extrañas planchas metálicas. Al fondo, en el centro de una cavidad de techo abobedado, hay un cofre decorado con pequeños cristales azules."
+    key_color = "blue"
     chest_symbol = "C"
     chest_name = "Blue chest"
     chest_color = (60, 120, 220)
@@ -211,6 +259,39 @@ class BlueChestRoom(UniqueRoomBase):
         entity_factories.maybe_turn_chest_into_mimic(chest_entity)
 
 
+class PrisionerVault(UniqueRoomBase):
+    key = "prisioner_vault"
+    template = prisioner_vault
+    name = "Prisioner vault"
+    description = "No te gusta el aspecto de este lugar."
+    key_color = "square"
+    door_symbol = "+"
+    door_lock_color = "square"
+    prisioner_symbol = "@"
+    key_min_floor = 2
+    key_max_floor = 2
+
+    def apply(self, dungeon, room) -> None:
+        super().apply(dungeon, room)
+        markers = getattr(room, "fixed_room_markers", {}) or {}
+        door_positions = markers.get(self.door_symbol, [])
+        if not door_positions:
+            door_positions = list(getattr(room, "allowed_door_coords", set()))
+        if door_positions:
+            import procgen
+            for x, y in door_positions:
+                procgen.spawn_door_entity(dungeon, x, y, lock_color=self.door_lock_color)
+                dungeon.tiles[x, y] = procgen.tile_types.closed_door
+
+        positions = markers.get(self.prisioner_symbol, [])
+        if not positions:
+            return
+        x, y = random.choice(positions)
+        import entity_factories
+        entity_factories.prisioner.spawn(dungeon, x, y)
+
+
 UNIQUE_ROOMS = {
     "blue_chest_room": BlueChestRoom,
+    "prisioner_vault": PrisionerVault,
 }

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import color
-from entity import Actor
+from entity import Actor, Chest, TableContainer, BookShelfContainer
 import exceptions
 import random
 from settings import DEBUG_MODE
@@ -536,6 +536,29 @@ class ThrowItemAction(Action):
             target_fighter.embedded_projectiles.append(self.item)
         self.item.parent = target
 
+    def _find_adjacent_drop_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
+        gamemap = self.engine.game_map
+        offsets = [
+            (0, -1),
+            (1, 0),
+            (0, 1),
+            (-1, 0),
+            (-1, -1),
+            (1, -1),
+            (1, 1),
+            (-1, 1),
+        ]
+        for dx, dy in offsets:
+            nx, ny = x + dx, y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            if gamemap.get_blocking_entity_at_location(nx, ny):
+                continue
+            return (nx, ny)
+        return None
+
     def perform(self) -> None:
         
         if self.item.throwable == False:
@@ -578,7 +601,13 @@ class ThrowItemAction(Action):
         if self.entity.equipment.item_is_equipped(self.item):
             self.entity.equipment.toggle_equip(self.item)
 
-        # Colocar el objeto lanzado en la casilla del objetivo
+        blocking_entity = self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y)
+        if isinstance(blocking_entity, (Chest, TableContainer, BookShelfContainer)):
+            fallback = self._find_adjacent_drop_tile(dest_x, dest_y)
+            if fallback:
+                dest_x, dest_y = fallback
+
+        # Colocar el objeto lanzado en la casilla del objetivo (o adyacente)
         self.entity.inventory.throw(self.item, dest_x, dest_y)
 
         # Bugfix: reset mouse location after throwing an item
@@ -1690,6 +1719,16 @@ class MovementAction(ActionWithDirection):
             play_player_footstep()
             if getattr(self.engine.game_map, "register_player_room_entry", None):
                 self.engine.game_map.register_player_room_entry(self.entity)
+            if (
+                self.engine.game_map.is_downstairs_location(self.entity.x, self.entity.y)
+                or (
+                    self.engine.game_map.upstairs_location
+                    and (self.entity.x, self.entity.y) == self.engine.game_map.upstairs_location
+                )
+            ):
+                self.engine.message_log.add_message(
+                    "Press SPACE to take the stairs.", color.orange
+                )
         # Especial de slimes
         elif player_moved and getattr(self.entity.fighter, "is_slime", False):
             inventory = getattr(self.entity, "inventory", None)

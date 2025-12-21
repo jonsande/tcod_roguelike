@@ -103,6 +103,12 @@ gray_key = Item(
     name="Gray key",
     id_name="gray_key",
 )
+square_key = Item(
+    char="?",
+    color=(190, 170, 90),
+    name="Square key",
+    id_name="square_key",
+)
 blue_key = Item(
     char="?",
     color=(60, 120, 220),
@@ -814,6 +820,25 @@ old_man = Actor(
     level=Level(xp_given=0),
 )
 old_man.id_name = "The old man"
+
+prisioner = Actor(
+    char="@",
+    color=(180, 180, 180),
+    name="Prisioner",
+    ai_cls=Dummy,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=20,
+        base_defense=0,
+        strength=0,
+        recover_rate=50,
+        recover_amount=0,
+        fov=2,
+    ),
+    inventory=Inventory(capacity=0),
+    level=Level(xp_given=0),
+)
+prisioner.id_name = "prisioner"
 
 #campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
 

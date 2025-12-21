@@ -1092,48 +1092,50 @@ class GameWorld:
         keys_placed: Set[str],
         key_positions: List[Tuple[str, Union[int, str], KeyLocation]],
     ) -> None:
-        if "blue" in keys_placed:
-            return
-        if "blue" in self._unique_keys_placed:
-            return
-        min_floor = None
-        max_floor = None
         try:
             import fixed_rooms
-            room_cls = fixed_rooms.UNIQUE_ROOMS.get("blue_chest_room")
-            if room_cls:
-                min_floor = getattr(room_cls, "key_min_floor", None)
-                max_floor = getattr(room_cls, "key_max_floor", None)
+            unique_rooms = getattr(fixed_rooms, "UNIQUE_ROOMS", {}) or {}
         except Exception:
-            min_floor = None
-            max_floor = None
-        maps_with_blue_room = [
-            game_map
-            for game_map in self._iter_all_maps()
-            if "blue_chest_room" in getattr(game_map, "unique_room_types", set())
-        ]
-        if not maps_with_blue_room:
-            return
-        exclude_tiles_by_map: Dict[GameMap, Set[Tuple[int, int]]] = {}
-        for game_map in maps_with_blue_room:
-            tiles = game_map.unique_room_tiles_by_type.get("blue_chest_room", set())
-            if tiles:
-                exclude_tiles_by_map[game_map] = set(tiles)
+            unique_rooms = {}
 
-        target_map, pos = self._place_unique_key(
-            "blue",
-            exclude_tiles_by_map=exclude_tiles_by_map,
-            min_floor=min_floor,
-            max_floor=max_floor,
-        )
-        if pos:
-            self._unique_keys_placed.add("blue")
-            keys_placed.add("blue")
-            key_positions.append(("blue", target_map.branch_label, pos))
-            if settings.DEBUG_MODE:
-                print(
-                    f"DEBUG: Llave blue colocada en {target_map.branch_label}."
-                )
+        for room_key, room_cls in unique_rooms.items():
+            key_color = getattr(room_cls, "key_color", None)
+            if not key_color:
+                continue
+            if key_color in keys_placed or key_color in self._unique_keys_placed:
+                continue
+
+            maps_with_room = [
+                game_map
+                for game_map in self._iter_all_maps()
+                if room_key in getattr(game_map, "unique_room_types", set())
+            ]
+            if not maps_with_room:
+                continue
+
+            exclude_tiles_by_map: Dict[GameMap, Set[Tuple[int, int]]] = {}
+            for game_map in maps_with_room:
+                tiles = game_map.unique_room_tiles_by_type.get(room_key, set())
+                if tiles:
+                    exclude_tiles_by_map[game_map] = set(tiles)
+
+            min_floor = getattr(room_cls, "key_min_floor", None)
+            max_floor = getattr(room_cls, "key_max_floor", None)
+
+            target_map, pos = self._place_unique_key(
+                key_color,
+                exclude_tiles_by_map=exclude_tiles_by_map,
+                min_floor=min_floor,
+                max_floor=max_floor,
+            )
+            if pos:
+                self._unique_keys_placed.add(key_color)
+                keys_placed.add(key_color)
+                key_positions.append((key_color, target_map.branch_label, pos))
+                if settings.DEBUG_MODE:
+                    print(
+                        f"DEBUG: Llave {key_color} colocada en {target_map.branch_label}."
+                    )
 
     def _place_unique_key(
         self,
@@ -1436,12 +1438,22 @@ class GameWorld:
         """Si hay puertas con cerradura en este nivel, asegura que exista al menos una llave previa."""
         if current_floor <= 1:
             return
-        has_blue_room = any(
-            "blue_chest_room" in getattr(game_map, "unique_room_types", set())
-            for game_map in self._iter_all_maps()
-        )
+        unique_key_colors: Set[str] = set()
+        try:
+            import fixed_rooms
+            for room_key, room_cls in getattr(fixed_rooms, "UNIQUE_ROOMS", {}).items():
+                key_color = getattr(room_cls, "key_color", None)
+                if not key_color:
+                    continue
+                if any(
+                    room_key in getattr(game_map, "unique_room_types", set())
+                    for game_map in self._iter_all_maps()
+                ):
+                    unique_key_colors.add(key_color)
+        except Exception:
+            unique_key_colors = set()
         for color in locked_colors:
-            if color == "blue" and has_blue_room:
+            if color in unique_key_colors:
                 continue
             if color in keys_placed:
                 continue

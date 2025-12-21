@@ -819,10 +819,17 @@ FIXED_ROOM_CHANCES = {
     "room_07": [(2, 0.01), (8, 0.00), (9, 0.01)],
 }
 
+# -- Unique rooms -------------------------------------------------------------
 # En este caso la probabilidad de generar cada una de las habitaciones únicas especiales
 # se aplica una sola vez por planta (no por cada intento de habitación)
+# Téngase en cuenta que algunas de estas salas dependen de una llave única. El nivel 
+# mínimo y máximo de generación de dichas llaves se gestiona desde fixed_rooms.py,
+# como atributo de la clase de unique room de que se trate. Así pues, a la hora de 
+# configurar probabilidad de generación de una unique room por planta quizá se quiera
+# configurar tabién las plantas en las que debe generarse su llave asociada.
 UNIQUE_ROOMS_CHANCES = {
     "blue_chest_room": [(2, 0.05), (4, 0.75), (16, 0.0)],
+    "prisioner_vault": [(2, 0.05), (5, 0.50), (16, 0.0)],
 }
 
 # -- Procedural room shapes ---------------------------------------------------
