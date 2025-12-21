@@ -1,7 +1,7 @@
 # Room flavour entries: list of dicts with 'name' and optional 'description'.
 # Names can repeat; descriptions are shown the first time the player enters the room.
 ROOM_FLAVOUR = [
-    {"name": "Boring chamber", "weight": 60,},
+    {"name": "Boring chamber", "weight": 20,},
     {
         "name": "Wet chamber",
         "description": "El suelo rezuma humedad y el aire huele a hierro viejo.",

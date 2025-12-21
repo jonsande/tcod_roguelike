@@ -814,6 +814,8 @@ FIXED_ROOM_CHANCES = {
     "room_07": [(2, 0.01), (8, 0.00), (9, 0.01)],
 }
 
+# En este caso la probabilidad de generar cada una de las habitaciones únicas especiales
+# se aplica una sola vez por planta (no por cada intento de habitación)
 UNIQUE_ROOMS_CHANCES = {
     "blue_chest_room": [(2, 0.05), (4, 0.75), (16, 0.0)],
 }

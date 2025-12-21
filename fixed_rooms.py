@@ -1,3 +1,5 @@
+import random
+
 # TODO: deberían poder crearse con objetos estas salas. Donde aparezca 
 # el carácter '~' debe generarse un scroll (aleatorio), donde aparezca 
 # el caracter '!' debe generarse una poción aleatoria, y donde aparezca 
@@ -6,6 +8,8 @@
 # de que aparezca un tipo u otro de pócima (si lo que se genera es una pócima), 
 # un tipo u otro de pergamino (si lo que se genera es un pergamino), un tipo u otro 
 # de arma (si lo que se genera es un arma).
+
+import color
 
 room_01 = (
     "..##..##..##..",
@@ -55,16 +59,22 @@ room_06 = (
 
 room_07 = (
     "#####..#####",
-    "#####..#####",
     "##........##",
     "............",
     "............",
     "##........##",
-    "#####..#####",
     "#####..#####",
 )
 
 # UNIQUE ROOMS
+
+## EL POZO
+
+## LA CÁRCEL
+
+## LA BODEGA
+
+## LABORATORIO
 
 ## BLUE CHEST ROOM
 ## "E" Entry points (connections)
@@ -82,9 +92,8 @@ blue_chest_room = (
 )
 
 BLUE_CHEST_ROOM_CONTENTS = [
-    "health_potion",
-    "health_potion",
-    "power_potion",
+    random.choice(["strength_potion", "life_potion"]),
+    "long_sword_plus",
 ]
 
 class UniqueRoomBase:
@@ -94,25 +103,47 @@ class UniqueRoomBase:
     description = None
 
     def apply(self, dungeon, room) -> None:
+        room.is_unique_room = True
         if self.name:
             dungeon.room_names_by_center[room.center] = self.name
         if self.description:
             dungeon.room_desc_by_center[room.center] = self.description
+            dungeon.room_desc_color_by_center[room.center] = color.descend
+        if self.key:
+            dungeon.unique_room_types.add(self.key)
+            tiles = set(getattr(room, "fixed_room_tiles", set()))
+            if tiles:
+                dungeon.unique_room_tiles_by_type[self.key] = tiles
+        if hasattr(dungeon, "unique_room_centers"):
+            dungeon.unique_room_centers.add(room.center)
 
 
 class BlueChestRoom(UniqueRoomBase):
     key = "blue_chest_room"
     template = blue_chest_room
     name = "Blue chest room"
-    description = "Un cofre azul destaca en el centro, rodeado de muros sellados."
+    description = "La cámara se encuentra sellada con extrañas planchas metálicas. Al fondo, en el centro de una cavidad de techo abobedado, hay un cofre decorado con pequeños cristales azules."
     chest_symbol = "C"
     chest_name = "Blue chest"
     chest_color = (60, 120, 220)
     chest_contents = BLUE_CHEST_ROOM_CONTENTS
+    door_symbol = "+"
+    door_lock_color = "blue"
+    key_min_floor = 4
+    key_max_floor = 6
 
     def apply(self, dungeon, room) -> None:
         super().apply(dungeon, room)
         markers = getattr(room, "fixed_room_markers", {}) or {}
+        door_positions = markers.get(self.door_symbol, [])
+        if not door_positions:
+            door_positions = list(getattr(room, "allowed_door_coords", set()))
+        if door_positions:
+            import procgen
+            for x, y in door_positions:
+                procgen.spawn_door_entity(dungeon, x, y, lock_color=self.door_lock_color)
+                dungeon.tiles[x, y] = procgen.tile_types.closed_door
+
         positions = markers.get(self.chest_symbol, [])
         if not positions:
             return
@@ -124,6 +155,7 @@ class BlueChestRoom(UniqueRoomBase):
         chest_entity.name = self.chest_name
         chest_entity.id_name = self.chest_name.lower().replace(" ", "_")
         chest_entity.color = self.chest_color
+        chest_entity.is_unique_room_chest = True
         items = []
         for item_id in self.chest_contents:
             item_proto = getattr(entity_factories, str(item_id), None)

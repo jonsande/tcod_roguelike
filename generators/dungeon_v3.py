@@ -31,6 +31,7 @@ from procgen import (
     choose_room_shape,
     ensure_path_between,
     get_fixed_room_choice,
+    get_unique_room_choice,
     _remove_invalid_fixed_room_doors,
     guarantee_downstairs_access,
     maybe_place_chest,
@@ -66,7 +67,9 @@ def generate_dungeon_v3(
     attempts = 0
     max_attempts = settings.DUNGEON_V3_MAX_PLACEMENT_ATTEMPTS
 
-    selected_unique_rooms: Set[str] = set()
+    pending_unique_choice = None
+    if settings.DUNGEON_V3_FIXED_ROOMS_ENABLED:
+        pending_unique_choice = get_unique_room_choice(floor_number)
     while len(rooms) < target_rooms and attempts < max_attempts:
         attempts += 1
         template = None
@@ -74,13 +77,12 @@ def generate_dungeon_v3(
         fixed_name = None
         is_unique = False
         if settings.DUNGEON_V3_FIXED_ROOMS_ENABLED:
-            fixed_choice = get_fixed_room_choice(floor_number)
-            if fixed_choice:
-                fixed_name, template, is_unique = fixed_choice
-                if is_unique and fixed_name in selected_unique_rooms:
-                    fixed_name = None
-                    template = None
-                    is_unique = False
+            if pending_unique_choice:
+                fixed_name, template, is_unique = pending_unique_choice
+            else:
+                fixed_choice = get_fixed_room_choice(floor_number)
+                if fixed_choice:
+                    fixed_name, template, is_unique = fixed_choice
 
         if template:
             height = len(template)
@@ -98,7 +100,7 @@ def generate_dungeon_v3(
         if any(_rooms_intersect_with_padding(new_room, other[0], padding) for other in rooms):
             continue
         if is_unique and fixed_name:
-            selected_unique_rooms.add(fixed_name)
+            pending_unique_choice = None
         rooms.append((new_room, template, fixed_name, is_unique))
 
     if not rooms:

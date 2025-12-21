@@ -4,7 +4,7 @@ from typing import Iterable, Iterator, Optional, TYPE_CHECKING, List, Tuple, Set
 
 import numpy as np  # type: ignore
 from tcod.console import Console
-from entity import Actor, Item, Obstacle, Chest
+from entity import Actor, Item, Obstacle, Chest, TableContainer, BookShelfContainer
 from render_order import RenderOrder
 import tile_types
 import entity_factories
@@ -83,15 +83,13 @@ class GameMapTown:
         self.room_names_by_center: Dict[Tuple[int, int], str] = {}
         self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
         self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
+        self.room_desc_color_by_center: Dict[Tuple[int, int], Tuple[int, int, int]] = {}
         self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
         self.room_seen: Set[Tuple[int, int]] = set()
         self.current_room_center: Optional[Tuple[int, int]] = None
-        self.room_names_by_center: Dict[Tuple[int, int], str] = {}
-        self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
-        self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
-        self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
-        self.room_seen: Set[Tuple[int, int]] = set()
-        self.current_room_center: Optional[Tuple[int, int]] = None
+        self.unique_room_types: Set[str] = set()
+        self.unique_room_tiles_by_type: Dict[str, Set[Tuple[int, int]]] = {}
+        self.unique_room_centers: Set[Tuple[int, int]] = set()
 
     @property
     def gamemap(self) -> GameMap:
@@ -145,36 +143,8 @@ class GameMapTown:
         return self.room_center_by_tile.get((x, y))
 
     def register_player_room_entry(self, actor: Actor) -> None:
-        if getattr(self, "is_town", False):
-            self.current_room_center = None
-            return
-        center = self.get_room_center_for_tile(actor.x, actor.y)
-        if not center:
-            self.current_room_center = None
-            return
-        self.current_room_center = center
-        if center in self.room_seen:
-            return
-        self.room_seen.add(center)
-        description = self.room_desc_by_center.get(center)
-        if description:
-            self.engine.message_log.add_message(description, color.white)
-
-    def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
-        return self.room_center_by_tile.get((x, y))
-
-    def register_player_room_entry(self, actor: Actor) -> None:
-        center = self.get_room_center_for_tile(actor.x, actor.y)
-        if not center:
-            self.current_room_center = None
-            return
-        self.current_room_center = center
-        if center in self.room_seen:
-            return
-        self.room_seen.add(center)
-        description = self.room_desc_by_center.get(center)
-        if description:
-            self.engine.message_log.add_message(description, color.white)
+        self.current_room_center = None
+        return
 
     def get_downstairs_locations(self) -> List[Tuple[int, int]]:
         if self.downstairs_locations:
@@ -383,9 +353,13 @@ class GameMap:
         self.room_names_by_center: Dict[Tuple[int, int], str] = {}
         self.room_ids_by_center: Dict[Tuple[int, int], str] = {}
         self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
+        self.room_desc_color_by_center: Dict[Tuple[int, int], Tuple[int, int, int]] = {}
         self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
         self.room_seen: Set[Tuple[int, int]] = set()
         self.current_room_center: Optional[Tuple[int, int]] = None
+        self.unique_room_types: Set[str] = set()
+        self.unique_room_tiles_by_type: Dict[str, Set[Tuple[int, int]]] = {}
+        self.unique_room_centers: Set[Tuple[int, int]] = set()
         #self.downstairs_location = []
 
     @property
@@ -450,7 +424,8 @@ class GameMap:
         self.room_seen.add(center)
         description = self.room_desc_by_center.get(center)
         if description:
-            self.engine.message_log.add_message(description, color.white)
+            msg_color = self.room_desc_color_by_center.get(center, color.white)
+            self.engine.message_log.add_message(description, msg_color)
 
     def get_downstairs_locations(self) -> List[Tuple[int, int]]:
         if self.downstairs_locations:
@@ -715,6 +690,7 @@ class GameWorld:
         self.branch_entries: Dict[int, int] = {}
         self.branch_lengths: Dict[int, int] = {}
         self._debug_key_positions: List[Tuple[str, Union[int, str], KeyLocation]] = []
+        self._unique_keys_placed: Set[str] = set()
         self._room_flavour_entries = self._load_room_flavour_entries()
         self._generate_world()
         self._sync_ambient_sound()
@@ -735,7 +711,7 @@ class GameWorld:
             if isinstance(entry, str):
                 name = entry.strip()
                 if name:
-                    entries.append({"name": name, "description": None, "weight": 1.0})
+                    entries.append({"name": name, "description": None, "weight": 1.0, "desc_color": color.white})
                 continue
             if isinstance(entry, dict):
                 name = str(entry.get("name", "")).strip()
@@ -751,7 +727,12 @@ class GameWorld:
                 if weight_value <= 0:
                     weight_value = 1.0
                 entries.append(
-                    {"name": name, "description": description or None, "weight": weight_value}
+                    {
+                        "name": name,
+                        "description": description or None,
+                        "weight": weight_value,
+                        "desc_color": color.white,
+                    }
                 )
         return entries
 
@@ -764,20 +745,33 @@ class GameWorld:
 
         entries = self._room_flavour_entries
         if not entries:
-            entries = [{"name": "Unknown chamber", "description": None, "weight": 1.0}]
+            entries = [
+                {
+                    "name": "Unknown chamber",
+                    "description": None,
+                    "weight": 1.0,
+                    "desc_color": color.white,
+                }
+            ]
 
         weights = [entry.get("weight", 1.0) for entry in entries]
         name_counts: Dict[str, int] = {}
         room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
 
         for center, tiles in room_tiles_map.items():
-            if center in game_map.room_names_by_center:
+            if center in getattr(game_map, "unique_room_centers", set()):
+                name = game_map.room_names_by_center.get(center, "Unique room")
+                description = game_map.room_desc_by_center.get(center)
+                desc_color = game_map.room_desc_color_by_center.get(center, color.white)
+            elif center in game_map.room_names_by_center:
                 name = game_map.room_names_by_center[center]
                 description = game_map.room_desc_by_center.get(center)
+                desc_color = game_map.room_desc_color_by_center.get(center, color.white)
             else:
                 choice = random.choices(entries, weights=weights, k=1)[0]
                 name = choice["name"]
                 description = choice.get("description")
+                desc_color = choice.get("desc_color", color.white)
             count = name_counts.get(name, 0) + 1
             name_counts[name] = count
             label = getattr(game_map, "branch_label", "").strip()
@@ -787,6 +781,7 @@ class GameWorld:
             game_map.room_ids_by_center[center] = room_id
             if description is not None:
                 game_map.room_desc_by_center[center] = description
+                game_map.room_desc_color_by_center[center] = desc_color
             for tile in tiles:
                 room_center_by_tile[tile] = center
 
@@ -1084,11 +1079,97 @@ class GameWorld:
                 floor, locked_colors, keys_placed, key_positions
             )
 
+        self._ensure_unique_room_keys(keys_placed, key_positions)
+
         self._debug_key_positions = key_positions
         self.current_floor = 1
         if settings.DEBUG_MODE:
             self.debug_print_key_locations()
             self.debug_print_branch_structure()
+
+    def _ensure_unique_room_keys(
+        self,
+        keys_placed: Set[str],
+        key_positions: List[Tuple[str, Union[int, str], KeyLocation]],
+    ) -> None:
+        if "blue" in keys_placed:
+            return
+        if "blue" in self._unique_keys_placed:
+            return
+        min_floor = None
+        max_floor = None
+        try:
+            import fixed_rooms
+            room_cls = fixed_rooms.UNIQUE_ROOMS.get("blue_chest_room")
+            if room_cls:
+                min_floor = getattr(room_cls, "key_min_floor", None)
+                max_floor = getattr(room_cls, "key_max_floor", None)
+        except Exception:
+            min_floor = None
+            max_floor = None
+        maps_with_blue_room = [
+            game_map
+            for game_map in self._iter_all_maps()
+            if "blue_chest_room" in getattr(game_map, "unique_room_types", set())
+        ]
+        if not maps_with_blue_room:
+            return
+        exclude_tiles_by_map: Dict[GameMap, Set[Tuple[int, int]]] = {}
+        for game_map in maps_with_blue_room:
+            tiles = game_map.unique_room_tiles_by_type.get("blue_chest_room", set())
+            if tiles:
+                exclude_tiles_by_map[game_map] = set(tiles)
+
+        target_map, pos = self._place_unique_key(
+            "blue",
+            exclude_tiles_by_map=exclude_tiles_by_map,
+            min_floor=min_floor,
+            max_floor=max_floor,
+        )
+        if pos:
+            self._unique_keys_placed.add("blue")
+            keys_placed.add("blue")
+            key_positions.append(("blue", target_map.branch_label, pos))
+            if settings.DEBUG_MODE:
+                print(
+                    f"DEBUG: Llave blue colocada en {target_map.branch_label}."
+                )
+
+    def _place_unique_key(
+        self,
+        color: str,
+        *,
+        exclude_tiles_by_map: Optional[Dict[GameMap, Set[Tuple[int, int]]]] = None,
+        min_floor: Optional[int] = None,
+        max_floor: Optional[int] = None,
+    ) -> Tuple[Optional[GameMap], Optional[KeyLocation]]:
+        maps = list(self._iter_all_maps())
+        if min_floor is not None or max_floor is not None:
+            filtered = []
+            for game_map in maps:
+                effective = getattr(game_map, "effective_floor", None)
+                if effective is None:
+                    continue
+                if min_floor is not None and effective < min_floor:
+                    continue
+                if max_floor is not None and effective > max_floor:
+                    continue
+                filtered.append(game_map)
+            maps = filtered
+        random.shuffle(maps)
+        for game_map in maps:
+            exclude = None
+            if exclude_tiles_by_map:
+                exclude = exclude_tiles_by_map.get(game_map)
+            pos = self._place_key_on_map(
+                game_map,
+                color,
+                exclude_tiles=exclude,
+                allow_table_bookshelf=True,
+            )
+            if pos:
+                return game_map, pos
+        return None, None
 
     def _get_floor_label(self, floor: Union[int, str]) -> str:
         if isinstance(floor, str):
@@ -1332,7 +1413,13 @@ class GameWorld:
         """Si hay puertas con cerradura en este nivel, asegura que exista al menos una llave previa."""
         if current_floor <= 1:
             return
+        has_blue_room = any(
+            "blue_chest_room" in getattr(game_map, "unique_room_types", set())
+            for game_map in self._iter_all_maps()
+        )
         for color in locked_colors:
+            if color == "blue" and has_blue_room:
+                continue
             if color in keys_placed:
                 continue
             min_floor = settings.DUNGEON_V3_LOCKED_DOOR_MIN_FLOOR.get(color, 1)
@@ -1381,18 +1468,37 @@ class GameWorld:
         game_map = self.levels[idx]
         return self._place_key_on_map(game_map, color)
 
-    def _place_key_on_map(self, game_map: GameMap, color: str) -> Optional[KeyLocation]:
+    def _place_key_on_map(
+        self,
+        game_map: GameMap,
+        color: str,
+        *,
+        exclude_tiles: Optional[Set[Tuple[int, int]]] = None,
+        allow_table_bookshelf: bool = False,
+    ) -> Optional[KeyLocation]:
         prototype = getattr(entity_factories, f"{color}_key", None)
         if not prototype:
             return None
 
-        carrier_location = self._maybe_assign_key_to_monster(game_map, prototype)
+        carrier_location = self._maybe_assign_key_to_monster(
+            game_map, prototype, exclude_tiles=exclude_tiles
+        )
         if carrier_location:
             return carrier_location
 
-        chest_location = self._maybe_place_key_in_chest(game_map, prototype)
+        chest_location = self._maybe_place_key_in_chest(
+            game_map, prototype, exclude_tiles=exclude_tiles
+        )
         if chest_location:
             return chest_location
+        if allow_table_bookshelf:
+            container_location = self._maybe_place_key_in_container(
+                game_map,
+                prototype,
+                exclude_tiles=exclude_tiles,
+            )
+            if container_location:
+                return container_location
 
         max_attempts = 200
         for _ in range(max_attempts):
@@ -1406,6 +1512,8 @@ class GameWorld:
                 continue
             if game_map.is_downstairs_location(x, y):
                 continue
+            if exclude_tiles and (x, y) in exclude_tiles:
+                continue
             if game_map.get_blocking_entity_at_location(x, y):
                 continue
             prototype.spawn(game_map, x, y)
@@ -1416,6 +1524,8 @@ class GameWorld:
         self,
         game_map: "GameMap",
         key_prototype: Item,
+        *,
+        exclude_tiles: Optional[Set[Tuple[int, int]]] = None,
     ) -> Optional[str]:
         chance = getattr(settings, "KEY_CARRIER_SPAWN_CHANCE", 0.0)
         if chance <= 0 or random.random() > chance:
@@ -1432,6 +1542,8 @@ class GameWorld:
         candidates: List[Actor] = []
         for actor in game_map.actors:
             if player is not None and actor is player:
+                continue
+            if exclude_tiles and (actor.x, actor.y) in exclude_tiles:
                 continue
             actor_name = getattr(actor, "name", "")
             if actor_name and actor_name.lower() in allowed_names:
@@ -1458,14 +1570,23 @@ class GameWorld:
         self,
         game_map: "GameMap",
         key_prototype: Item,
+        *,
+        exclude_tiles: Optional[Set[Tuple[int, int]]] = None,
     ) -> Optional[str]:
         chance = getattr(settings, "KEY_CHEST_SPAWN_CHANCE", 0.0)
         if chance <= 0 or random.random() > chance:
             return None
 
         chests: List[Chest] = [
-            entity for entity in game_map.entities if isinstance(entity, Chest)
+            entity
+            for entity in game_map.entities
+            if isinstance(entity, Chest)
+            and not getattr(entity, "is_unique_room_chest", False)
         ]
+        if exclude_tiles:
+            chests = [
+                chest for chest in chests if (chest.x, chest.y) not in exclude_tiles
+            ]
         if not chests:
             return None
 
@@ -1473,6 +1594,37 @@ class GameWorld:
         key_item = copy.deepcopy(key_prototype)
         target_chest.add_item(key_item)
         return f"dentro de un cofre en ({target_chest.x}, {target_chest.y})"
+
+    def _maybe_place_key_in_container(
+        self,
+        game_map: "GameMap",
+        key_prototype: Item,
+        *,
+        exclude_tiles: Optional[Set[Tuple[int, int]]] = None,
+    ) -> Optional[str]:
+        chance = getattr(settings, "KEY_CHEST_SPAWN_CHANCE", 0.0)
+        if chance <= 0 or random.random() > chance:
+            return None
+
+        containers = [
+            entity
+            for entity in game_map.entities
+            if isinstance(entity, (Chest, TableContainer, BookShelfContainer))
+            and not getattr(entity, "is_unique_room_chest", False)
+        ]
+        if exclude_tiles:
+            containers = [
+                container
+                for container in containers
+                if (container.x, container.y) not in exclude_tiles
+            ]
+        if not containers:
+            return None
+
+        target = random.choice(containers)
+        key_item = copy.deepcopy(key_prototype)
+        target.add_item(key_item)
+        return f"dentro de un contenedor en ({target.x}, {target.y})"
 
     def register_adventurer_descent(self, loot: List[Item]) -> None:
         """Schedule an adventurer corpse with its loot deeper in the dungeon."""

@@ -101,6 +101,12 @@ gray_key = Item(
     name="Gray key",
     id_name="gray_key",
 )
+blue_key = Item(
+    char="?",
+    color=(60, 120, 220),
+    name="Blue key",
+    id_name="blue_key",
+)
 chest = Chest(
     char="ε",
     open_char="ε",

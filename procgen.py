@@ -1940,6 +1940,8 @@ def _spawn_entity_template(
 
 
 def place_entities(room: RectangularRoom, dungeon: GameMap, floor_number: int,) -> None:
+    if getattr(room, "is_unique_room", False):
+        return
     number_of_monsters = random.randint(
         0, get_max_value_for_floor(max_monsters_by_floor, floor_number)
     )
@@ -2499,6 +2501,7 @@ def carve_fixed_room(
                 dungeon.tiles[tx, ty] = tile_types.closed_door
                 spawn_door_entity(dungeon, tx, ty)
                 door_positions.add((tx, ty))
+                markers.setdefault(ch, []).append((tx, ty))
             elif ch == "E":
                 dungeon.tiles[tx, ty] = tile_types.floor
                 markers.setdefault(ch, []).append((tx, ty))
@@ -2777,12 +2780,10 @@ def apply_unique_room_features(
     instance.apply(dungeon, room)
 
 
-def get_fixed_room_choice(
+def get_unique_room_choice(
     current_floor: int,
 ) -> Optional[Tuple[str, Tuple[str, ...], bool]]:
-    candidates: List[Tuple[str, Tuple[str, ...], bool]] = []
     unique_candidates: List[Tuple[str, Tuple[str, ...], bool]] = []
-
     for name, rules in UNIQUE_ROOMS_CHANCES.items():
         if name in _unique_rooms_used:
             continue
@@ -2797,6 +2798,15 @@ def get_fixed_room_choice(
             template = getattr(room_cls, "template", None) if room_cls else None
             if template:
                 unique_candidates.append((name, template, True))
+    if unique_candidates:
+        return random.choice(unique_candidates)
+    return None
+
+
+def get_fixed_room_choice(
+    current_floor: int,
+) -> Optional[Tuple[str, Tuple[str, ...], bool]]:
+    candidates: List[Tuple[str, Tuple[str, ...], bool]] = []
     for name, rules in FIXED_ROOM_CHANCES.items():
         chance = 0.0
         for min_floor, value in rules:
@@ -2809,9 +2819,6 @@ def get_fixed_room_choice(
             if template:
                 candidates.append((name, template, False))
 
-    if unique_candidates:
-        return random.choice(unique_candidates)
-
     if not candidates:
         return None
 
@@ -2819,6 +2826,8 @@ def get_fixed_room_choice(
 
 
 def place_entities_fixdungeon(room: RectangularRoom, dungeon: GameMap, floor_number: int, forbidden_cells) -> None:
+    if getattr(room, "is_unique_room", False):
+        return
     
     number_of_monsters = random.randint(
         0, get_max_value_for_floor(max_monsters_by_floor, floor_number)
