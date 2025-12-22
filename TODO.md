@@ -1,4 +1,5 @@
 AÚN SIN CATALOGAR
+- [ ] Equipar armaduras debería consumir 3 turnos (de otro modo compensa ponérselas en mitad de un combate).
 - [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
 - [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
 - [x] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.

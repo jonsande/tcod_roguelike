@@ -35,6 +35,7 @@ class Equippable(BaseComponent):
         recover_rate_bonus: int = 0,
         base_defense_bonus: int = 0,
         luck_bonus: int = 0,
+        noise_penalty: int = 0,
         cursed: bool = False,
         ranged_range: int = 0,
         ranged_strength_bonus: bool = False,
@@ -61,6 +62,7 @@ class Equippable(BaseComponent):
         self.recover_rate_bonus = recover_rate_bonus
         self.base_defense_bonus = base_defense_bonus
         self.luck_bonus = luck_bonus
+        self.noise_penalty = noise_penalty
         self.cursed = cursed
         self.ranged_range = ranged_range
         self.ranged_strength_bonus = ranged_strength_bonus
@@ -122,6 +124,7 @@ class Equippable(BaseComponent):
         add_stat("\nRecovery rate", self.recover_rate_bonus)
         add_stat("\nBase defense", self.base_defense_bonus)
         add_stat("\nLuck", self.luck_bonus)
+        add_stat("\nNoise", self.noise_penalty)
 
         if self.super_memory_bonus:
             lines.append(" Grants perfect recall")
@@ -285,10 +288,11 @@ class LeatherArmor(Equippable):
             dmg_bonus = 0, 
             defense_bonus=-1,
             stealth_bonus=0,
-            stealth_penalty=1,
+            stealth_penalty=0,
             to_hit_bonus=0,
             to_hit_penalty=0,
             armor_value_bonus=2,
+            noise_penalty=1,
         )
         #self.parent.info=f"Stealth Penalty: {self.stealth_penalty}",
         #super().__init__(equipment_type=EquipmentType.ARMOR, armor_value_bonus=1, stealth_penalty=1, to_hit_penalty=1)
@@ -299,8 +303,9 @@ class ChainMail(Equippable):
             equipment_type=EquipmentType.ARMOR, 
             armor_value_bonus=5,
             defense_bonus=-2,
-            stealth_penalty=3,
+            stealth_penalty=1,
             to_hit_penalty=2,
+            noise_penalty=2,
             )
 
 

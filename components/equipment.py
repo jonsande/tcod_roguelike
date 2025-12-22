@@ -251,6 +251,10 @@ class Equipment(BaseComponent):
             bonus += self.ring_right.equippable.armor_value_bonus
 
         return bonus
+
+    @property
+    def noise_penalty(self) -> int:
+        return self._sum_bonus("noise_penalty")
     
     @property
     def to_hit_bonus(self) -> int:
