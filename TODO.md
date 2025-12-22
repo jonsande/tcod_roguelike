@@ -144,13 +144,13 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
-- [ ] Escudos. Los escudos deben añadirte DEFENSE. Deben equiparse en la ranura OFFHAND.
+- [x] Escudos. Los escudos deben añadirte DEFENSE. Deben equiparse en la ranura OFFHAND.
 - [ ] Guantes. Alguno mágico, que te suba el to-hit, o la suerte.
 - [ ] Botas.
 - [ ] Mushroms.
 - [x] Cascos. Con propiedades. Hará el juego más interesante, y una forma de poder enfrentarse a la progresión de la dificultad de enemigos.
 - [-] Capas. Las capas han de ser lanzables. Además de tener un bonus al stealth. Algunas serán mágicas.
-- [ ] Bastones mágicos.
+- [-] Bastones mágicos.
 - [!] Pala y cuerda. La pala te permite cavar en la casilla en la que te encuentras y bajar al nivel de abajo. La cuerda te permite volver a subir por el agujero (para evitar quedarte atrapado por el sistema de llaves-cerraduras). Si no tiene una cuerda, soltará un mensaje del tipo a "no voy a cavar un agujero sin tener una cuerda por la que poder bajar", o algo así.
 - [x] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas.

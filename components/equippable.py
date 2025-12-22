@@ -143,6 +143,32 @@ class OffhandBook(Equippable):
         super().__init__(equipment_type=EquipmentType.OFFHAND)
 
 
+class SmallShield(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.OFFHAND,
+            defense_bonus=1,
+        )
+
+
+class MediumShield(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.OFFHAND,
+            defense_bonus=2,
+            to_hit_penalty=1,
+        )
+
+
+class LargeShield(Equippable):
+    def __init__(self) -> None:
+        super().__init__(
+            equipment_type=EquipmentType.OFFHAND,
+            defense_bonus=3,
+            to_hit_penalty=2,
+        )
+
+
 class Dagger(Equippable):
     def __init__(self) -> None:
         super().__init__(

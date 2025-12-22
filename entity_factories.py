@@ -1111,6 +1111,36 @@ tunneling_staff = Item(
 )
 loot_tables.register_loot_item("tunneling_staff", tunneling_staff)
 
+small_shield = Item(
+    char="(",
+    color=(160, 160, 160),
+    name="Small shield",
+    id_name="Small shield",
+    equippable=equippable.SmallShield(),
+    info="A light buckler that turns aside glancing blows.",
+)
+loot_tables.register_loot_item("small_shield", small_shield)
+
+medium_shield = Item(
+    char="(",
+    color=(120, 120, 120),
+    name="Medium shield",
+    id_name="Medium shield",
+    equippable=equippable.MediumShield(),
+    info="A balanced shield that protects well but hampers aim.",
+)
+loot_tables.register_loot_item("medium_shield", medium_shield)
+
+large_shield = Item(
+    char="(",
+    color=(90, 90, 90),
+    name="Large shield",
+    id_name="Large shield",
+    equippable=equippable.LargeShield(),
+    info="A heavy shield that offers strong protection at a cost to accuracy.",
+)
+loot_tables.register_loot_item("large_shield", large_shield)
+
 leather_armor = Item(
     char="[",
     color=(139, 69, 19),
