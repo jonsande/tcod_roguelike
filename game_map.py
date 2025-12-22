@@ -85,6 +85,7 @@ class GameMapTown:
         self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
         self.room_desc_color_by_center: Dict[Tuple[int, int], Tuple[int, int, int]] = {}
         self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        self.room_noise_penalty_by_center: Dict[Tuple[int, int], int] = {}
         self.room_seen: Set[Tuple[int, int]] = set()
         self.current_room_center: Optional[Tuple[int, int]] = None
         self.unique_room_types: Set[str] = set()
@@ -141,6 +142,12 @@ class GameMapTown:
 
     def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
         return self.room_center_by_tile.get((x, y))
+
+    def get_room_noise_penalty(self, x: int, y: int) -> int:
+        center = self.room_center_by_tile.get((x, y))
+        if not center:
+            return 0
+        return self.room_noise_penalty_by_center.get(center, 0)
 
     def register_player_room_entry(self, actor: Actor) -> None:
         self.current_room_center = None
@@ -355,6 +362,7 @@ class GameMap:
         self.room_desc_by_center: Dict[Tuple[int, int], Optional[str]] = {}
         self.room_desc_color_by_center: Dict[Tuple[int, int], Tuple[int, int, int]] = {}
         self.room_center_by_tile: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        self.room_noise_penalty_by_center: Dict[Tuple[int, int], int] = {}
         self.room_seen: Set[Tuple[int, int]] = set()
         self.current_room_center: Optional[Tuple[int, int]] = None
         self.unique_room_types: Set[str] = set()
@@ -412,6 +420,12 @@ class GameMap:
 
     def get_room_center_for_tile(self, x: int, y: int) -> Optional[Tuple[int, int]]:
         return self.room_center_by_tile.get((x, y))
+
+    def get_room_noise_penalty(self, x: int, y: int) -> int:
+        center = self.room_center_by_tile.get((x, y))
+        if not center:
+            return 0
+        return self.room_noise_penalty_by_center.get(center, 0)
 
     def register_player_room_entry(self, actor: Actor) -> None:
         center = self.get_room_center_for_tile(actor.x, actor.y)
@@ -711,7 +725,15 @@ class GameWorld:
             if isinstance(entry, str):
                 name = entry.strip()
                 if name:
-                    entries.append({"name": name, "description": None, "weight": 1.0, "desc_color": color.white})
+                    entries.append(
+                        {
+                            "name": name,
+                            "description": None,
+                            "weight": 1.0,
+                            "desc_color": color.white,
+                            "noise_penalty": 0,
+                        }
+                    )
                 continue
             if isinstance(entry, dict):
                 name = str(entry.get("name", "")).strip()
@@ -720,18 +742,24 @@ class GameWorld:
                 description = entry.get("description")
                 description = str(description).strip() if description is not None else None
                 weight = entry.get("weight", 1.0)
+                noise_penalty = entry.get("noise_penalty", 0)
                 try:
                     weight_value = float(weight)
                 except (TypeError, ValueError):
                     weight_value = 1.0
                 if weight_value <= 0:
                     weight_value = 1.0
+                try:
+                    noise_penalty_value = int(noise_penalty)
+                except (TypeError, ValueError):
+                    noise_penalty_value = 0
                 entries.append(
                     {
                         "name": name,
                         "description": description or None,
                         "weight": weight_value,
                         "desc_color": color.white,
+                        "noise_penalty": noise_penalty_value,
                     }
                 )
         return entries
@@ -763,15 +791,18 @@ class GameWorld:
                 name = game_map.room_names_by_center.get(center, "Unique room")
                 description = game_map.room_desc_by_center.get(center)
                 desc_color = game_map.room_desc_color_by_center.get(center, color.white)
+                noise_penalty = game_map.room_noise_penalty_by_center.get(center, 0)
             elif center in game_map.room_names_by_center:
                 name = game_map.room_names_by_center[center]
                 description = game_map.room_desc_by_center.get(center)
                 desc_color = game_map.room_desc_color_by_center.get(center, color.white)
+                noise_penalty = game_map.room_noise_penalty_by_center.get(center, 0)
             else:
                 choice = random.choices(entries, weights=weights, k=1)[0]
                 name = choice["name"]
                 description = choice.get("description")
                 desc_color = choice.get("desc_color", color.white)
+                noise_penalty = choice.get("noise_penalty", 0)
             count = name_counts.get(name, 0) + 1
             name_counts[name] = count
             label = getattr(game_map, "branch_label", "").strip()
@@ -782,6 +813,7 @@ class GameWorld:
             if description is not None:
                 game_map.room_desc_by_center[center] = description
                 game_map.room_desc_color_by_center[center] = desc_color
+            game_map.room_noise_penalty_by_center[center] = noise_penalty
             for tile in tiles:
                 room_center_by_tile[tile] = center
 

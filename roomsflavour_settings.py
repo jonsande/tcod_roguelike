@@ -9,12 +9,14 @@ ROOM_FLAVOUR = [
     },
     {
         "name": "Blue moss chamber",
-        "description": "Un musgo azulado cubre las paredes y el techo.",
+        "description": "Un musgo azulado cubre el suelo, las paredes y el techo.",
+        "noise_penalty": -1,
         "weight": 1,
     },
     {
         "name": "Collapsed hall",
         "description": "Restos de piedra y madera crujen bajo tus pasos.",
+        "noise_penalty": 1,
         "weight": 1,
     },
     {

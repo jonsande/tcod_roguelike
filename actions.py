@@ -1777,7 +1777,8 @@ class MovementAction(ActionWithDirection):
             if getattr(self.engine, "register_noise", None):
                 equipment = getattr(self.entity, "equipment", None)
                 noise_penalty = equipment.noise_penalty if equipment else 0
-                noise_level = 1 + noise_penalty
+                room_noise_penalty = game_map.get_room_noise_penalty(dest_x, dest_y)
+                noise_level = 1 + noise_penalty + room_noise_penalty
                 is_flying = getattr(self.entity, "is_flying", False) or getattr(getattr(self.entity, "fighter", None), "is_flying", False)
                 tag = "flutter" if is_flying else "footsteps"
                 self.engine.register_noise(self.entity, level=noise_level, duration=1, tag=tag)
