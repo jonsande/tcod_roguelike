@@ -4,6 +4,7 @@ import math
 from typing import Callable, Optional, Tuple, Type, TypeVar, TYPE_CHECKING, Union
 
 from render_order import RenderOrder
+from components import equippable as equippable_component
 
 if TYPE_CHECKING:
     from components.ai import BaseAI
@@ -302,10 +303,14 @@ class Book(Item):
     def __init__(self, *, info: str = "NO INFO", **kwargs):
         kwargs.setdefault("throwable", True)
         kwargs.setdefault("info", info)
+        kwargs.setdefault("equippable", equippable_component.OffhandBook())
         super().__init__(**kwargs)
 
     def read_message(self) -> str:
         return self.info
+
+    def read_aloud(self, reader: "Actor") -> str:
+        return f"Lees en voz alta el libro {self.name}."
 
 
 class GeneratedBook(Book):
@@ -335,6 +340,16 @@ class GeneratedBook(Book):
             color=self.color,
             id_name=self.id_name,
         )
+
+
+class ApothecaryBook(Book):
+    """Book that reveals the identities of all potions when read aloud."""
+
+    def read_aloud(self, reader: "Actor") -> str:
+        from entity_factories import identify_all_potions
+
+        identify_all_potions()
+        return "Las pócimas quedan identificadas."
 
 
 class Decoration(Entity):

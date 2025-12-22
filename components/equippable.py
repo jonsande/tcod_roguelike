@@ -135,6 +135,11 @@ class Equippable(BaseComponent):
         return f"\n".join(lines)
 
 
+class OffhandBook(Equippable):
+    def __init__(self) -> None:
+        super().__init__(equipment_type=EquipmentType.OFFHAND)
+
+
 class Dagger(Equippable):
     def __init__(self) -> None:
         super().__init__(

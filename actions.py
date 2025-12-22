@@ -293,6 +293,44 @@ class EquipAction(Action):
         self.entity.equipment.toggle_equip(self.item)
 
 
+class BookToggleEquipAction(Action):
+    def __init__(self, entity: Actor, item: Item):
+        super().__init__(entity)
+        self.item = item
+
+    def perform(self) -> None:
+        # TIME SYSTEM
+        self.entity.fighter.current_time_points -= self.entity.fighter.action_time_cost
+        if DEBUG_MODE:
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: spends {self.entity.fighter.action_time_cost} t-pts in BookToggleEquipAction")
+            print(f"DEBUG: {bcolors.OKBLUE}{self.entity.name}{bcolors.ENDC}: {self.entity.fighter.current_time_points} t-pts left.")
+
+        equipment = self.entity.equipment
+        slot = "offhand"
+        current_item = getattr(equipment, slot, None)
+
+        if current_item is self.item:
+            if equipment._cannot_remove_cursed(current_item, True):
+                return
+            setattr(equipment, slot, None)
+            self.engine.message_log.add_message(
+                f"Has desequipado el libro {self.item.name}.",
+                color.orange,
+            )
+        else:
+            if current_item is not None and equipment._cannot_remove_cursed(current_item, True):
+                return
+            setattr(equipment, slot, self.item)
+            self.engine.message_log.add_message(
+                f"Has equipado el libro {self.item.name}. Activalo de nuevo para ver sus opciones.",
+                color.orange,
+            )
+
+        fighter = getattr(self.entity, "fighter", None)
+        if fighter:
+            fighter.on_equipment_changed()
+
+
 class TakeStairsAction(Action):
     def perform(self) -> None:
         """
@@ -594,6 +632,10 @@ class ThrowItemAction(Action):
                 self.engine.message_log.add_message(f"{self.entity.name} is exhausted!", color.red)
             raise exceptions.Impossible("")
 
+        # Throwing is noisy regardless of item type or hit result.
+        if getattr(self.engine, "register_noise", None):
+            self.engine.register_noise(self.entity, level=1, duration=1, tag="throw")
+
         path = self._compute_throw_path(self.entity.x, self.entity.y, dest_x, dest_y)
         self._animate_throw(path)
 
@@ -890,8 +932,9 @@ class ThrowItemAction(Action):
 
             # Enemigo dado por enterado
             if isinstance(target, Actor) and target.is_alive:
-                target.fighter.aggravated = True
-                self.engine.message_log.add_message(f"{target.name} is aggravated!", color.red)
+                if target.fighter.aggravated == False:
+                    target.fighter.aggravated = True
+                    self.engine.message_log.add_message(f"{target.name} is aggravated!", color.red)
 
         # TODO: Contra objetivos no vivientes
         else:
@@ -1386,7 +1429,14 @@ class MeleeAction(ActionWithDirection):
                                     print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
                                 self.engine.player.level.add_xp(target.level.xp_given)
 
-                            target.fighter.aggravated = True
+                            if was_aggravated == False:
+                                target.fighter.aggravated = True
+                                self.engine.message_log.add_message(
+                                    f"{target.name} is aggravated!",
+                                    color.red,
+                                )
+                            else:
+                                target.fighter.aggravated = True
 
             attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
 

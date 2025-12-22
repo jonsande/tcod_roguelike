@@ -5,6 +5,7 @@ class EquipmentType(Enum):
     WEAPON = auto()
     WAND = auto()
     #RANGEDWEAPON = auto()
+    OFFHAND = auto()
     ARMOR = auto()
     HEADARMOR = auto()
     CLOAK = auto()

@@ -20,6 +20,7 @@ class Equipment(BaseComponent):
     def __init__(
         self,
         weapon: Optional[Item] = None,
+        offhand: Optional[Item] = None,
         armor: Optional[Item] = None,
         artifact: Optional[Item] = None,
         ring_left: Optional[Item] = None,
@@ -30,6 +31,7 @@ class Equipment(BaseComponent):
         has_cloak_slot: bool = False,
     ):
         self.weapon = weapon
+        self.offhand = offhand
         self.armor = armor
         self.artifact = artifact
         self.ring_left = ring_left
@@ -42,6 +44,7 @@ class Equipment(BaseComponent):
     def __setstate__(self, state):
         """Ensure new slots exist when loading older save files."""
         self.__dict__.update(state)
+        self.__dict__.setdefault("offhand", None)
         self.__dict__.setdefault("has_cloak_slot", False)
         self.__dict__.setdefault("cloak", None)
 
@@ -50,6 +53,7 @@ class Equipment(BaseComponent):
             item.equippable
             for item in (
                 self.weapon,
+                self.offhand,
                 self.armor,
                 self.head_armor,
                 self.cloak,
@@ -69,6 +73,7 @@ class Equipment(BaseComponent):
             item
             for item in (
                 self.weapon,
+                self.offhand,
                 self.armor,
                 self.head_armor,
                 self.cloak,
@@ -100,6 +105,9 @@ class Equipment(BaseComponent):
         if self.weapon is not None and self.weapon.equippable is not None:
             bonus += self.weapon.equippable.defense_bonus
 
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.defense_bonus
+
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.defense_bonus
 
@@ -130,6 +138,9 @@ class Equipment(BaseComponent):
             #total += self.weapon.equippable.weapon_dmg
             total += self.weapon.equippable.dmg_bonus
 
+        if self.offhand is not None and self.offhand.equippable is not None:
+            total += self.offhand.equippable.dmg_bonus
+
         if self.armor is not None and self.armor.equippable is not None:
             # total += self.armor.equippable.weapon_dmg
             total += self.armor.equippable.dmg_bonus
@@ -159,6 +170,9 @@ class Equipment(BaseComponent):
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.dmg_bonus
 
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.dmg_bonus
+
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.dmg_bonus
 
@@ -182,6 +196,9 @@ class Equipment(BaseComponent):
 
         if self.weapon is not None and self.weapon.equippable is not None:
             bonus += self.weapon.equippable.stealth_bonus
+
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.stealth_bonus
 
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.stealth_bonus
@@ -211,6 +228,9 @@ class Equipment(BaseComponent):
             #bonus += self.weapon.equippable.stealth_penalty
             bonus += self.weapon.equippable.armor_value_bonus
 
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.armor_value_bonus
+
         if self.armor is not None and self.armor.equippable is not None:
             #bonus += self.armor.equippable.stealth_penalty
             bonus += self.armor.equippable.armor_value_bonus
@@ -238,6 +258,9 @@ class Equipment(BaseComponent):
 
         if self.weapon is not None and self.weapon.equippable is not None:
             bonus += self.weapon.equippable.to_hit_bonus
+
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.to_hit_bonus
 
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.to_hit_bonus
@@ -267,6 +290,9 @@ class Equipment(BaseComponent):
             bonus += self.weapon.equippable.to_hit_penalty
             #bonus += 1
 
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.to_hit_penalty
+
         if self.armor is not None and self.armor.equippable is not None:
             #bonus += self.weapon.equippable.to_hit_penalty
             bonus += self.armor.equippable.to_hit_penalty
@@ -295,6 +321,9 @@ class Equipment(BaseComponent):
 
         if self.armor is not None and self.armor.equippable is not None:
             bonus += self.armor.equippable.armor_value_bonus
+
+        if self.offhand is not None and self.offhand.equippable is not None:
+            bonus += self.offhand.equippable.armor_value_bonus
 
         if self.head_armor is not None and self.head_armor.equippable is not None:
             bonus += self.head_armor.equippable.armor_value_bonus
@@ -348,6 +377,7 @@ class Equipment(BaseComponent):
     def item_is_equipped(self, item: Item) -> bool:
         return (
             self.weapon == item
+            or self.offhand == item
             or self.armor == item
             or self.head_armor == item
             or self.cloak == item
@@ -394,6 +424,12 @@ class Equipment(BaseComponent):
             and equippable_item.equippable.equipment_type in (EquipmentType.WEAPON, EquipmentType.WAND)
         ):
             slot = "weapon"
+            identify_on_equip = False
+        elif (
+            equippable_item.equippable
+            and equippable_item.equippable.equipment_type == EquipmentType.OFFHAND
+        ):
+            slot = "offhand"
             identify_on_equip = False
         elif (
             equippable_item.equippable

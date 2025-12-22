@@ -1079,6 +1079,58 @@ class InventoryEventHandler(AskUserEventHandler):
         return entries
 
 
+class BookOptionsHandler(AskUserEventHandler):
+    TITLE = "Opciones del libro"
+
+    def __init__(self, engine: Engine, book: Book):
+        super().__init__(engine)
+        self.book = book
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+
+        x = 1
+        y = 1
+        width = 78
+        height = 7
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        console.print(x=x + 1, y=2, string=f"Libro: {self.book.name}")
+        console.print(x=x + 1, y=3, string="a) Leer el libro")
+        console.print(x=x + 1, y=4, string="b) Leerlo en voz alta")
+        console.print(x=x + 1, y=5, string="c) Desequiparlo")
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+        index = key - tcod.event.KeySym.a
+
+        if key == tcod.event.KeySym.ESCAPE:
+            return super().ev_keydown(event)
+
+        if index == 0:
+            return PopupMessage(self, self.book.read_message())
+        if index == 1:
+            message = self.book.read_aloud(self.engine.player)
+            if message:
+                self.engine.message_log.add_message(message, color.orange)
+            return super().ev_keydown(event)
+        if index == 2:
+            return actions.BookToggleEquipAction(self.engine.player, self.book)
+
+        self.engine.message_log.add_message("Invalid entry.", color.invalid)
+        return None
+
+
 class InventoryActivateHandler(InventoryEventHandler):
     """Handle using an inventory item."""
 
@@ -1086,7 +1138,9 @@ class InventoryActivateHandler(InventoryEventHandler):
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         if isinstance(item, Book):
-            return PopupMessage(self, item.read_message())
+            if self.engine.player.equipment.item_is_equipped(item):
+                return BookOptionsHandler(self.engine, item)
+            return actions.BookToggleEquipAction(self.engine.player, item)
         if item.consumable:
             # Return the action for the selected item.
             return item.consumable.get_action(self.engine.player)

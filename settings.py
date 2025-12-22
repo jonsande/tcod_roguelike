@@ -313,6 +313,9 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "accuracy_ring", "equip": True},
     # {"item": "leather_armor", "equip": True},
     {"item": "dagger", "quantity": 1, "equip": True},
+    {"item": "generated_book", "quantity": 1, "equip": False},
+    {"item": "forgotten_canticle", "quantity": 1, "equip": False},
+    {"item": "apothecary_book", "quantity": 1, "equip": False}
     # {"item": "long_bow", "quantity": 1},
     # {"item": "arrow", "quantity": 20},
     #{"item": "spear", "quantity": 1, "equip": True},
@@ -717,6 +720,7 @@ TABLE_LOOT_TABLES = {
         # Libros estáticos
         ("forgotten_canticle", 3),
         ("architect_notes", 3),
+        ("apothecary_book", 1),
         ("red_tower_mails", 3),
         ("tired_librarian_notes", 3),
         ("wanderers_diary", 3),
@@ -764,6 +768,7 @@ BOOKSHELF_LOOT_TABLES = {
         # Libros estáticos
         ("forgotten_canticle", 3),
         ("architect_notes", 3),
+        ("apothecary_book", 3),
         ("red_tower_mails", 3),
         ("tired_librarian_notes", 3),
         ("wanderers_diary", 3),

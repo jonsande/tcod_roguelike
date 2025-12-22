@@ -26,7 +26,19 @@ from components.equipment import Equipment
 from components.fighter import Fighter, Door, BreakableWallFighter, NaturalWeapon
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item, Book, GeneratedBook, Decoration, Obstacle, Entity, Chest, TableContainer, BookShelfContainer
+from entity import (
+    Actor,
+    Item,
+    Book,
+    GeneratedBook,
+    ApothecaryBook,
+    Decoration,
+    Obstacle,
+    Entity,
+    Chest,
+    TableContainer,
+    BookShelfContainer,
+)
 from render_order import RenderOrder
 import random
 import numpy as np
@@ -725,6 +737,30 @@ petrification_potion = Item(
     throwable=True,
 )
 
+POTION_ITEMS = [
+    health_potion,
+    strength_potion,
+    poison_potion,
+    antidote,
+    power_potion,
+    precission_potion,
+    stamina_potion,
+    increase_max_stamina,
+    life_potion,
+    infra_vision_potion,
+    temporal_infra_vision_potion,
+    blindness_potion,
+    confusion_potion,
+    paralysis_potion,
+    petrification_potion,
+]
+
+
+def identify_all_potions() -> None:
+    for potion in POTION_ITEMS:
+        if not getattr(potion, "identified", False):
+            potion.identify()
+
 # DECORATION
 
 debris_a = Decoration(
@@ -1380,6 +1416,21 @@ loot_tables.register_loot_item("forgotten_canticle", forgotten_canticle)
 architect_notes = _build_static_book("architect_notes")
 architect_notes._spawn_key = "architect_notes"
 loot_tables.register_loot_item("architect_notes", architect_notes)
+
+# Libros especiales
+apothecary_book = ApothecaryBook(
+    char="~",
+    color=(210, 200, 170),
+    name="Apothecary's Book",
+    id_name="Apothecary's Book",
+    info=(
+        "Un libro que permite identificar hierbas y distintas pócimas, tónicos y "
+        "medicinas creadas con ellas."
+    ),
+    stackable=False,
+)
+apothecary_book._spawn_key = "apothecary_book"
+loot_tables.register_loot_item("apothecary_book", apothecary_book)
 
 # Notas inútiles o pistas falsas
 note_wizard_1 = Book(
