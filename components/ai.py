@@ -1769,9 +1769,10 @@ class MimicHostileAI(BaseAI):
         dest_x, dest_y = self.path.pop(0)
         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
 
-class Neutral(BaseAI):
 
-    # Actualmente un personaje con IA "Neutral" camina derecho
+class ToDownStairs(BaseAI):
+
+    # Un personaje con esta IA camina derecho
     # hacia las escaleras y baja por ellas.
 
     def __init__(self, entity: Actor):

@@ -78,6 +78,14 @@ ADJACENT_DELTAS = [
     (1, 1),
 ]
 
+def _is_friendly_target(player: "Actor", target: "Actor") -> bool:
+    if settings.get_faction_relation(
+        getattr(player, "faction", ""),
+        getattr(target, "faction", ""),
+    ) != "friendly":
+        return False
+    return settings.resolve_player_attitude(player, target) == "friendly"
+
 WAIT_KEYS = {
     tcod.event.KeySym.PERIOD,
     tcod.event.KeySym.KP_5,
@@ -480,8 +488,8 @@ class AskUserEventHandler(EventHandler):
         return MainGameEventHandler(self.engine)
 
 
-class ConfirmAdventurerAttackHandler(AskUserEventHandler):
-    """Ask the player to confirm attacking a neutral adventurer."""
+class ConfirmFriendlyAttackHandler(AskUserEventHandler):
+    """Ask the player to confirm attacking a friendly creature."""
 
     def __init__(
         self,
@@ -489,15 +497,15 @@ class ConfirmAdventurerAttackHandler(AskUserEventHandler):
         parent_handler: BaseEventHandler,
         attacker: Actor,
         target: Actor,
-        dx: int,
-        dy: int,
+        action_factory: Callable[[], Action],
+        target_position: Optional[Tuple[int, int]] = None,
     ):
         super().__init__(engine)
         self.parent = parent_handler
         self.attacker = attacker
         self.target = target
-        self.dx = dx
-        self.dy = dy
+        self._action_factory = action_factory
+        self._target_position = target_position
         self.text = _(
             "Attack {target}? This will turn them hostile. \n\nPress 'y' to confirm or ESC to cancel."
         ).format(target=self.target.name)
@@ -552,15 +560,22 @@ class ConfirmAdventurerAttackHandler(AskUserEventHandler):
             tcod.event.KeySym.KP_ENTER,
         ):
             if self._should_attack():
-                return BumpAction(self.attacker, self.dx, self.dy)
+                self._execute_action()
             return self.parent
         return None
 
     def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
         """Left click confirms a selection."""
         if event.button == tcod.event.MouseButton.LEFT and self._should_attack():
-            return BumpAction(self.attacker, self.dx, self.dy)
+            self._execute_action()
         return self.parent
+
+    def _execute_action(self) -> None:
+        action = self._action_factory()
+        if not action:
+            return
+        handler = self.parent if isinstance(self.parent, EventHandler) else self
+        handler.handle_action(action)
 
     def _should_attack(self) -> bool:
         """Ensure the target is still valid before confirming the attack."""
@@ -569,9 +584,7 @@ class ConfirmAdventurerAttackHandler(AskUserEventHandler):
         fighter = getattr(self.target, "fighter", None)
         if not fighter or getattr(fighter, "hp", 0) <= 0:
             return False
-        dest_x = self.attacker.x + self.dx
-        dest_y = self.attacker.y + self.dy
-        if (self.target.x, self.target.y) != (dest_x, dest_y):
+        if self._target_position and (self.target.x, self.target.y) != self._target_position:
             return False
         if getattr(self.target, "gamemap", None) is not self.engine.game_map:
             return False
@@ -1236,7 +1249,23 @@ class InventoryThrowHandler(InventoryEventHandler):
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """User selects an item to throw, then select target position."""
-        return SingleRangedAttackHandler(self.engine, lambda pos: ThrowItemAction(self.engine.player, item, pos))
+        player = self.engine.player
+
+        def _throw_action(pos: Tuple[int, int]) -> Optional[ActionOrHandler]:
+            target = self.engine.game_map.get_actor_at_location(*pos)
+            action_factory = lambda: ThrowItemAction(player, item, pos)
+            if target and _is_friendly_target(player, target):
+                return ConfirmFriendlyAttackHandler(
+                    self.engine,
+                    MainGameEventHandler(self.engine),
+                    player,
+                    target,
+                    action_factory,
+                    target_position=pos,
+                )
+            return action_factory()
+
+        return SingleRangedAttackHandler(self.engine, _throw_action)
 
 
 class InventoryExamineHandler(InventoryEventHandler):
@@ -1625,7 +1654,7 @@ class MainGameEventHandler(EventHandler):
             chest_handler = self._maybe_open_chest(player, dx, dy)
             if chest_handler:
                 return chest_handler
-            confirm_handler = self._maybe_confirm_adventurer_attack(player, dx, dy)
+            confirm_handler = self._maybe_confirm_friendly_attack(player, dx, dy)
             if confirm_handler:
                 return confirm_handler
             action = BumpAction(player, dx, dy)
@@ -1715,7 +1744,7 @@ class MainGameEventHandler(EventHandler):
 
         return action
 
-    def _maybe_confirm_adventurer_attack(
+    def _maybe_confirm_friendly_attack(
         self, player: Actor, dx: int, dy: int
     ) -> Optional[ActionOrHandler]:
         dest_x = player.x + dx
@@ -1723,12 +1752,19 @@ class MainGameEventHandler(EventHandler):
         target = self.engine.game_map.get_actor_at_location(dest_x, dest_y)
         if not target:
             return None
-        if getattr(target, "name", "").lower() != "adventurer":
-            return None
         fighter = getattr(target, "fighter", None)
-        if fighter and getattr(fighter, "aggravated", False):
+        if not fighter or getattr(fighter, "hp", 0) <= 0:
             return None
-        return ConfirmAdventurerAttackHandler(self.engine, self, player, target, dx, dy)
+        if not _is_friendly_target(player, target):
+            return None
+        return ConfirmFriendlyAttackHandler(
+            self.engine,
+            self,
+            player,
+            target,
+            lambda: BumpAction(player, dx, dy),
+            target_position=(dest_x, dest_y),
+        )
 
     def _maybe_open_chest(self, player, dx: int, dy: int) -> Optional[ActionOrHandler]:
         dest_x = player.x + dx
@@ -1768,10 +1804,23 @@ class MainGameEventHandler(EventHandler):
             "Selecciona un objetivo a distancia.",
             color.needs_target,
         )
-        return SingleRangedAttackHandler(
-            self.engine,
-            lambda pos: ThrowItemAction(player, arrow, pos, ranged_weapon=weapon),
-        )
+        def _ranged_action(pos: Tuple[int, int]) -> Optional[ActionOrHandler]:
+            target = self.engine.game_map.get_actor_at_location(*pos)
+            action_factory = lambda: ThrowItemAction(
+                player, arrow, pos, ranged_weapon=weapon
+            )
+            if target and _is_friendly_target(player, target):
+                return ConfirmFriendlyAttackHandler(
+                    self.engine,
+                    MainGameEventHandler(self.engine),
+                    player,
+                    target,
+                    action_factory,
+                    target_position=pos,
+                )
+            return action_factory()
+
+        return SingleRangedAttackHandler(self.engine, _ranged_action)
 
     def _maybe_reach_attack(self, player: Actor) -> Optional[ActionOrHandler]:
         weapon = getattr(player.equipment, "weapon", None)
@@ -1791,7 +1840,9 @@ class MainGameEventHandler(EventHandler):
                 continue
             if not getattr(actor, "fighter", None):
                 continue
-            if player.distance(actor.x, actor.y) <= weapon_reach:
+            dx = abs(player.x - actor.x)
+            dy = abs(player.y - actor.y)
+            if max(dx, dy) <= weapon_reach:
                 targets.append(actor)
 
         if not targets:
@@ -1803,26 +1854,47 @@ class MainGameEventHandler(EventHandler):
 
         if len(targets) == 1:
             target = targets[0]
-            return actions.ReachMeleeAction(
+            action_factory = lambda: actions.ReachMeleeAction(
                 player,
                 target.x - player.x,
                 target.y - player.y,
                 weapon_reach,
             )
+            if _is_friendly_target(player, target):
+                return ConfirmFriendlyAttackHandler(
+                    self.engine,
+                    self,
+                    player,
+                    target,
+                    action_factory,
+                    target_position=(target.x, target.y),
+                )
+            return action_factory()
 
         self.engine.message_log.add_message(
             "Selecciona un objetivo en alcance.",
             color.needs_target,
         )
-        return SingleRangedAttackHandler(
-            self.engine,
-            lambda pos: actions.ReachMeleeAction(
+        def _reach_action(pos: Tuple[int, int]) -> Optional[ActionOrHandler]:
+            target = self.engine.game_map.get_actor_at_location(*pos)
+            action_factory = lambda: actions.ReachMeleeAction(
                 player,
                 pos[0] - player.x,
                 pos[1] - player.y,
                 weapon_reach,
-            ),
-        )
+            )
+            if target and _is_friendly_target(player, target):
+                return ConfirmFriendlyAttackHandler(
+                    self.engine,
+                    MainGameEventHandler(self.engine),
+                    player,
+                    target,
+                    action_factory,
+                    target_position=pos,
+                )
+            return action_factory()
+
+        return SingleRangedAttackHandler(self.engine, _reach_action)
 
 
 class GameOverEventHandler(EventHandler):

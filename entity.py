@@ -123,6 +123,8 @@ class Actor(Entity):
         inventory: Inventory,
         level: Level,
         to_eat_drop = None,
+        faction: str = "wild",
+        player_attitude: Optional[str] = None,
         #recover_rate: int,
     ):
         super().__init__(
@@ -137,6 +139,13 @@ class Actor(Entity):
 
         self.ai_cls = ai_cls
         self.ai: Optional[BaseAI] = ai_cls(self)
+
+        if not faction:
+            raise ValueError("Actor faction must be a non-empty string.")
+        self.faction = faction
+        if player_attitude is not None and player_attitude not in ("friendly", "neutral", "hostile"):
+            raise ValueError(f"Invalid player_attitude: {player_attitude}")
+        self.player_attitude = player_attitude
 
         self.equipment: Equipment = equipment
         self.equipment.parent = self

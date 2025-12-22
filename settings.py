@@ -1057,28 +1057,8 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
-    "adventurer": {
-        "min_floor": 2, 
-        "weight_progression": [
-            (1, 0),
-            (2, 2),
-            (3, 4),
-            (4, 6),
-            (8, 4),
-            (15, 0),
-            ],
-    },
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
-    "campfire": {
-        "min_floor": 2,
-        "weight_progression": [
-            (2, 10),
-            (13, 7),
-            (14, 4),
-            (15, 1),
-            (16, 0),
-        ],
-    },
+    "campfire": {"min_floor": 2, "weight_progression": [(2, 10), (13, 7), (14, 4), (15, 1), (16, 0),],},
     "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
@@ -1094,6 +1074,7 @@ ENEMY_SPAWN_RULES = {
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
     "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
+    "adventurer": {"min_floor": 2, "weight_progression": [(1, 0), (2, 2), (3, 4), (15, 0),],},
     #"warden": {"min_floor": 6, "weight_progression": [(6, 6), (8, 14), (10, 6), (12, 0)]},
 }
 
@@ -1105,3 +1086,48 @@ PROFICIENCY_LEVELS = {
     "Expert": 2.5, 
     "Master": 4.0
     }
+
+# -- Factions -------------------------------------------------------------
+# Relaciones entre facciones. La misma faccion siempre es friendly para sí misma.
+# Ahora mismo esto sólo afecta a los mensajes de confirmación en caso de intentar
+# atacar a una criatura friendly.
+FACTION_RELATIONS = {
+    "human": {
+        "friendly": ["slime"],
+        "neutral": [],
+        "hostile": ["wild"],
+    },
+    "wild": {
+        "friendly": [],
+        "neutral": ["slime"],
+        "hostile": ["human"],
+    },
+    "slime": 
+    {
+        "friendly": [],
+        "neutral": ["human", "wild"],
+        "hostile": [],
+    },
+}
+
+def get_faction_relation(source_faction: str, target_faction: str) -> str:
+    if source_faction == target_faction:
+        return "friendly"
+    relations = FACTION_RELATIONS.get(source_faction, {})
+    for relation in ("friendly", "neutral", "hostile"):
+        if target_faction in relations.get(relation, []):
+            return relation
+    return "neutral"
+
+def resolve_player_attitude(player, target) -> str:
+    attitude = getattr(target, "player_attitude", None)
+    if attitude not in ("friendly", "neutral", "hostile"):
+        attitude = get_faction_relation(
+            getattr(player, "faction", ""),
+            getattr(target, "faction", ""),
+        )
+        target.player_attitude = attitude
+    return attitude
+
+def are_factions_friendly(source_faction: str, target_faction: str) -> bool:
+    return get_faction_relation(source_faction, target_faction) == "friendly"

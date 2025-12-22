@@ -8,7 +8,7 @@ from components.ai import (
     HostileEnemyV2,
     HostileEnemyV3,
     ScoutV3,
-    Neutral,
+    #Neutral,
     Dummy,
     ConfusedEnemy,
     HostileEnemyPlus,
@@ -818,6 +818,7 @@ old_man = Actor(
     ),
     inventory=Inventory(capacity=1),
     level=Level(xp_given=0),
+    faction="human",
 )
 old_man.id_name = "The old man"
 
@@ -1552,6 +1553,7 @@ player = Actor(
     ),
     inventory=Inventory(capacity=35),
     level=Level(level_up_base=20), # Default: 200
+    faction="human",
 )
 
 adventurer = Actor(
@@ -1583,6 +1585,7 @@ adventurer = Actor(
     ),
     inventory=Inventory(capacity=20, loot_table_key="Adventurer", loot_amount=4),
     level=Level(level_up_base=20),
+    faction="human",
 )
 
 adventurer.on_spawn = _setup_adventurer_equipment
@@ -1682,6 +1685,7 @@ slime = Actor(
     ),
     inventory=Inventory(capacity=4),
     level=Level(xp_given=1),
+    faction="slime"
 )
 
 cave_bat = Actor(

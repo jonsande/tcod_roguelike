@@ -13,6 +13,7 @@ from entity import Actor, Chest, TableContainer, BookShelfContainer
 import exceptions
 import random
 from settings import DEBUG_MODE
+import settings
 import numpy as np
 import tile_types
 from audio import (
@@ -53,6 +54,15 @@ POTION_IDENTIFICATION_DESCRIPTIONS = {
     "Self paralysis potion": "{target} queda rígido como una estatua.",
     "Petrification potion": "{target} se vuelve de piedra.",
 }
+
+def _mark_player_attack_target_hostile(player: Actor, target: Actor) -> None:
+    if settings.get_faction_relation(
+        getattr(player, "faction", ""),
+        getattr(target, "faction", ""),
+    ) != "friendly":
+        return
+    if settings.resolve_player_attitude(player, target) != "hostile":
+        target.player_attitude = "hostile"
 
 
 # la clase padre 'acción'
@@ -418,7 +428,9 @@ class ReachMeleeAction(ActionWithDirection):
         self.reach = reach
 
     def perform(self) -> None:
-        if self.entity.distance(*self.dest_xy) > self.reach:
+        dx = abs(self.dest_xy[0] - self.entity.x)
+        dy = abs(self.dest_xy[1] - self.entity.y)
+        if max(dx, dy) > self.reach:
             raise exceptions.Impossible("El objetivo está fuera de alcance.")
         weapon = getattr(self.entity.equipment, "weapon", None)
         equippable = getattr(weapon, "equippable", None)
@@ -616,6 +628,9 @@ class ThrowItemAction(Action):
         if not target:
             self._spend_throw_cost()
             return
+
+        if self.entity is self.engine.player and isinstance(target, Actor):
+            _mark_player_attack_target_hostile(self.entity, target)
 
         # Comprobar si atacante y/o objetivo son visibles para el jugador
         # Útil para impresión de mensajes y más.
@@ -1155,6 +1170,9 @@ class MeleeAction(ActionWithDirection):
 
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
+
+        if self.entity is self.engine.player and isinstance(target, Actor):
+            _mark_player_attack_target_hostile(self.entity, target)
 
         target_ai = getattr(target, "ai", None)
         target_is_dummy = self.is_dummy_object(target_ai)

@@ -231,7 +231,7 @@ class SpearPlus(Equippable):
             dmg_bonus=2,
             defense_bonus=2,
             to_hit_bonus=2,
-            reach=1,
+            reach=2,
             )
 
 class LongBow(Equippable):
