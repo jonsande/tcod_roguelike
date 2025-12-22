@@ -1863,6 +1863,38 @@ cave_bat.fighter.is_flying = True
 # TODO: poisonous_cave_bat
 # TODO: vampire_bat
 
+quasit = Actor(
+    char="q",
+    color=(80, 140, 70),
+    name="Quasit",
+    ai_cls=SleepingEnemy,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=7,
+        base_defense=4,
+        strength=0,
+        recover_rate=50,
+        recover_amount=0,
+        fov=6,
+        foh=6,
+        perception=4,
+        weapon_proficiency=PROFICIENCY_LEVELS["Novice"],
+        base_stealth=4,
+        aggressivity=6,
+        stamina=4,
+        max_stamina=4,
+        action_time_cost=6,
+        poison_resistance=4,
+        woke_ai_cls=HostileEnemyV3,
+        can_open_doors=True,
+        natural_weapon=NaturalWeapon(name="Claws", min_dmg=1, max_dmg=3, dmg_bonus=1),
+    ),
+    inventory=Inventory(capacity=0),
+    level=Level(xp_given=4),
+)
+quasit.is_flying = True
+quasit.fighter.is_flying = True
+
 def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_hp = random.randint(7, 10)
     entity.fighter.hp = entity.fighter.max_hp
@@ -1929,7 +1961,7 @@ def _grey_goblin_on_spawn(entity: Actor) -> None:
 
 grey_goblin = Actor(
     char="g",
-    color=(73,144,84),
+    color=(95,117,91),
     name="Grey goblin",
     ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, ScoutV3]),
     #ai_cls=HostileEnemyV3,

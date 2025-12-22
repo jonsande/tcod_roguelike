@@ -363,13 +363,15 @@ class SilenceBook(Book):
     def read_aloud(self, reader: "Actor") -> str:
         engine = getattr(getattr(reader, "gamemap", None), "engine", None)
         if engine and getattr(engine, "silence_turns", 0) > 0:
+            self._silence_spawn_pending = False
             return "No es posible leer en voz alta mientras dure el silencio."
         if engine:
             engine.apply_silence(
                 25,
                 end_message="El silencio se disipa.",
             )
-        return "Al recitarlo, un silencio antinatural lo cubre todo."
+        self._silence_spawn_pending = True
+        return "Tras la recitación, se produce un silencio terrible y absoluto."
 
 
 class Decoration(Entity):

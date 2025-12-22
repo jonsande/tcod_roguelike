@@ -17,6 +17,8 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
+- [ ] Quasit.
+- [ ] Arpías.
 - [ ] Nyarlathotep.
 - [ ] Yog-Sothoth.
 - [ ] Perros de tíndalos.

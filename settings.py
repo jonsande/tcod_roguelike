@@ -320,7 +320,7 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "large_shield", "quantity": 1, "equip": False},
     # {"item": "generated_book", "quantity": 1, "equip": False},
     # {"item": "forgotten_canticle", "quantity": 1, "equip": False},
-    # {"item": "silence_book", "quantity": 1, "equip": False},
+    #{"item": "silence_book", "quantity": 1, "equip": False},
     # {"item": "long_bow", "quantity": 1},
     # {"item": "arrow", "quantity": 20},
     #{"item": "spear", "quantity": 1, "equip": True},
@@ -869,6 +869,19 @@ ROOM_MIN_SIZE_SHAPES = {
 # -- Cavern generation --------------------------------------------------------
 # Probabilidad de que un piso generado proceduralmente sea una caverna en vez de un conjunto de habitaciones.
 CAVERN_SPAWN_CHANCE = 0.10
+
+# Silencio: probabilidad de invocar criaturas cercanas al leer el códice.
+SILENCE_SUMMON_CHANCE = 0.08
+# Lista de criaturas posibles: ("entity_factories_key", weight)
+SILENCE_SUMMON_CREATURES = [
+    ("grey_goblin", 1),
+]
+# Número de habitaciones cercanas candidatas para el spawn.
+SILENCE_SUMMON_NEARBY_ROOMS = 3
+# Radio (Manhattan) para el spawn fallback en mapas sin habitaciones.
+SILENCE_SUMMON_FALLBACK_RADIUS = 8
+# Intentos máximos para encontrar casilla en el fallback.
+SILENCE_SUMMON_FALLBACK_TRIES = 80
 # Porcentaje inicial de roca en el mapa; cuanto más alto, más estrechas y cerradas son las cuevas.
 CAVERN_FILL_PROBABILITY = 0.60
 # Número mínimo de vecinos muro necesarios para que un muro "nazca" (afecta al tamaño de los huecos abiertos).

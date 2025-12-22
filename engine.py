@@ -348,6 +348,161 @@ class Engine:
                     self._silence_end_message, color.status_effect_applied
                 )
 
+    def maybe_spawn_silence_creature(self, reader: Actor) -> None:
+        chance = getattr(settings, "SILENCE_SUMMON_CHANCE", 0.0)
+        try:
+            chance_value = float(chance)
+        except (TypeError, ValueError):
+            chance_value = 0.0
+        if chance_value <= 0 or random.random() >= chance_value:
+            return
+
+        raw_choices = getattr(settings, "SILENCE_SUMMON_CREATURES", None) or []
+        choices: List[Tuple[str, float]] = []
+        for entry in raw_choices:
+            if isinstance(entry, str):
+                choices.append((entry, 1.0))
+                continue
+            if isinstance(entry, (tuple, list)) and entry:
+                name = entry[0]
+                weight = entry[1] if len(entry) > 1 else 1.0
+                try:
+                    weight_value = float(weight)
+                except (TypeError, ValueError):
+                    weight_value = 1.0
+                choices.append((name, max(0.0, weight_value)))
+        if not choices:
+            return
+
+        names = [name for name, _ in choices]
+        weights = [weight for _, weight in choices]
+        creature_key = random.choices(names, weights=weights, k=1)[0]
+
+        import entity_factories
+
+        prototype = getattr(entity_factories, creature_key, None)
+        if not prototype:
+            return
+
+        game_map = getattr(self, "game_map", None)
+        if not game_map:
+            return
+
+        centers = game_map.nearest_rooms_from(reader.x, reader.y)
+        if not centers:
+            room_tiles_map = getattr(game_map, "room_tiles_map", {}) or {}
+            centers = [center for center in room_tiles_map.keys()]
+        current_center = game_map.get_room_center_for_tile(reader.x, reader.y)
+        if current_center in centers:
+            centers = [center for center in centers if center != current_center]
+        if not centers:
+            spawn_tile = self._find_silence_fallback_tile(reader)
+            if not spawn_tile:
+                return
+            spawned = prototype.spawn(game_map, *spawn_tile)
+            fighter = getattr(spawned, "fighter", None)
+            if fighter:
+                fighter.aggravated = True
+                ai_cls = getattr(fighter, "woke_ai_cls", None)
+                if ai_cls:
+                    spawned.ai_cls = ai_cls
+                    spawned.ai = ai_cls(spawned)
+            self.message_log.add_message(
+                "Algo extraño ha sucedido. Tienes un mal presentimiento.",
+                color.orange,
+            )
+            return
+
+        max_rooms = getattr(settings, "SILENCE_SUMMON_NEARBY_ROOMS", 3)
+        if isinstance(max_rooms, int) and max_rooms > 0:
+            centers = centers[:max_rooms]
+
+        min_distance = 0
+        fighter = getattr(reader, "fighter", None)
+        if fighter:
+            min_distance = max(0, getattr(fighter, "effective_fov", 0))
+
+        random.shuffle(centers)
+        spawn_tile = None
+        for center in centers:
+            tiles = game_map.get_room_tiles(center)
+            if not tiles:
+                continue
+            random.shuffle(tiles)
+            for x, y in tiles:
+                if reader.distance(x, y) <= min_distance:
+                    continue
+                if not game_map.tiles["walkable"][x, y]:
+                    continue
+                if (x, y) == (reader.x, reader.y):
+                    continue
+                if game_map.get_blocking_entity_at_location(x, y):
+                    continue
+                if game_map.get_actor_at_location(x, y):
+                    continue
+                spawn_tile = (x, y)
+                break
+            if spawn_tile:
+                break
+        if not spawn_tile:
+            return
+
+        spawned = prototype.spawn(game_map, *spawn_tile)
+        fighter = getattr(spawned, "fighter", None)
+        if fighter:
+            fighter.aggravated = True
+            ai_cls = getattr(fighter, "woke_ai_cls", None)
+            if ai_cls:
+                spawned.ai_cls = ai_cls
+                spawned.ai = ai_cls(spawned)
+        self.message_log.add_message(
+            "Algo extraño ha sucedido. Tienes un mal presentimiento.",
+            color.orange,
+        )
+
+    def _find_silence_fallback_tile(self, reader: Actor) -> Optional[Tuple[int, int]]:
+        game_map = getattr(self, "game_map", None)
+        if not game_map:
+            return None
+        min_distance = 0
+        fighter = getattr(reader, "fighter", None)
+        if fighter:
+            min_distance = max(0, getattr(fighter, "effective_fov", 0))
+        radius = getattr(settings, "SILENCE_SUMMON_FALLBACK_RADIUS", 8)
+        tries = getattr(settings, "SILENCE_SUMMON_FALLBACK_TRIES", 80)
+        try:
+            radius_value = int(radius)
+        except (TypeError, ValueError):
+            radius_value = 8
+        try:
+            tries_value = int(tries)
+        except (TypeError, ValueError):
+            tries_value = 80
+        if radius_value <= 0 or tries_value <= 0:
+            return None
+        px, py = reader.x, reader.y
+        for _ in range(tries_value):
+            dx = random.randint(-radius_value, radius_value)
+            dy = random.randint(-radius_value, radius_value)
+            if abs(dx) + abs(dy) > radius_value:
+                continue
+            x = px + dx
+            y = py + dy
+            if not game_map.in_bounds(x, y):
+                continue
+            if not game_map.tiles["walkable"][x, y]:
+                continue
+            if (x, y) == (px, py):
+                continue
+            if reader.distance(x, y) <= min_distance:
+                continue
+            if game_map.get_blocking_entity_at_location(x, y):
+                continue
+            if game_map.get_actor_at_location(x, y):
+                continue
+            return (x, y)
+        return None
+
     def _get_active_noise_event(self, source: Actor) -> Optional[Tuple[int, int, str]]:
         events = self._noise_events.get(source)
         if not events:
