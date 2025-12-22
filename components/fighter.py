@@ -484,6 +484,9 @@ class Fighter(FireStatusMixin, BaseComponent):
 
     @property
     def foh(self) -> int:
+        engine = getattr(self, "engine", None)
+        if engine and getattr(engine, "silence_turns", 0) > 0:
+            return 0
         return getattr(self, "_base_foh", 0)
 
     @foh.setter

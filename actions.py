@@ -322,7 +322,7 @@ class BookToggleEquipAction(Action):
                 return
             setattr(equipment, slot, self.item)
             self.engine.message_log.add_message(
-                f"Has equipado el libro {self.item.name}. Activalo de nuevo para ver sus opciones.",
+                f"Has equipado el libro {self.item.name}. Actívalo de nuevo para ver sus opciones.",
                 color.orange,
             )
 
@@ -2086,6 +2086,12 @@ class WaitAction(Action):
             "You try to listen through the door",
             color.white,
         )
+        if getattr(engine, "silence_turns", 0) > 0:
+            engine.message_log.add_message(
+                "The silence blocks any sound.",
+                color.white,
+            )
+            return
         roll = random.randint(1, 6)
         if DEBUG_MODE:
             print(f"DEBUG: Listen roll 1d6 -> {roll}")

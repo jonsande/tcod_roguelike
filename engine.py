@@ -165,6 +165,8 @@ class Engine:
         self.spawn_monsters_counter = 0
         self.spawn_monsters_generated = 0
         self.temporal_effects = []
+        self.silence_turns = 0
+        self._silence_end_message: Optional[str] = None
         self.lamp_hint_shown = False
         self.center_room_array = []
         self.identified_items = []
@@ -307,6 +309,8 @@ class Engine:
     
     def register_noise(self, source: Actor, level: int = 1, duration: int = 2, tag: str = "") -> None:
         """Stores a temporary noise event for `source` so AIs (and the player) can detect it via hearing."""
+        if getattr(self, "silence_turns", 0) > 0:
+            return
         if level <= 0 or duration <= 0:
             return
         # Always allow a fresh notification for this noise event.
@@ -319,8 +323,30 @@ class Engine:
 
     def noise_level(self, source: Actor) -> int:
         """Returns the active noise level for an actor, pruning expired events."""
+        if getattr(self, "silence_turns", 0) > 0:
+            return 0
         event = self._get_active_noise_event(source)
         return event[0] if event else 0
+
+    def apply_silence(self, turns: int, end_message: Optional[str] = None) -> None:
+        if turns <= 0:
+            return
+        self.silence_turns = max(self.silence_turns, turns)
+        if end_message:
+            self._silence_end_message = end_message
+        self._noise_events.clear()
+        self._noise_notified.clear()
+
+    def update_silence_effects(self) -> None:
+        if self.silence_turns <= 0:
+            return
+        self.silence_turns -= 1
+        if self.silence_turns <= 0:
+            self.silence_turns = 0
+            if self._silence_end_message:
+                self.message_log.add_message(
+                    self._silence_end_message, color.status_effect_applied
+                )
 
     def _get_active_noise_event(self, source: Actor) -> Optional[Tuple[int, int, str]]:
         events = self._noise_events.get(source)
@@ -463,6 +489,9 @@ class Engine:
 
     def _notify_player_hearing(self) -> None:
         """Send a one-time message for each audible noise event."""
+        if getattr(self, "silence_turns", 0) > 0:
+            self._noise_notified.clear()
+            return
         if not self._noise_events:
             self._noise_notified.clear()
             return

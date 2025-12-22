@@ -310,6 +310,9 @@ class Book(Item):
         return self.info
 
     def read_aloud(self, reader: "Actor") -> str:
+        engine = getattr(getattr(reader, "gamemap", None), "engine", None)
+        if engine and getattr(engine, "silence_turns", 0) > 0:
+            return "No es posible leer en voz alta mientras dure el silencio."
         return f"Lees en voz alta el libro {self.name}."
 
 
@@ -352,6 +355,21 @@ class ApothecaryBook(Book):
 
         identify_all_potions()
         return "Las pócimas quedan identificadas."
+
+
+class SilenceBook(Book):
+    """Book that suppresses all noise for a short time when read aloud."""
+
+    def read_aloud(self, reader: "Actor") -> str:
+        engine = getattr(getattr(reader, "gamemap", None), "engine", None)
+        if engine and getattr(engine, "silence_turns", 0) > 0:
+            return "No es posible leer en voz alta mientras dure el silencio."
+        if engine:
+            engine.apply_silence(
+                25,
+                end_message="El silencio se disipa.",
+            )
+        return "Al recitarlo, un silencio antinatural lo cubre todo."
 
 
 class Decoration(Entity):

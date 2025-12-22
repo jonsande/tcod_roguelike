@@ -379,6 +379,7 @@ class EventHandler(BaseEventHandler):
 
         # Actualizamos efectos temporales
         self.engine.update_temporal_effects()
+        self.engine.update_silence_effects()
 
         # Monstruos que entran por las escaleras
         self.engine.spawn_monsters_upstairs()

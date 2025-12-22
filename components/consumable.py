@@ -136,6 +136,8 @@ class ScrollConsumable(Consumable):
     empty_effect_color = color.orange
 
     def activate(self, action: actions.ItemAction) -> None:
+        if getattr(self.engine, "silence_turns", 0) > 0:
+            raise Impossible("No puedes activar pergaminos mientras dure el silencio.")
         previously_identified = getattr(self.parent, "identified", False)
         setattr(self, "_effect_message_emitted", False)
         context = self._activate_scroll(action) or {}

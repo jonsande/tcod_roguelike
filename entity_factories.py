@@ -32,6 +32,7 @@ from entity import (
     Book,
     GeneratedBook,
     ApothecaryBook,
+    SilenceBook,
     Decoration,
     Obstacle,
     Entity,
@@ -1507,6 +1508,20 @@ apothecary_book = ApothecaryBook(
 )
 apothecary_book._spawn_key = "apothecary_book"
 loot_tables.register_loot_item("apothecary_book", apothecary_book)
+
+silence_book = SilenceBook(
+    char="~",
+    color=(210, 200, 170),
+    name="Códice del Silencio",
+    id_name="Códice del Silencio",
+    info=(
+        "Un libro envuelto en harapos. Sus páginas describen el arte "
+        "de silenciar el mundo a través de palabras."
+    ),
+    stackable=False,
+)
+silence_book._spawn_key = "silence_book"
+loot_tables.register_loot_item("silence_book", silence_book)
 
 # Notas inútiles o pistas falsas
 note_wizard_1 = Book(

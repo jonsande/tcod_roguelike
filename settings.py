@@ -320,7 +320,7 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "large_shield", "quantity": 1, "equip": False},
     # {"item": "generated_book", "quantity": 1, "equip": False},
     # {"item": "forgotten_canticle", "quantity": 1, "equip": False},
-    # {"item": "apothecary_book", "quantity": 1, "equip": False},
+    # {"item": "silence_book", "quantity": 1, "equip": False},
     # {"item": "long_bow", "quantity": 1},
     # {"item": "arrow", "quantity": 20},
     #{"item": "spear", "quantity": 1, "equip": True},
@@ -729,6 +729,7 @@ TABLE_LOOT_TABLES = {
         ("forgotten_canticle", 3),
         ("architect_notes", 3),
         ("apothecary_book", 1),
+        ("silence_book", 1),
         ("red_tower_mails", 3),
         ("tired_librarian_notes", 3),
         ("wanderers_diary", 3),
@@ -774,12 +775,14 @@ BOOKSHELF_LOOT_TABLES = {
     2: [
         # Libros "mágicos":
         ("apothecary_book", 1),
+        ("silence_book", 1),
         # Generador de libros
         ("generated_book", 4), 
         # Libros estáticos
         ("forgotten_canticle", 4),
         ("architect_notes", 4),
         ("apothecary_book", 4),
+        ("silence_book", 2),
         ("red_tower_mails", 4),
         ("tired_librarian_notes", 4),
         ("wanderers_diary", 4),
@@ -1078,6 +1081,7 @@ ITEM_SPAWN_RULES = {
     # BOOKS/NOTES (set base_weight to 0 to avoid room spawns; tweak min/max as needed)
     # MAGIC BOOKS
     "apothecary_book": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "silence_book": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
     # DYNAMIC BOOKS
     "generated_book": {"min_floor": 2, "base_weight": 0, "min_instances": 63, "max_instances": 128},
     # STATIC BOOKS

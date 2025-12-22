@@ -156,7 +156,8 @@ OBJETOS VARIOS
 - [x] Libros, notas.
 
 LIBROS MÁGICOS (e.e. capaces de hacer algo)
-- [ ] Todos los libros deben poder leerse en voz alta. Para que un libro "mágico" produzca sus efectos hará falta leerlo en voz alta.
+- [ ] Libros que explican qué hacen, cómo funcionan, condiciones, etc. de otros libros mágicos.
+- [x] Todos los libros deben poder leerse en voz alta. Para que un libro "mágico" produzca sus efectos hará falta leerlo en voz alta.
 - [ ] Al leer en voz alta un libro "ordinario" habrá una probabilidad de "pacificar" a una criatura hostil, o incluso de volverla amiga o aliada, o producir en ella efectos varios. Los goblins deben poder pacificarse con ciertos libros. No todas las criaturas podrán ser pacificadas.
 - [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
 - [ ] Los libros mágicos serán libros con efectos muy poderosos, pero cuyos efectos son sensibles a condiciones, o que sólo pueden activarse sus efectos si al leerlos se cumplen una serie de condiciones. Los libros mágicos no se consumen. Pero leerlos tiene un coste. Algunos pueden transformar de algún modo al jugador, o producir un efecto colateral/secundario.
@@ -167,11 +168,12 @@ LIBROS MÁGICOS (e.e. capaces de hacer algo)
 - [ ] Libro de conciencia remota. Te permite tomar la perspectiva de un enemigo. Mientras estás "conectado" con él no puedes ver lo que pasa a tu alrededor. Bajo ciertas condiciones, puedes tomar el control de la criatura. Bajo ciertas condiciones, puedes escoger con qué criatura conectar.
 - [ ] Libro transformador. Transforma un objeto en otro. Bajo ciertas condiciones, transforma todos los objetos de tu inventario en otros. Bajo ciertas condiciones, te permite controlar qué objeto conseguir.
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
-- [ ] Libro de visión. Permite ver qué hay en otro punto del mapa.
+- [!] Libro de visión. Permite ver qué hay en otro punto del mapa.
 - [ ] Libro de portal. Abre un portal mágico que lleva a algún otro sitio. Bajo ciertas circunstancias te introduce en un bucle espacio-temporal.
 - [ ] Libro de portal espejo. Genera un portal. Si hay generados dos portales, al entrar por uno se aparece por el otro. No puede haber más de dos portales creados al mismo tiempo. Los portales tienen (quizá) una duración. 
-- [!] Libro de las pociones! Si lo lees, identifica todas las pociones.
+- [x] Libro de las pociones! Si lo lees, identifica todas las pociones.
 - [ ] Libro de los pergaminos. Idem.
+- [ ] Leer en voz alta debe requerir tres turnos. Si en ese tiempo el jugador es atacado la lectura será interrumpida.
 
 ARTEFACTOS
 - [ ] Artefacto reloj de arena. El reloj es un objeto necesario para resolver uno de los grandes puzles del juego.
