@@ -142,6 +142,7 @@ MOVILIARIO, OBJETOS DECORATIVOS E INTERACTIVOS
 - [!] Más objetos decorativos o interactivos en las habitaciones. Barriles, Carteles con mensajes, inscripciones en el suelo o paredes, aventureros petrificados, restos de...
 
 OBJETOS VARIOS
+- [ ] Escudos. Los escudos deben añadirte DEFENSE. Deben equiparse en la ranura OFFHAND.
 - [ ] Guantes. Alguno mágico, que te suba el to-hit, o la suerte.
 - [ ] Botas.
 - [ ] Mushroms.
@@ -152,7 +153,9 @@ OBJETOS VARIOS
 - [x] La sand bag (tiene que tener 3 usos). Al lanzar arena sobre un enemigo este tiene que quedar cegado (pero la mecánica de cegado para un PNJ deberá ser algo como confusion, o paralisis).
 - [x] Libros, notas.
 
-LIBROS MÁGICOS
+LIBROS MÁGICOS (e.e. capaces de hacer algo)
+- [ ] Todos los libros deben poder leerse en voz alta. Para que un libro "mágico" produzca sus efectos hará falta leerlo en voz alta [[Repensar: Para leer en voz alta un libro hace falta equiparse con él en la ranura WEAPON. Si se lee (activa) un libro sin tenerlo equipado, se equipará (saldrá un mensaje abajo indicando que ahora tienes el libro en las manos y que para leerlo debes volver a activarlo). Si se lee (activa) teniéndolo equipado.... Quizá interese crear una nueva ranura, llamada BOOK o OFFHAND. Quizá lo mejor es la opción de la ranura OFFHAND, pues eso permitiría cosas muy chulas como ir con bastón mágico en una mano y libro en la otra. O con espada y escudo. Al activar un libro equipado podría salir un menú, preguntádote si quieres leerlo en voz alta, en voz baja o desequiparlo]].
+- [ ] Al leer en voz alta un libro "ordinario" habrá una probabilidad de "pacificar" a una criatura hostil, o incluso de volverla amiga o aliada, o producir en ella efectos varios. Los goblins deben poder pacificarse con ciertos libros. No todas las criaturas podrán ser pacificadas.
 - [!] Libros mágicos especiales. Algo especial puede suceder si se lanza el libro adecuado contra un slime.
 - [ ] Los libros mágicos serán libros con efectos muy poderosos, pero cuyos efectos son sensibles a condiciones, o que sólo pueden activarse sus efectos si al leerlos se cumplen una serie de condiciones. Los libros mágicos no se consumen. Pero leerlos tiene un coste. Algunos pueden transformar de algún modo al jugador, o producir un efecto colateral/secundario.
 - [ ] Libro de levantar muertos. Todos los cadáveres se levantan como zombies y los huesos como skeletons. En un caso los levantados serán aliados del jugador y en otro enemigos.
@@ -164,7 +167,8 @@ LIBROS MÁGICOS
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
 - [ ] Libro de visión. Permite ver qué hay en otro punto del mapa.
 - [ ] Libro de portal. Abre un portal mágico que lleva a algún otro sitio. Bajo ciertas circunstancias te introduce en un bucle espacio-temporal.
-- [ ] Libro de las pociones! Si lo lees, identifica todas las pociones.
+- [ ] Libro de portal espejo. Genera un portal. Si hay generados dos portales, al entrar por uno se aparece por el otro. No puede haber más de dos portales creados al mismo tiempo. Los portales tienen (quizá) una duración. 
+- [!] Libro de las pociones! Si lo lees, identifica todas las pociones.
 - [ ] Libro de los pergaminos. Idem.
 
 ARTEFACTOS
