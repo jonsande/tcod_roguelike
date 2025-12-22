@@ -17,7 +17,12 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Mimics. Mimic cofre.
+- [ ] Nyarlathotep.
+- [ ] Yog-Sothoth.
+- [ ] Perros de tíndalos.
+- [ ] Azathoth https://hplovecraft.fandom.com/es/wiki/Azathoth
+- [ ] El Rey de Amarillo (avatar de Hastur)
+- [x] Mimics. Mimic cofre.
 - [x] Slimes. Los slimes deben poder atravesar puertas [DESCARTADO; complica mucho e innecesariamente las cosas, por obstrucción de caminos; mejor se quedan en su habitación]. Los slimes básicos deben ser muy muy lentos, y no deben atacar por sí mismos. Si se les ataca, sin embargo, y no se consigue matarlos de un solo golpe, se quedarán con el arma con que se les haya atacado. La única manera de recuperar ese arma es matando al slime, o incinerándolo. Si se mata a un slime, este no muere, sino que se convierte en dos mini-slimes, con la mitad de hp cada uno que su original, y por lo demás mismas capacidades (o sea, que puede atravesar puertas y puede absorver las armas de los atacantes). 
 - [x] Cuando los slimes se regeneran a la vista del jugador, debe salir un mensaje indicándolo. De otro modo los jugadores no entenderán por qué no pueden matar a un slime (cuando lo hacen incorrectamente).
 - [x] Una forma de simplificar el pathfinding de los slimes. Que lleven un registro de las casillas visitadas; después el slime simplemente intenta moverse a una casilla aleatoria de las que tiene a su alrededor y no está visitada. Así evitamos usar el pathfinding.
@@ -164,7 +169,7 @@ LIBROS MÁGICOS (e.e. capaces de hacer algo)
 - [ ] Libro de levantar muertos. Todos los cadáveres se levantan como zombies y los huesos como skeletons. En un caso los levantados serán aliados del jugador y en otro enemigos.
 - [ ] Libro/s reactivo/s: a) Se vuelve ilegible si matas a cierto tipo de criatura. b) Cambia su efecto según tu alineamiento o reputación. c) Te “juzga” y decide si cooperar. Pueden negarse a ser leídos. Pueden también atraer enemigos que quieren destruirlos.
 - [ ] Libro/s con condiciones para poder ser leídos: luz, silencio o tiempo sin interrupciones; leer en combate tiene efectos imprevisibles; según la cordura u otro atributo, puede tener efectos diferentes.
-- [ ] Libro de silencio. Deja en silencio todo durante X turnos. Bajo ciertas condiciones, todas las criaturas se duermen.
+- [-] Libro de silencio. Deja en silencio todo durante X turnos. Bajo ciertas condiciones, todas las criaturas se duermen.
 - [ ] Libro de conciencia remota. Te permite tomar la perspectiva de un enemigo. Mientras estás "conectado" con él no puedes ver lo que pasa a tu alrededor. Bajo ciertas condiciones, puedes tomar el control de la criatura. Bajo ciertas condiciones, puedes escoger con qué criatura conectar.
 - [ ] Libro transformador. Transforma un objeto en otro. Bajo ciertas condiciones, transforma todos los objetos de tu inventario en otros. Bajo ciertas condiciones, te permite controlar qué objeto conseguir.
 - [ ] Libro que no debería existir. No aparece identificado como libro. Leerlo crea una copia imperfecta del jugador. La copia aprende de tus acciones.
