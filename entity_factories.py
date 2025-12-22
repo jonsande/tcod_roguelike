@@ -1388,6 +1388,7 @@ goblin_tooth_amulet = Item(
 
 # NOTES, BOOKS, NON MAGIC SCROLLS
 
+# DYNAMIC BOOKS
 generated_book = GeneratedBook(
     char="~",
     color=(200, 180, 120),
@@ -1398,6 +1399,7 @@ generated_book = GeneratedBook(
 generated_book._spawn_key = "generated_book"
 loot_tables.register_loot_item("generated_book", generated_book)
 
+# STATIC BOOKS
 def _build_static_book(key: str) -> Book:
     title, content = bookgen.get_static_book_payload(key)
     return Book(
@@ -1417,7 +1419,51 @@ architect_notes = _build_static_book("architect_notes")
 architect_notes._spawn_key = "architect_notes"
 loot_tables.register_loot_item("architect_notes", architect_notes)
 
-# Libros especiales
+red_tower_mails = _build_static_book("red_tower_mails")
+red_tower_mails._spawn_key = "red_tower_mails"
+loot_tables.register_loot_item("red_tower_mails", red_tower_mails)
+
+corridor_chronicles = _build_static_book("corridor_chronicles")
+corridor_chronicles._spawn_key = "corridor_chronicles"
+loot_tables.register_loot_item("corridor_chronicles", corridor_chronicles)
+
+fungi_book = _build_static_book("fungi_book")
+fungi_book._spawn_key = "fungi_book"
+loot_tables.register_loot_item("fungi_book", fungi_book)
+
+living_stoone_theory = _build_static_book("living_stoone_theory")
+living_stoone_theory._spawn_key = "living_stoone_theory"
+loot_tables.register_loot_item("living_stoone_theory", living_stoone_theory)
+
+nine_lanterns_codex = _build_static_book("nine_lanterns_codex")
+nine_lanterns_codex._spawn_key = "nine_lanterns_codex"
+loot_tables.register_loot_item("nine_lanterns_codex", nine_lanterns_codex)
+
+coal_stories = _build_static_book("coal_stories")
+coal_stories._spawn_key = "coal_stories"
+loot_tables.register_loot_item("coal_stories", coal_stories)
+
+crack_finder_book = _build_static_book("crack_finder_book")
+crack_finder_book._spawn_key = "crack_finder_book"
+loot_tables.register_loot_item("crack_finder_book", crack_finder_book)
+
+lower_cavern_bestiary = _build_static_book("lower_cavern_bestiary")
+lower_cavern_bestiary._spawn_key = "lower_cavern_bestiary"
+loot_tables.register_loot_item("lower_cavern_bestiary", crack_finder_book)
+
+sixteen_rings = _build_static_book("sixteen_rings")
+sixteen_rings._spawn_key = "sixteen_rings"
+loot_tables.register_loot_item("sixteen_rings", sixteen_rings)
+
+wanderers_diary = _build_static_book("wanderers_diary")
+wanderers_diary._spawn_key = "wanderers_diary"
+loot_tables.register_loot_item("wanderers_diary", wanderers_diary)
+
+tired_librarian_notes = _build_static_book("tired_librarian_notes")
+tired_librarian_notes._spawn_key = "tired_librarian_notes"
+loot_tables.register_loot_item("tired_librarian_notes", tired_librarian_notes)
+
+# MAGIC BOOKS
 apothecary_book = ApothecaryBook(
     char="~",
     color=(210, 200, 170),
@@ -1440,6 +1486,7 @@ note_wizard_1 = Book(
     id_name="Note Wizard #1",
     info="Hq ho ervtfh hqfdqwdgr, ho qhqñ rhugrlgr, Wlppb, kxíd gh orv jerolqv ulvxhqrv txh or dfhfkedq frq vxv wudpsdv. Gh uhshqwh, xq pdjr dqfldqr dsduhflr hq xqd qxeh gh kxpr sxusxud. '¡Ghwhqhgv, fuhdwxudv gh od vrpeud!', uxlr, odqfdqgr xq khfklyr txh wudqvirupr odv wudpsdv hq ioruhv. Orv jerolqv kxbhurq fkilldqgr, b hq pdjr wrpr od pdqr gh Wlppb: 'Yhq, shtxhqñ, ho krjdu wh hvshud'."
     )
+
 # Notas útiles
 # TODO: el número identificativo del id_name hay que relativizarlo. Que sea aleatorio en cada partida.
 library_clue_1 = Book(

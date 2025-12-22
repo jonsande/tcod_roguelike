@@ -766,22 +766,25 @@ TABLE_LOOT_TABLES = {
 # Cada clave marca el nivel mínimo y lista los ítems posibles con su peso.
 BOOKSHELF_LOOT_TABLES = {
     2: [
-        ("generated_book", 3), # Generador de libros
+        # Libros "mágicos":
+        ("apothecary_book", 1),
+        # Generador de libros
+        ("generated_book", 4), 
         # Libros estáticos
-        ("forgotten_canticle", 3),
-        ("architect_notes", 3),
-        ("apothecary_book", 3),
-        ("red_tower_mails", 3),
-        ("tired_librarian_notes", 3),
-        ("wanderers_diary", 3),
-        ("sixteen_rings", 3),
-        ("lower_cavern_bestiary", 3),
-        ("crack_finder_book", 3),
-        ("coal_stories", 3),
-        ("nine_lanterns_codex", 3),
-        ("living_stoone_theory", 3),
-        ("fungi_book", 3),
-        ("corridor_chronicles", 3),
+        ("forgotten_canticle", 4),
+        ("architect_notes", 4),
+        ("apothecary_book", 4),
+        ("red_tower_mails", 4),
+        ("tired_librarian_notes", 4),
+        ("wanderers_diary", 4),
+        ("sixteen_rings", 4),
+        ("lower_cavern_bestiary", 4),
+        ("crack_finder_book", 4),
+        ("coal_stories", 4),
+        ("nine_lanterns_codex", 4),
+        ("living_stoone_theory", 4),
+        ("fungi_book", 4),
+        ("corridor_chronicles", 4),
         # Libros con pistas
         ("library_clue_1", 3),
         ("library_clue_2", 3),
@@ -973,7 +976,17 @@ ADVENTURER_CORPSE_NAME = "Remains of an adventurer"
 ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.15
 
 # -- Loot generation -----------------------------------------------------------
-# Configuración de botín/objetos. Cada entrada permite controlar:
+# Configuración de botín/objetos. 
+# Los objetos que aparecen en esta lista son los que se pueden generar en el suelo de
+# las salas (es decir, fuera de contenedores). Los objetos que más arriba se hayan
+# especificado para tipo de contenedor se podrán generar en esos contenedores, aunque
+# no aparezcan en esta lista ITEM_SPAWN_RULES.
+# Por su parte, el mínimo y máximo de instancias aquí establecido sí se respeta en la 
+# generación de ítems en contenedores. Ahora bien: si no se especifica en esta lista el
+# máximo y mínimo de instancias para un objeto, no tendrá límites, tampoco en contenedores.
+# Esta es la razón por la que en ocasiones interesa incluir en esta lista algunos ítems
+# aunque sea con una probabilidad 0 de generarse. 
+# Cada entrada permite controlar:
 # - min_floor: nivel mínimo en el que empieza a considerarse.
 # - max_instances: número máximo de copias (None = ilimitado).
 # - base_weight: peso base a partir de min_floor cuando no se usa weight_progression.
@@ -1052,7 +1065,34 @@ ITEM_SPAWN_RULES = {
     # OTHER
     "bones": {"min_floor": 2, "weight_progression": [(2, 90), (4, 20), (6, 5)]},
     "rock": {"min_floor": 2, "weight_progression": [(2, 15), (3, 45)]},
-    "note_wizard_1": {"min_floor": 2, "max_instances": 1, "weight_progression": [(2, 5)]},
+    # BOOKS/NOTES (set base_weight to 0 to avoid room spawns; tweak min/max as needed)
+    # MAGIC BOOKS
+    "apothecary_book": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    # DYNAMIC BOOKS
+    "generated_book": {"min_floor": 2, "base_weight": 0, "min_instances": 63, "max_instances": 128},
+    # STATIC BOOKS
+    "forgotten_canticle": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "architect_notes": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "red_tower_mails": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "tired_librarian_notes": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "wanderers_diary": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "sixteen_rings": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "lower_cavern_bestiary": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "crack_finder_book": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "coal_stories": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "nine_lanterns_codex": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "living_stoone_theory": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "fungi_book": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "corridor_chronicles": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    # CLUES BOOKS
+    "library_clue_1": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "library_clue_2": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "library_clue_3": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "library_clue_4": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "library_clue_5": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    "library_clue_6": {"min_floor": 2, "base_weight": 0, "min_instances": 1, "max_instances": 1},
+    # NOTES
+    "note_wizard_1": {"min_floor": 2, "min_instances": 1, "max_instances": 1, "weight_progression": [(2, 5)]},
     # ARTIFACTS
     # La generación de ALGUNOS artefactos únicos los está gestionando uniques.py
     "goblin_tooth_amulet": {"min_floor": 6, "max_instances": 1, "weight_progression": [(6, 5)]},

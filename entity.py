@@ -333,13 +333,15 @@ class GeneratedBook(Book):
 
     def __deepcopy__(self, memo):
         """Create a new generated book with a fresh title and content."""
-        return GeneratedBook(
+        clone = GeneratedBook(
             title_fn=self._title_fn,
             content_fn=self._content_fn,
             char=self.char,
             color=self.color,
             id_name=self.id_name,
         )
+        clone._spawn_key = getattr(self, "_spawn_key", "generated_book")
+        return clone
 
 
 class ApothecaryBook(Book):

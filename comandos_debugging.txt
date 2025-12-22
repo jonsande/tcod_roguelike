@@ -12,6 +12,7 @@ DEBUGGING COMMANDS
 - Localización de las llaves
 - Localización de El Artefacto
 - Listado de todos los monstruos e items generados (organizados por planta)
+- Listado de todos los libros generados (con ubicacion)
 - Cómo abrir una consola python con el save de una partida guardada
 - Imprimir el nombre de la habitación actual del jugador.
 
@@ -164,6 +165,27 @@ Reiniciar los contadores
 
 (Ahora se ejecuta automáticamente reset_generation_stats() al iniciar una partida nueva, lo cual borra el historial interno del GenerationTracker: deja a cero los totales y las cuentas por nivel).
 
+=== Listado de todos los libros generados (con ubicacion) ===
+
+Durante una partida activa, abre la consola de depuración (BACKSPACE con DEBUG_MODE=True) y ejecuta:
+
+self.engine.game_world.debug_print_book_locations("name")
+
+self.engine.game_world.debug_print_book_locations()
+
+Puedes pasar un argumento para elegir el orden:
+
+[RECOMENDADO] self.engine.game_world.debug_print_book_locations("name")   # por nombre alfabético
+self.engine.game_world.debug_print_book_locations("count")  # por número de instancias (desc)
+self.engine.game_world.debug_print_book_locations("floor")  # por planta (rama y nivel)
+
+Salida:
+- Agrupada por tipo de libro.
+- Orden configurable con el argumento ("count", "name", "floor").
+- Dentro de cada tipo, se muestran variantes por título (name) con su propio contador.
+- Dentro de cada variante, ordenada por planta (rama y nivel) y ubicación.
+- Siempre indica el número total de instancias por tipo y por variante.
+
 
 Ir a consola con BACKSPACE en mitad del juego
 
@@ -211,5 +233,3 @@ Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
 === imprimir el nombre de la habitación actual del jugador
 
 self.engine.game_world.debug_print_player_room_name()
-
-

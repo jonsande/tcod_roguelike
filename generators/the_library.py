@@ -88,7 +88,10 @@ LIBRARY_BOOKSHELF_ITEM_COUNT_BY_FLOOR = [
 ]
 LIBRARY_BOOKSHELF_LOOT_TABLES = {
     1: [
-        ("generated_book", 60), # Generador de libros
+        # Libros "mágicos"
+        ("apothecary_book",30),
+        # Generador de libros
+        ("generated_book", 60),
         # Libros estáticos
         ("forgotten_canticle", 5),
         ("architect_notes", 5),

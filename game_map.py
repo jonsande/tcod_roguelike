@@ -1253,6 +1253,128 @@ class GameWorld:
         # Actualizamos el registro interno para futuras llamadas.
         self._debug_key_positions = positions
 
+    def debug_print_book_locations(self, sort_by: str = "count") -> None:
+        """Imprime en consola los libros generados y su ubicación por piso."""
+        from entity import Book
+
+        catalog: Dict[str, Dict[str, object]] = {}
+        seen: Set[int] = set()
+
+        def book_type(book: Book) -> str:
+            return getattr(book, "id_name", "") or getattr(book, "name", "Libro")
+
+        def book_variant(book: Book) -> str:
+            return getattr(book, "name", "Libro")
+
+        def add_entry(book: Book, floor_label: str, location: str) -> None:
+            book_id = id(book)
+            if book_id in seen:
+                return
+            seen.add(book_id)
+            type_key = book_type(book)
+            variant_key = book_variant(book)
+            entry = catalog.setdefault(
+                type_key, {"label": type_key, "variants": {}}
+            )
+            variants = entry["variants"]
+            variant_entry = variants.setdefault(variant_key, [])
+            variant_entry.append((floor_label, location))
+
+        for game_map in self._iter_all_maps():
+            floor_label = getattr(game_map, "branch_label", "?")
+            for item in game_map.items:
+                if isinstance(item, Book):
+                    add_entry(item, floor_label, f"suelo en {(item.x, item.y)}")
+            for entity in game_map.entities:
+                inventory = getattr(entity, "inventory", None)
+                if not inventory:
+                    continue
+                for item in getattr(inventory, "items", []):
+                    if isinstance(item, Book):
+                        holder = getattr(entity, "name", entity.__class__.__name__)
+                        if hasattr(entity, "x") and hasattr(entity, "y"):
+                            location = f"inventario de {holder} en {(entity.x, entity.y)}"
+                        else:
+                            location = f"inventario de {holder}"
+                        add_entry(item, floor_label, location)
+
+        player = getattr(self.engine, "player", None)
+        if player:
+            inventory = getattr(player, "inventory", None)
+            if inventory:
+                floor_label = getattr(
+                    getattr(player, "gamemap", None), "branch_label", None
+                ) or getattr(getattr(self.engine, "game_map", None), "branch_label", "?")
+                for item in inventory.items:
+                    if isinstance(item, Book):
+                        add_entry(
+                            item,
+                            floor_label,
+                            f"inventario del jugador en {(player.x, player.y)}",
+                        )
+
+        if not catalog:
+            print("DEBUG: No hay libros generados.")
+            return
+
+        def floor_sort_key(label: str) -> Tuple[int, int, int, str]:
+            if label.startswith("M-"):
+                try:
+                    return (0, int(label.split("-", 1)[1]), 0, label)
+                except ValueError:
+                    return (0, 0, 0, label)
+            if label.startswith("B"):
+                try:
+                    branch_part, depth_part = label[1:].split("-", 1)
+                    return (1, int(branch_part), int(depth_part), label)
+                except ValueError:
+                    return (1, 0, 0, label)
+            return (2, 0, 0, label)
+
+        print("DEBUG: Libros generados:")
+        def total_type_count(entry: Dict[str, object]) -> int:
+            variants = entry.get("variants", {})
+            total = 0
+            for locations in variants.values():
+                total += len(locations)
+            return total
+
+        def earliest_location(entry: Dict[str, object]) -> Tuple[str, str]:
+            variants = entry.get("variants", {})
+            flat_locations: List[Tuple[str, str]] = []
+            for locations in variants.values():
+                flat_locations.extend(locations)
+            if not flat_locations:
+                return ("?", "")
+            return sorted(flat_locations, key=lambda loc: (floor_sort_key(loc[0]), loc[1]))[0]
+
+        def book_sort_key(item: Tuple[str, Dict[str, object]]) -> Tuple:
+            label = str(item[1]["label"]).lower()
+            key = str(item[0]).lower()
+            count = total_type_count(item[1])
+            if sort_by == "name":
+                return (label, key, -count)
+            if sort_by == "floor":
+                first_floor, first_location = earliest_location(item[1])
+                return (floor_sort_key(first_floor), first_location, label, key, -count)
+            return (-count, label, key)
+
+        sorted_books = sorted(catalog.items(), key=book_sort_key)
+        for _, info in sorted_books:
+            label = str(info["label"])
+            variants = info["variants"]
+            total_count = total_type_count(info)
+            print(f"  {label} (x{total_count})")
+            sorted_variants = sorted(
+                variants.items(),
+                key=lambda item: (-len(item[1]), str(item[0]).lower()),
+            )
+            for variant_name, locations in sorted_variants:
+                locations.sort(key=lambda loc: (floor_sort_key(loc[0]), loc[1]))
+                print(f"    {variant_name} (x{len(locations)})")
+                for floor_label, location in locations:
+                    print(f"      piso {floor_label} {location}")
+
     def debug_print_branch_structure(self) -> None:
         """Imprime en consola la estructura de ramas generadas."""
         if not self.branches:
