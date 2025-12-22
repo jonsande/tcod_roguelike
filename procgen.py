@@ -254,6 +254,9 @@ def _build_spawn_rule_entries(
 
 item_spawn_rules = _build_spawn_rule_entries(settings.ITEM_SPAWN_RULES, "items")
 enemy_spawn_rules = _build_spawn_rule_entries(settings.ENEMY_SPAWN_RULES, "monsters")
+stairs_monster_spawn_rules = _build_spawn_rule_entries(
+    settings.STAIRS_MONSTER_SPAWN_RULES, None, register_labels=False
+)
 cavern_monster_spawn_rules = _build_spawn_rule_entries(
     settings.CAVERN_MONSTER_SPAWN_RULES, None, register_labels=False
 )

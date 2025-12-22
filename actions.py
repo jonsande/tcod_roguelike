@@ -344,9 +344,6 @@ class TakeStairsAction(Action):
 
                 print(f"Total level xp gained: [{self.engine.game_world.current_floor} (current floor) * 5] + [{unaware_enemies} (unaware enemies) * {self.engine.game_world.current_floor} (current floor)")
             
-            # Reinicia el contador para la generación de monstruos
-            self.engine.spawn_monsters_counter = 0
-
             if not self.engine.game_world.get_downstairs_destination(stairs_location):
                 raise exceptions.Impossible("You can't descend any further.")
 
@@ -385,8 +382,6 @@ class TakeStairsAction(Action):
 
             if not self.engine.perform_floor_transition(self.engine.game_world.retreat_floor):
                 raise exceptions.Impossible("You can't ascend any further.")
-
-            self.engine.spawn_monsters_counter = 0
 
             self.engine.message_log.add_message(
                 "You ascend the staircase.", color.ascend

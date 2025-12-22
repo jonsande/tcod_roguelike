@@ -1078,6 +1078,30 @@ ENEMY_SPAWN_RULES = {
     #"warden": {"min_floor": 6, "weight_progression": [(6, 6), (8, 14), (10, 6), (12, 0)]},
 }
 
+# --- Stairs spawn configuration -----------------------------------------
+# Turns before stairs spawn can trigger.
+STAIRS_SPAWN_DELAY_TURNS = 250
+# Chance per turn (0-1) to spawn a single creature once delay is met.
+STAIRS_SPAWN_CHANCE = 0.01
+# Max creatures spawned by this system per level.
+STAIRS_SPAWN_MAX_PER_LEVEL = 3
+# Spawn rules for stairs creatures (same schema as ENEMY_SPAWN_RULES).
+STAIRS_MONSTER_SPAWN_RULES = {
+    "goblin": {"min_floor": 1, "weight_progression": [(1, 40), (4, 25), (6, 10)]},
+    "orc": {"min_floor": 4, "weight_progression": [(4, 15), (6, 25), (10, 5)]},
+    "slime": {"min_floor": 2, "weight_progression": [(2, 10), (5, 8), (8, 4)]},
+    "skeleton": {"min_floor": 5, "weight_progression": [(5, 10), (8, 20)]},
+    "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 12)]},
+}
+# AI class names for stairs spawns (must exist in components.ai).
+STAIRS_MONSTER_AI = {
+    "goblin": "ScoutV3",
+    "orc": "ScoutV3",
+    "slime": "ScoutV3",
+    "skeleton": "ScoutV3",
+    "grey_goblin": "ScoutV3",
+}
+
 PROFICIENCY_LEVELS = {
     "Beginner": 0.5, 
     "Novice": 1.0, 

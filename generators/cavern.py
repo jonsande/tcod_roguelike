@@ -187,6 +187,7 @@ def populate_cavern(dungeon: GameMap, floor_number: int) -> None:
         ):
             entity_factories.debris_a.spawn(dungeon, x, y)
     dungeon.spawn_monsters_counter = 0
+    dungeon.spawn_monsters_generated = 0
 
     min_monsters, max_monsters = get_floor_value(
         cavern_monster_count_by_floor, floor_number, (8, 14)

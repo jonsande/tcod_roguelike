@@ -1394,6 +1394,8 @@ class GameWorld:
         self._update_center_rooms(next_map)
         self.engine.update_fov()
         self._sync_ambient_sound()
+        self.engine.spawn_monsters_counter = 0
+        self.engine.spawn_monsters_generated = 0
         return True
 
     def retreat_floor(self) -> bool:
@@ -1417,6 +1419,8 @@ class GameWorld:
         self._update_center_rooms(previous_map)
         self.engine.update_fov()
         self._sync_ambient_sound()
+        self.engine.spawn_monsters_counter = 0
+        self.engine.spawn_monsters_generated = 0
         return True
 
     def get_room_tiles_from_certain_floor(self, floor: int, center: Tuple[int, int]) -> List[Tuple[int, int]]:

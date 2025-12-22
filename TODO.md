@@ -105,6 +105,7 @@ POCIONES
 - [x] Crear animación genérica para lanzamiento de cualquier objeto.
 
 ANILLOS
+- [!] Anillo de detectar peligro. Se activa si hay un peligro dentro de un radio x. El anillo apretará más o menos el dedo de su portador dependiendo del nivel de peligro detectado.
 - [ ] Anillo stealth.
 - [ ] Anillo de invisibilidad
 - [ ] Anilos mixtos, con propiedades mágicas buenas y también malas.

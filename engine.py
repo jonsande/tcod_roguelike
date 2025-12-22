@@ -163,6 +163,7 @@ class Engine:
         self.turn = 0
         self.satiety_counter = 0
         self.spawn_monsters_counter = 0
+        self.spawn_monsters_generated = 0
         self.temporal_effects = []
         self.lamp_hint_shown = False
         self.center_room_array = []
@@ -806,7 +807,6 @@ class Engine:
 
 
     def spawn_monsters_upstairs(self):
-        
         if settings.DEBUG_MODE:
             print(f"DEBUG: DOWNSTAIRS_LOCATION: {self.game_map.downstairs_location}", color.red)
 
@@ -815,54 +815,79 @@ class Engine:
         if not spawn_location:
             return
 
-        self.spawn_monsters_counter = self.spawn_monsters_counter + 1
+        if self.spawn_monsters_generated >= settings.STAIRS_SPAWN_MAX_PER_LEVEL:
+            return
 
-        dice = random.randint(1, 20)
+        self.spawn_monsters_counter += 1
+        if self.spawn_monsters_counter < settings.STAIRS_SPAWN_DELAY_TURNS:
+            return
 
-        total = self.spawn_monsters_counter + dice
+        if random.random() >= settings.STAIRS_SPAWN_CHANCE:
+            return
 
+        spawn_x, spawn_y = spawn_location
+        blocking_entity = self.game_map.get_blocking_entity_at_location(spawn_x, spawn_y)
+        if blocking_entity:
+            if isinstance(blocking_entity, Actor):
+                if blocking_entity is self.player:
+                    return
+                if not self._relocate_actor_from_stairs(blocking_entity, spawn_x, spawn_y):
+                    return
+            else:
+                return
+
+        from procgen import (
+            stairs_monster_spawn_rules,
+            _select_weighted_spawn_entries,
+            record_entity_spawned,
+        )
+        selections = _select_weighted_spawn_entries(
+            stairs_monster_spawn_rules, 1, self.game_world.current_floor, "monsters"
+        )
+        if not selections:
+            return
+
+        entry = selections[0]
+        spawned = entry["entity"].spawn(self.game_map, spawn_x, spawn_y)
+        ai_name = settings.STAIRS_MONSTER_AI.get(entry["name"])
+        ai_cls = getattr(components.ai, ai_name, None) if ai_name else None
+        if ai_cls:
+            spawned.ai_cls = ai_cls
+            spawned.ai = ai_cls(spawned)
+
+        self.spawn_monsters_generated += 1
+        record_entity_spawned(
+            spawned,
+            self.game_world.current_floor,
+            "monsters",
+            key=entry["name"],
+            procedural=True,
+            source="stairs_spawn",
+        )
         if settings.DEBUG_MODE:
-            print("DEBUG: self.spawn_monsters_counter = ", self.spawn_monsters_counter)
-            print("DEBUG: Spawn monsters dice (1d20) = ", dice)
-            print("DEBUG: Total = ", total)
+            ai_label = ai_cls.__name__ if ai_cls else getattr(spawned.ai_cls, "__name__", "UnknownAI")
+            print(
+                f"DEBUG: Stairs spawn -> {entry['name']} ({spawned.name}) with AI {ai_label}"
+            )
 
-        if total >= 230:
-
-            spawn_chance = random.randint(1,6)
-
-            if settings.DEBUG_MODE:
-                    print(f"DEBUG: spawn chance dice: {spawn_chance}")
-
-            if spawn_chance >= 5:
-
-                amount = random.randint(1, 3)
-
-                if settings.DEBUG_MODE:
-                    from color import bcolors
-                    print(f"{bcolors.WARNING}DEBUG: New monsters upstairs! ({amount}){bcolors.ENDC}")
-
-                from entity_factories import monster_roulette, orc, goblin, snake, true_orc, grey_goblin, slime, skeleton
-                from components.ai import ScoutV3
-                for i in range(amount):
-
-                    # Generate random monsters upstairs
-                    if self.game_world.current_floor <= 4:
-                        selected_monster = monster_roulette(choices=[goblin,])
-                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
-                        selected_monster.ai_cls = ScoutV3
-                    elif self.game_world.current_floor > 5 and self.game_world.current_floor < 9:
-                        selected_monster = monster_roulette(choices=[orc, goblin, slime, skeleton])
-                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
-                        selected_monster.ai_cls = ScoutV3
-                    else:
-                        selected_monster = monster_roulette(choices=[orc, true_orc, grey_goblin, skeleton])
-                        selected_monster.spawn(self.game_map, spawn_location[0], spawn_location[1])
-                        selected_monster.ai_cls = ScoutV3
-                    
-                    # Generate single type monster upstairs
-                    #entity_factories.goblin.spawn(self.game_map, spawn_location[0], spawn_location[1])
-            
-            self.spawn_monsters_counter = 0
+    def _relocate_actor_from_stairs(self, actor: Actor, x: int, y: int) -> bool:
+        directions = [
+            (-1, -1), (0, -1), (1, -1),
+            (-1, 0), (1, 0),
+            (-1, 1), (0, 1), (1, 1),
+        ]
+        random.shuffle(directions)
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            if not self.game_map.in_bounds(nx, ny):
+                continue
+            if not self.game_map.tiles["walkable"][nx, ny]:
+                continue
+            if self.game_map.get_blocking_entity_at_location(nx, ny):
+                continue
+            actor.move(nx - actor.x, ny - actor.y)
+            return True
+        return False
 
 
     def update_hunger(self): 
