@@ -198,7 +198,7 @@ class Engine:
             "player": None,
             "mouse": None,
         }
-        self._noise_events: Dict[Actor, Tuple[int, int]] = {}
+        self._noise_events: Dict[Actor, List[Tuple[int, int, str]]] = {}
         self._noise_notified: set[Actor] = set()
         self.profiler = TurnProfiler(
             enabled=getattr(settings, "PERF_PROFILER_ENABLED", False),
@@ -312,28 +312,38 @@ class Engine:
         # Always allow a fresh notification for this noise event.
         self._noise_notified.discard(source)
         expires = self.turn + duration
-        current = self._noise_events.get(source)
-        if current:
-            prev_level, prev_exp, prev_tag = current
-            level = max(level, prev_level)
-            expires = max(expires, prev_exp)
-            tag = tag or prev_tag
-        self._noise_events[source] = (level, expires, tag)
+        current_events = self._noise_events.get(source, [])
+        active_events = [event for event in current_events if self.turn <= event[1]]
+        active_events.append((level, expires, tag))
+        self._noise_events[source] = active_events
 
     def noise_level(self, source: Actor) -> int:
         """Returns the active noise level for an actor, pruning expired events."""
-        if source not in self._noise_events:
-            return 0
-        level, expires, _ = self._noise_events[source]
-        if self.turn > expires:
+        event = self._get_active_noise_event(source)
+        return event[0] if event else 0
+
+    def _get_active_noise_event(self, source: Actor) -> Optional[Tuple[int, int, str]]:
+        events = self._noise_events.get(source)
+        if not events:
+            return None
+        active_events = [event for event in events if self.turn <= event[1]]
+        if not active_events:
             self._noise_events.pop(source, None)
-            return 0
-        return level
+            self._noise_notified.discard(source)
+            return None
+        self._noise_events[source] = active_events
+        return max(active_events, key=lambda event: (event[0], event[1]))
 
     def _prune_noise_events(self) -> None:
         """Remove expired noise entries based on current turn."""
-        expired = [actor for actor, (_, exp, _) in self._noise_events.items() if self.turn > exp]
-        for actor in expired:
+        expired_sources = []
+        for actor, events in self._noise_events.items():
+            active_events = [event for event in events if self.turn <= event[1]]
+            if active_events:
+                self._noise_events[actor] = active_events
+            else:
+                expired_sources.append(actor)
+        for actor in expired_sources:
             self._noise_events.pop(actor, None)
             self._noise_notified.discard(actor)
 
@@ -456,7 +466,11 @@ class Engine:
         if not self._noise_events:
             self._noise_notified.clear()
             return
-        for actor, (level, expires, tag) in list(self._noise_events.items()):
+        for actor in list(self._noise_events.keys()):
+            active_event = self._get_active_noise_event(actor)
+            if not active_event:
+                continue
+            level, expires, tag = active_event
             if actor is self.player:
                 continue
             if expires < self.turn:
@@ -1136,6 +1150,11 @@ class Engine:
             maximum_value=self.player.fighter.max_hp,
             current_stamina=self.player.fighter.stamina,
             max_stamina=self.player.fighter.max_stamina,
+            layout=hud,
+        )
+        render_functions.render_noise_indicator(
+            console=console,
+            noise_level=self.noise_level(self.player),
             layout=hud,
         )
 

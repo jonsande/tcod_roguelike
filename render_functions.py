@@ -283,6 +283,24 @@ def render_combat_mode(console: Console, hit, defense, layout: dict):
     # )
 
 
+def render_noise_indicator(console: Console, noise_level: int, layout: dict) -> None:
+    y = layout["stats_row"]
+    if noise_level <= 0:
+        noise_color = color.green
+    elif noise_level == 1:
+        noise_color = color.white
+    elif noise_level == 2:
+        noise_color = color.orange
+    else:
+        noise_color = color.red
+    console.print(
+        x=layout["noise_x"],
+        y=y,
+        string=f"Noise: {noise_level}",
+        fg=noise_color,
+    )
+
+
 def render_fortify_indicator(console: Console, layout: dict):
     console.print(x=layout["fortify_x"], y=layout["stats_row"], string="Press WAIT: +1 Def ", fg=color.orange)
 

@@ -1750,6 +1750,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.weapon_proficiency = 1.0
         self._init_fire_status(fire_resistance)
         self._last_attacker_is_player = False
+        self._last_attacker = None
 
     @property
     def hp(self) -> int:
@@ -1808,6 +1809,7 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         self.hp -= amount
         player_entity = getattr(self.engine, "player", None)
         self._last_attacker_is_player = attacker is player_entity
+        self._last_attacker = attacker
         # Being hit generates noise so the player hears blows on the wall.
         if getattr(self.engine, "register_noise", None):
             try:
@@ -1859,6 +1861,10 @@ class BreakableWallFighter(FireStatusMixin, BaseComponent):
         if getattr(self.engine, "register_noise", None):
             try:
                 self.engine.register_noise(self.parent, level=4, duration=3, tag="wall_break")
+                if self._last_attacker:
+                    self.engine.register_noise(
+                        self._last_attacker, level=4, duration=3, tag="wall_break"
+                    )
             except Exception:
                 pass
         gamemap.tiles[x, y] = tile_types.floor
