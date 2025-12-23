@@ -33,6 +33,8 @@ from audio import (
     preload_wind_audio,
     update_campfire_audio,
     update_wind_audio,
+    set_audio_silence,
+    ambient_sound,
 )
 from visual_effects import WindEffect
 
@@ -336,6 +338,7 @@ class Engine:
             self._silence_end_message = end_message
         self._noise_events.clear()
         self._noise_notified.clear()
+        set_audio_silence(True)
 
     def update_silence_effects(self) -> None:
         if self.silence_turns <= 0:
@@ -343,12 +346,21 @@ class Engine:
         self.silence_turns -= 1
         if self.silence_turns <= 0:
             self.silence_turns = 0
+            set_audio_silence(False)
+            game_world = getattr(self, "game_world", None)
+            if game_world:
+                ambient_sound.play_for_floor(game_world.current_floor)
             if self._silence_end_message:
                 self.message_log.add_message(
                     self._silence_end_message, color.status_effect_applied
                 )
 
-    def maybe_spawn_silence_creature(self, reader: Actor) -> None:
+    def maybe_spawn_silence_creature(
+        self,
+        reader: Actor,
+        *,
+        target_id_name: Optional[str] = None,
+    ) -> None:
         chance = getattr(settings, "SILENCE_SUMMON_CHANCE", 0.0)
         try:
             chance_value = float(chance)
@@ -404,13 +416,33 @@ class Engine:
             if fighter:
                 fighter.aggravated = True
                 ai_cls = getattr(fighter, "woke_ai_cls", None)
-                if ai_cls:
+                if target_id_name:
+                    spawned.ai_cls = components.ai.DemonicObjectRetrieverAI
+                    spawned.ai = components.ai.DemonicObjectRetrieverAI(
+                        spawned,
+                        target_id_name=target_id_name,
+                    )
+                elif ai_cls:
                     spawned.ai_cls = ai_cls
                     spawned.ai = ai_cls(spawned)
+            if target_id_name and not isinstance(
+                getattr(spawned, "ai", None), components.ai.DemonicObjectRetrieverAI
+            ):
+                spawned.ai_cls = components.ai.DemonicObjectRetrieverAI
+                spawned.ai = components.ai.DemonicObjectRetrieverAI(
+                    spawned,
+                    target_id_name=target_id_name,
+                )
             self.message_log.add_message(
                 "Algo extraño ha sucedido. Tienes un mal presentimiento.",
                 color.orange,
             )
+            if settings.DEBUG_MODE:
+                ai_name = getattr(getattr(spawned, "ai", None), "__class__", type("x", (), {})).__name__
+                target_name = getattr(getattr(spawned, "ai", None), "target_id_name", None)
+                print(
+                    f"DEBUG: Silence spawn -> {spawned.name} AI={ai_name} target={target_name}"
+                )
             return
 
         max_rooms = getattr(settings, "SILENCE_SUMMON_NEARBY_ROOMS", 3)
@@ -452,13 +484,33 @@ class Engine:
         if fighter:
             fighter.aggravated = True
             ai_cls = getattr(fighter, "woke_ai_cls", None)
-            if ai_cls:
+            if target_id_name:
+                spawned.ai_cls = components.ai.DemonicObjectRetrieverAI
+                spawned.ai = components.ai.DemonicObjectRetrieverAI(
+                    spawned,
+                    target_id_name=target_id_name,
+                )
+            elif ai_cls:
                 spawned.ai_cls = ai_cls
                 spawned.ai = ai_cls(spawned)
+        if target_id_name and not isinstance(
+            getattr(spawned, "ai", None), components.ai.DemonicObjectRetrieverAI
+        ):
+            spawned.ai_cls = components.ai.DemonicObjectRetrieverAI
+            spawned.ai = components.ai.DemonicObjectRetrieverAI(
+                spawned,
+                target_id_name=target_id_name,
+            )
         self.message_log.add_message(
             "Algo extraño ha sucedido. Tienes un mal presentimiento.",
             color.orange,
         )
+        if settings.DEBUG_MODE:
+            ai_name = getattr(getattr(spawned, "ai", None), "__class__", type("x", (), {})).__name__
+            target_name = getattr(getattr(spawned, "ai", None), "target_id_name", None)
+            print(
+                f"DEBUG: Silence spawn -> {spawned.name} AI={ai_name} target={target_name}"
+            )
 
     def _find_silence_fallback_tile(self, reader: Actor) -> Optional[Tuple[int, int]]:
         game_map = getattr(self, "game_map", None)

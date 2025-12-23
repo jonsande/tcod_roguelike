@@ -20,6 +20,7 @@ from components.ai import (
     OldManAI,
     WardenAI,
     MimicSleepAI,
+    DemonicObjectRetrieverAI,
 )
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -1863,37 +1864,51 @@ cave_bat.fighter.is_flying = True
 # TODO: poisonous_cave_bat
 # TODO: vampire_bat
 
+def _randomize_quasit_stats(entity: Actor) -> None:
+    entity.fighter.max_hp = random.randint(11, 14)
+    entity.fighter.hp = entity.fighter.max_hp
+    #entity.ai = DemonicObjectRetrieverAI(entity, target_id_name="The Artifact")
+    # etc.
+
+def _quasit_on_spawn(entity: Actor) -> None:
+    """Configure quasits when they spawn so the engine can pickle the factory."""
+    # _setup_creature_equipment(entity)
+    _randomize_quasit_stats(entity)
+
 quasit = Actor(
     char="q",
-    color=(80, 140, 70),
+    color=(252, 71, 15),
     name="Quasit",
     ai_cls=SleepingEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=7,
+        hp=11,
         base_defense=4,
         strength=0,
+        base_to_hit=2,
         recover_rate=50,
-        recover_amount=0,
-        fov=6,
-        foh=6,
+        recover_amount=1,
+        fov=8,
+        foh=8,
         perception=4,
         weapon_proficiency=PROFICIENCY_LEVELS["Novice"],
         base_stealth=4,
         aggressivity=6,
         stamina=4,
         max_stamina=4,
-        action_time_cost=6,
+        action_time_cost=8,
         poison_resistance=4,
-        woke_ai_cls=HostileEnemyV3,
+        woke_ai_cls=ScoutV3,
         can_open_doors=True,
-        natural_weapon=NaturalWeapon(name="Claws", min_dmg=1, max_dmg=3, dmg_bonus=1),
+        natural_weapon=NaturalWeapon(name="Claws", min_dmg=3, max_dmg=8, dmg_bonus=1),
     ),
-    inventory=Inventory(capacity=0),
-    level=Level(xp_given=4),
+    inventory=Inventory(capacity=1),
+    level=Level(xp_given=10),
 )
 quasit.is_flying = True
 quasit.fighter.is_flying = True
+
+quasit.on_spawn = _quasit_on_spawn
 
 def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_hp = random.randint(7, 10)

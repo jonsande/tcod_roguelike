@@ -24,6 +24,7 @@ else:
 _mixer_initialized = False
 _mixer_attempted = False
 _sound_cache: Dict[str, "pygame.mixer.Sound"] = {}
+_audio_silenced = False
 
 
 def _ensure_mixer_initialized(*, allow_when_disabled: bool = False) -> bool:
@@ -73,6 +74,33 @@ def _ensure_mixer_initialized(*, allow_when_disabled: bool = False) -> bool:
     _mixer_initialized = True
     _mixer_attempted = True
     return True
+
+
+def set_audio_silence(active: bool) -> None:
+    """Enable/disable global audio silence (used by the Silence effect)."""
+    global _audio_silenced
+    _audio_silenced = bool(active)
+    if not _audio_silenced:
+        return
+
+    try:
+        ambient_sound.stop()
+    except Exception:
+        pass
+    try:
+        _stop_campfire_loop(fade_ms=0)
+    except Exception:
+        pass
+    try:
+        _stop_wind_loop(fade_ms=0)
+    except Exception:
+        pass
+    if pygame is not None:
+        try:
+            pygame.mixer.stop()
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
 
 
 def _resolve_audio_path(track: str) -> Optional[Path]:
@@ -200,6 +228,9 @@ class AmbientSoundController:
 
     def play_for_floor(self, floor: int) -> None:
         """Play (or switch to) the ambient track requested for this floor."""
+        if _audio_silenced:
+            self.stop()
+            return
         if not audio_cfg.AMBIENT_SOUND_ENABLED:
             self.stop()
             return
@@ -303,6 +334,9 @@ class AmbientSoundController:
         return True
 
     def play_menu_track(self) -> None:
+        if _audio_silenced:
+            self.stop()
+            return
         if not getattr(audio_cfg, "MENU_AMBIENT_SOUND_ENABLED", False):
             self.stop()
             return
@@ -400,6 +434,8 @@ def _load_sound(track: str) -> Optional["pygame.mixer.Sound"]:
 
 
 def _play_sound_effect(track: str, *, volume: float) -> None:
+    if _audio_silenced:
+        return
     if not _ensure_mixer_initialized(allow_when_disabled=True):
         return
 
@@ -828,6 +864,9 @@ def update_campfire_audio(source: object, active: bool, *, fadeout_ms: int = 600
     """Start or stop the looping campfire audio depending on player proximity."""
     if source is None:
         return
+    if _audio_silenced:
+        _stop_campfire_loop(fade_ms=fadeout_ms)
+        return
 
     if not getattr(audio_cfg, "CAMPFIRE_SOUND_ENABLED", False):
         _campfire_active_sources.clear()
@@ -910,6 +949,9 @@ def _stop_wind_loop(*, fade_ms: int = 400) -> None:
 def update_wind_audio(active: bool) -> None:
     """Start/stop the looping wind audio based on whether wind is present on screen."""
     fade_out_ms = max(0, int(getattr(audio_cfg, "WIND_SOUND_FADE_OUT_MS", 500)))
+    if _audio_silenced:
+        _stop_wind_loop(fade_ms=fade_out_ms)
+        return
     if not getattr(audio_cfg, "WIND_SOUND_ENABLED", False):
         _stop_wind_loop(fade_ms=fade_out_ms)
         return

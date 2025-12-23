@@ -121,7 +121,12 @@ class PickupAction(Action):
         item_to_pick.parent = self.entity.inventory
         inventory.items.append(item_to_pick)
 
-        self.engine.message_log.add_message(f"You picked up the {item_to_pick.name}!")
+        if self.entity is self.engine.player:
+            self.engine.message_log.add_message(f"You picked up the {item_to_pick.name}!")
+        elif self.engine.game_map.visible[self.entity.x, self.entity.y]:
+            self.engine.message_log.add_message(
+                f"{self.entity.name} picks up the {item_to_pick.name}."
+            )
         play_item_pickup_sound(item_to_pick)
 
         # TIME SYSTEM

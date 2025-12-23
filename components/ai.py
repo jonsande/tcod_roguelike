@@ -9,7 +9,7 @@ from tcod import constants
 from tcod.map import compute_fov
 from i18n import _
 
-from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction
+from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction, PickupAction
 import color
 import tile_types
 import exceptions
@@ -350,6 +350,250 @@ class BaseAI(Action):
         computed_path = [(index[0], index[1]) for index in path]
         self._path_cache[cache_key] = (engine_turn, computed_path)
         return list(computed_path)
+
+
+class DemonicObjectRetrieverAI(BaseAI):
+    """AI that relentlessly retrieves a specific item id_name."""
+
+    def __init__(self, entity: Actor, target_id_name: Optional[str] = None) -> None:
+        super().__init__(entity)
+        self.target_id_name = target_id_name
+        self.path: List[Tuple[int, int]] = []
+        self._missing_turns_remaining: Optional[int] = None
+
+    def set_target_id_name(self, target_id_name: str) -> None:
+        self.target_id_name = target_id_name
+        self._missing_turns_remaining = None
+
+    def _despawn(self) -> None:
+        gamemap = getattr(self.entity, "gamemap", None)
+        engine = getattr(gamemap, "engine", None) if gamemap else None
+        if engine and gamemap and gamemap.visible[self.entity.x, self.entity.y]:
+            engine.message_log.add_message(
+                f"{self.entity.name} disappears.",
+                color.descend,
+            )
+        entities = getattr(gamemap, "entities", None) if gamemap else None
+        if entities and self.entity in entities:
+            entities.remove(self.entity)
+        self.entity.ai = None
+
+    def _handle_missing_target(self) -> None:
+        if self._missing_turns_remaining is None:
+            self._missing_turns_remaining = 3
+        self._missing_turns_remaining -= 1
+        if self._missing_turns_remaining <= 0:
+            self._despawn()
+            return None
+        return WaitAction(self.entity).perform()
+
+    def _find_target_item(self):
+        if not self.target_id_name:
+            return None
+        gamemap = getattr(self.engine, "game_map", None)
+        if not gamemap:
+            return None
+
+        candidates: List[Tuple[object, Tuple[int, int], Optional[Actor]]] = []
+        seen_items = set()
+        for actor in gamemap.actors:
+            inventory = getattr(actor, "inventory", None)
+            for item in getattr(inventory, "items", []) or []:
+                if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                    candidates.append((item, (actor.x, actor.y), actor))
+                    seen_items.add(item)
+            equipment = getattr(actor, "equipment", None)
+            equipped_items = getattr(equipment, "equipped_items", None)
+            if callable(equipped_items):
+                for item in equipped_items() or []:
+                    if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                        candidates.append((item, (actor.x, actor.y), actor))
+                        seen_items.add(item)
+
+        for item in gamemap.items:
+            if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                candidates.append((item, (item.x, item.y), None))
+                seen_items.add(item)
+
+        if not candidates:
+            return None
+
+        def distance(candidate: Tuple[object, Tuple[int, int], Optional[Actor]]) -> int:
+            pos = candidate[1]
+            return max(abs(pos[0] - self.entity.x), abs(pos[1] - self.entity.y))
+
+        return min(candidates, key=distance)
+
+    def _fallback_step(self, dest_x: int, dest_y: int) -> None:
+        dx = 0
+        dy = 0
+        if dest_x > self.entity.x:
+            dx = 1
+        elif dest_x < self.entity.x:
+            dx = -1
+        if dest_y > self.entity.y:
+            dy = 1
+        elif dest_y < self.entity.y:
+            dy = -1
+        if dx == 0 and dy == 0:
+            return WaitAction(self.entity).perform()
+        return BumpAction(self.entity, dx, dy).perform()
+
+    def _move_towards(self, dest_x: int, dest_y: int) -> None:
+        self.path = self.get_path_to(dest_x, dest_y, ignore_senses=True)
+        if not self.path:
+            return self._fallback_step(dest_x, dest_y)
+        next_x, next_y = self.path.pop(0)
+        blocking_entity = self.engine.game_map.get_blocking_entity_at_location(next_x, next_y)
+        if blocking_entity and blocking_entity is not self.entity:
+            dx = next_x - self.entity.x
+            dy = next_y - self.entity.y
+            return BumpAction(self.entity, dx, dy).perform()
+        return MovementAction(self.entity, next_x - self.entity.x, next_y - self.entity.y).perform()
+
+    def _attack_or_chase(self, target: Actor) -> None:
+        dx = target.x - self.entity.x
+        dy = target.y - self.entity.y
+        distance = max(abs(dx), abs(dy))
+        if distance <= 1:
+            return MeleeAction(self.entity, dx, dy).perform()
+        return self._move_towards(target.x, target.y)
+
+    def _pickup_target_item(self, item) -> bool:
+        try:
+            PickupAction(self.entity, item).perform()
+            return True
+        except exceptions.Impossible:
+            inventory = getattr(self.entity, "inventory", None)
+            if not inventory:
+                return False
+            if item in inventory.items:
+                return True
+            gamemap = getattr(self.entity, "gamemap", None)
+            entities = getattr(gamemap, "entities", None) if gamemap else None
+            if entities and item in entities:
+                entities.remove(item)
+            item.parent = inventory
+            inventory.items.append(item)
+            if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+                self.engine.message_log.add_message(
+                    f"{self.entity.name} picks up the {item.name}."
+                )
+            fighter = getattr(self.entity, "fighter", None)
+            if fighter:
+                fighter.current_time_points -= fighter.action_time_cost
+            return True
+
+    def _relocate_book_after_retrieval(self, item) -> None:
+        try:
+            from entity import Book, Chest
+        except Exception:
+            return
+
+        if not isinstance(item, Book):
+            return
+
+        engine = getattr(self.entity, "gamemap", None)
+        engine = getattr(engine, "engine", None) if engine else None
+        if not engine:
+            return
+
+        game_world = getattr(engine, "game_world", None)
+        if not game_world:
+            return
+
+        def _detach_from_parent() -> None:
+            parent = getattr(item, "parent", None)
+            items = getattr(parent, "items", None)
+            if items and item in items:
+                try:
+                    items.remove(item)
+                except ValueError:
+                    pass
+
+        def _place_in_container(container, label: str) -> None:
+            inventory = getattr(container, "inventory", None)
+            if not inventory:
+                return
+            _detach_from_parent()
+            inventory.items.append(item)
+            item.parent = inventory
+            if getattr(settings, "DEBUG_MODE", False):
+                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
+                print(
+                    f"DEBUG: Demonic retrieval placed {name} in {container.name} at {label} ({container.x}, {container.y})"
+                )
+
+        fixed_layouts = getattr(settings, "FIXED_DUNGEON_LAYOUTS", {}) or {}
+        library_maps = []
+        for floor, layout in fixed_layouts.items():
+            map_name = ""
+            if isinstance(layout, dict):
+                map_name = str(layout.get("map", "")).lower()
+            if map_name in ("the_library", "the_library_template"):
+                if isinstance(floor, int) and 1 <= floor <= len(game_world.levels):
+                    library_maps.append((floor, game_world.levels[floor - 1]))
+
+        library_shelves = []
+        for floor, game_map in library_maps:
+            for entity in getattr(game_map, "entities", []):
+                if getattr(entity, "id_name", "").lower() == "bookshelf":
+                    library_shelves.append((game_map, entity))
+
+        if library_shelves:
+            _, shelf = random.choice(library_shelves)
+            label = getattr(getattr(shelf, "gamemap", None), "branch_label", None) or "?"
+            _place_in_container(shelf, label)
+            return
+
+        containers = []
+        iter_maps = getattr(game_world, "_iter_all_maps", None)
+        maps = list(iter_maps()) if callable(iter_maps) else list(getattr(game_world, "levels", []))
+        for game_map in maps:
+            for entity in getattr(game_map, "entities", []):
+                if isinstance(entity, Chest):
+                    containers.append((game_map, entity))
+
+        if not containers:
+            if getattr(settings, "DEBUG_MODE", False):
+                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
+                print(f"DEBUG: Demonic retrieval could not place {name}; no containers found.")
+            return
+
+        _, container = random.choice(containers)
+        label = getattr(getattr(container, "gamemap", None), "branch_label", None) or "?"
+        _place_in_container(container, label)
+
+    def perform(self) -> None:
+        if not self.target_id_name:
+            return self._handle_missing_target()
+
+        found = self._find_target_item()
+        if not found:
+            return self._handle_missing_target()
+
+        self._missing_turns_remaining = None
+        target_item, target_pos, holder = found
+
+        if holder is self.entity:
+            self._despawn()
+            return None
+
+        if holder:
+            return self._attack_or_chase(holder)
+
+        target_x, target_y = target_pos
+        if self.entity.x == target_x and self.entity.y == target_y:
+            if self._pickup_target_item(target_item):
+                self._relocate_book_after_retrieval(target_item)
+                self._despawn()
+            return None
+
+        blocking_actor = self.engine.game_map.get_actor_at_location(target_x, target_y)
+        if blocking_actor and blocking_actor is not self.entity:
+            return self._attack_or_chase(blocking_actor)
+
+        return self._move_towards(target_x, target_y)
     
 class ConfusedEnemy(BaseAI):
     """

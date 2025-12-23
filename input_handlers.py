@@ -1126,7 +1126,10 @@ class BookOptionsHandler(AskUserEventHandler):
                 self.engine.message_log.add_message(message, color.orange)
             if isinstance(self.book, SilenceBook) and getattr(self.book, "_silence_spawn_pending", False):
                 self.book._silence_spawn_pending = False
-                self.engine.maybe_spawn_silence_creature(self.engine.player)
+                self.engine.maybe_spawn_silence_creature(
+                    self.engine.player,
+                    target_id_name=getattr(self.book, "id_name", None),
+                )
             return super().ev_keydown(event)
         if index == 2:
             return actions.BookToggleEquipAction(self.engine.player, self.book)

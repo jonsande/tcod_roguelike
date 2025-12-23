@@ -17,7 +17,7 @@ ARMAS
 - [x] Los objetos equipados en el inventario deben ir de otro color.
 
 CRIATURAS
-- [ ] Quasit.
+- [x] Quasit.
 - [ ] Arpías.
 - [ ] Nyarlathotep.
 - [ ] Yog-Sothoth.
@@ -33,8 +33,9 @@ CRIATURAS
 - [x] Mecánica para que las criaturas se equipen con las armaduras que tengan en su inventario.
 - [x] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes.
 
-IA
-- [ ] Ampliar el AI HostileEnemy: las criaturas con una BaseAI de tipo HostileEnemy que no hayas sido todavía agraviadas nunca (aggravated), deben tener un comportamiento "oscilante". Es decir, moverse aleatoriamente (pero sin abrir puertas, ni atacar, ni hacer bump sobre nadie ni nada) a alguna casilla de su alrededor cada cierto tiempo (cada 1d6 turnos). Por otra parte, una criatura con una BaseAI de tipo HostileEnemy que haya sido agraviada (aggravated) alguna vez, dejará de estar agraviada si se cumplen la siguiente condición: el personaje que lo agravió queda fuera de su campo de visión (fov) durante 12 + 1d20 turnos. [NOTA: el sistema "oscilante" es útil para hacer más interesante el stealth, pues de otro modo es casi imposible pillar por sorpresa a un enemigo, a no ser que esté dormido.]
+IA - COMPORTAMIENTO DE CRIATURAS
+- [ ] Crear una ObjectRetrieverAI ordinaria. La criatura con esta AI buscará el objeto objetivo (deberá saber dónde está). Lo cogerá e intentará escapar por las escaleras más cercanas.
+- [ ] Ampliar el AI HostileEnemy: algunas criaturas con una BaseAI de tipo HostileEnemy que no hayas sido todavía agraviadas nunca (aggravated), deben tener un comportamiento "oscilante". Es decir, moverse aleatoriamente (pero sin abrir puertas, ni atacar, ni hacer bump sobre nadie ni nada) a alguna casilla de su alrededor cada cierto tiempo (cada 1d6 turnos). Por otra parte, una criatura con una BaseAI de tipo HostileEnemy que haya sido agraviada (aggravated) alguna vez, dejará de estar agraviada si se cumplen la siguiente condición: el personaje que lo agravió queda fuera de su campo de visión (fov) durante 12 + 1d20 turnos. [NOTA: el sistema "oscilante" es útil para hacer más interesante el stealth, pues de otro modo es casi imposible pillar por sorpresa a un enemigo, a no ser que esté dormido.]
 - [!] Las criaturas deben huir con hp bajos
 - [ ] Una vez que un enemigo no visible ha sido aggravated tiene que haber una probabilidad de darle esquinazo. No puede ser que el jugador quede ya como objetivo. En cada turno habrá que hacer una tirada para ver si sigue buscándole o no.
 - [ ] Mejorar IAs de enemigos para que vaya más rápido cuando en un mapa hay muchos. Que haya algo así como un estado de letargo, en la que no hagan apenas cálculos.
@@ -91,6 +92,9 @@ PERKS
 - [ ] Heridas, cojera, epilepsia, visiones, u otras cosas, útiles/buenas o no.
 
 PERGAMINOS
+- [ ] Pergamino de círculo protector. Impide durante 25 turnos la entrada de toda criatura en un radio de 2.
+- [ ] Pergamino de imagen doble. Durante X turnos aumenta la defensa del lector en 4.
+- [ ] Pergamino de escudo mágico. Durante X turnos aumenta la defensa del lector en Y puntos.
 - [DESCARTADO] Limitar la distancia a la que se pueden "lanzar" los pergaminos. [P.D. Está naturalmente limitada por la limitación de visión]
 - [x] Pergamino de descender de nivel.
 - [ ] El paralysis scroll dura quizá poco.
@@ -180,6 +184,7 @@ LIBROS MÁGICOS (e.e. capaces de hacer algo)
 - [ ] Libro de portal espejo. Genera un portal. Si hay generados dos portales, al entrar por uno se aparece por el otro. No puede haber más de dos portales creados al mismo tiempo. Los portales tienen (quizá) una duración. 
 - [x] Libro de las pociones! Si lo lees, identifica todas las pociones.
 - [ ] Libro de los pergaminos. Idem.
+- [ ] Libro de círculo de protección. Ninguna criatura podrá entrar en un radio de 2 casillas.
 - [ ] Leer en voz alta debe requerir tres turnos. Si en ese tiempo el jugador es atacado la lectura será interrumpida.
 
 ARTEFACTOS

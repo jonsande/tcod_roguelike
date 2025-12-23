@@ -869,19 +869,6 @@ ROOM_MIN_SIZE_SHAPES = {
 # -- Cavern generation --------------------------------------------------------
 # Probabilidad de que un piso generado proceduralmente sea una caverna en vez de un conjunto de habitaciones.
 CAVERN_SPAWN_CHANCE = 0.10
-
-# Silencio: probabilidad de invocar criaturas cercanas al leer el códice.
-SILENCE_SUMMON_CHANCE = 0.08
-# Lista de criaturas posibles: ("entity_factories_key", weight)
-SILENCE_SUMMON_CREATURES = [
-    ("grey_goblin", 1),
-]
-# Número de habitaciones cercanas candidatas para el spawn.
-SILENCE_SUMMON_NEARBY_ROOMS = 3
-# Radio (Manhattan) para el spawn fallback en mapas sin habitaciones.
-SILENCE_SUMMON_FALLBACK_RADIUS = 8
-# Intentos máximos para encontrar casilla en el fallback.
-SILENCE_SUMMON_FALLBACK_TRIES = 80
 # Porcentaje inicial de roca en el mapa; cuanto más alto, más estrechas y cerradas son las cuevas.
 CAVERN_FILL_PROBABILITY = 0.60
 # Número mínimo de vecinos muro necesarios para que un muro "nazca" (afecta al tamaño de los huecos abiertos).
@@ -1166,6 +1153,7 @@ STAIRS_MONSTER_SPAWN_RULES = {
     "slime": {"min_floor": 2, "weight_progression": [(2, 10), (5, 8), (8, 4)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 10), (8, 20)]},
     "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 12)]},
+    "quasit": {"min_floor": 8, "weight_progression": [(8, 12)]},
 }
 # AI class names for stairs spawns (must exist in components.ai).
 STAIRS_MONSTER_AI = {
@@ -1174,6 +1162,7 @@ STAIRS_MONSTER_AI = {
     "slime": "ScoutV3",
     "skeleton": "ScoutV3",
     "grey_goblin": "ScoutV3",
+    "quasit": "ScoutV3",
 }
 
 PROFICIENCY_LEVELS = {
@@ -1184,6 +1173,19 @@ PROFICIENCY_LEVELS = {
     "Expert": 2.5, 
     "Master": 4.0
     }
+
+# Silencio: probabilidad de invocar criaturas cercanas al leer el códice.
+SILENCE_SUMMON_CHANCE = 0.08
+# Lista de criaturas posibles: ("entity_factories_key", weight)
+SILENCE_SUMMON_CREATURES = [
+    ("quasit", 1),
+]
+# Número de habitaciones cercanas candidatas para el spawn.
+SILENCE_SUMMON_NEARBY_ROOMS = 3
+# Radio (Manhattan) para el spawn fallback en mapas sin habitaciones.
+SILENCE_SUMMON_FALLBACK_RADIUS = 8
+# Intentos máximos para encontrar casilla en el fallback.
+SILENCE_SUMMON_FALLBACK_TRIES = 80
 
 # -- Factions -------------------------------------------------------------
 # Relaciones entre facciones. La misma faccion siempre es friendly para sí misma.
