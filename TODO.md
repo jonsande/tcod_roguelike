@@ -1,4 +1,5 @@
 AÚN SIN CATALOGAR
+. [ ] Al coger un objeto debería aparecer la letra asignada al mismo.
 - [ ] Equipar armaduras debería consumir 3 turnos (de otro modo compensa ponérselas en mitad de un combate).
 - [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
 - [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
@@ -34,6 +35,7 @@ CRIATURAS
 - [x] Instancias de una misma clase con puntos de vida diferentes y otros valores diferentes.
 
 IA - COMPORTAMIENTO DE CRIATURAS
+- [ ] Los enemigos también deberían perder DEFENSE al atacar, no??!
 - [ ] Crear una ObjectRetrieverAI ordinaria. La criatura con esta AI buscará el objeto objetivo (deberá saber dónde está). Lo cogerá e intentará escapar por las escaleras más cercanas.
 - [ ] Ampliar el AI HostileEnemy: algunas criaturas con una BaseAI de tipo HostileEnemy que no hayas sido todavía agraviadas nunca (aggravated), deben tener un comportamiento "oscilante". Es decir, moverse aleatoriamente (pero sin abrir puertas, ni atacar, ni hacer bump sobre nadie ni nada) a alguna casilla de su alrededor cada cierto tiempo (cada 1d6 turnos). Por otra parte, una criatura con una BaseAI de tipo HostileEnemy que haya sido agraviada (aggravated) alguna vez, dejará de estar agraviada si se cumplen la siguiente condición: el personaje que lo agravió queda fuera de su campo de visión (fov) durante 12 + 1d20 turnos. [NOTA: el sistema "oscilante" es útil para hacer más interesante el stealth, pues de otro modo es casi imposible pillar por sorpresa a un enemigo, a no ser que esté dormido.]
 - [!] Las criaturas deben huir con hp bajos
@@ -323,6 +325,8 @@ VARIOS
 
 
 BUGS
+
+bug; estoy recibiendo mensajes de "quasit attacks quasit" pero no estoy viendo ningún quasit.
 
 bug: los enemigos ciegos siguen persiguiéndote. Deberían quedarse quietos. O moverse al tuntún.
 

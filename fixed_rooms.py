@@ -182,7 +182,7 @@ blue_chest_room = (
 )
 
 BLUE_CHEST_ROOM_CONTENTS = [
-    random.choice(["strength_potion", "life_potion"]),
+    random.choice(["life_potion"]),
     "long_sword_plus",
 ]
 

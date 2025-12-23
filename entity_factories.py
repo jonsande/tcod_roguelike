@@ -1914,6 +1914,8 @@ def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_hp = random.randint(7, 10)
     entity.fighter.hp = entity.fighter.max_hp
     entity.fighter.base_defense = random.randint(2, 3)
+    entity.fighter.max_stamina = random.randint(2, 3)
+    entity.fighter.stamina = entity.fighter.max_stamina
     entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
     entity.fighter.woke_ai_cls = HostileEnemyV3
     # etc.
@@ -1927,8 +1929,9 @@ goblin = Actor(
     char="g",
     color=(60,89,33),
     name="Goblin",
-    #ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
-    ai_cls=SleepingEnemy,
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
+    #ai_cls=SleepingEnemy,
+    #ai_cls=ScoutV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,
@@ -1942,12 +1945,13 @@ goblin = Actor(
         perception=3,
         weapon_proficiency = PROFICIENCY_LEVELS["Novice"],
         aggressivity=4,
-        stamina=random.randint(2,4),
         max_stamina=3,
+        stamina=3,
         poison_resistance=6,
         action_time_cost=7,
-        woke_ai_cls=HostileEnemyV3,
-        #woke_ai_cls=random.choice([HostileEnemyV3, ScoutV3]),
+        #woke_ai_cls=HostileEnemyV3,
+        woke_ai_cls=random.choice([HostileEnemyV3, ScoutV3]),
+        woke_ai_cls=ScoutV3,
         can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Goblin claws", min_dmg=1, max_dmg=4, dmg_bonus=0),
     ),

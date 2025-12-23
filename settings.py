@@ -334,9 +334,9 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "infra_vision_potion", "quantity": 5},
     #{"item": "confusion_potion", "quantity": 3},
     #{"item": "identify_scroll", "quantity": 9},
-    #{"item": "sand_bag", "quantity": 2},
-    #{"item": "scout_hood", "quantity": 1},
-    #{"item": "cloak", "quantity": 1},
+    {"item": "sand_bag", "quantity": 2},
+    {"item": "scout_hood", "quantity": 1},
+    {"item": "cloak", "quantity": 1},
     #{"item": "tunneling_staff", "quantity": 1},
     # {"item": "long_bow", "quantity": 1},
     # {"item": "arrow", "quantity": 15},
@@ -1003,9 +1003,9 @@ ADVENTURER_CORPSE_CHANCE_PER_FLOOR = 0.15
 # - weight_progression: lista de (nivel, peso) que sobreescribe el peso a partir de ese nivel.
 ITEM_SPAWN_RULES = {
     # HI VALUE POTIONS
-    "strength_potion": {"min_floor": 2, "min_instances": 3, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "strength_potion": {"min_floor": 2, "min_instances": 3, "max_instances": 3, "base_weight": 8, "weight_progression": [(3, 2)]},
     "increase_max_stamina": {"min_floor": 2, "min_instances": 3, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
-    "life_potion": {"min_floor": 2, "min_instances": 3, "max_instances": 5, "base_weight": 8, "weight_progression": [(3, 2)]},
+    "life_potion": {"min_floor": 2, "min_instances": 3, "max_instances": 4, "base_weight": 8, "weight_progression": [(3, 2)]},
     "infra_vision_potion": {"min_floor": 2, "min_instances": 3, "max_instances": 5, "base_weight": 8, "weight_progression": [(2, 6)]},
     # POTIONS
     "antidote": {"min_floor": 2, "weight_progression": [(2, 5)]},
@@ -1072,7 +1072,7 @@ ITEM_SPAWN_RULES = {
     "cursed_weakness_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "cursed_myopia_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "cursed_fatigue_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
-    "cursed_lethargy_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
+    #"cursed_lethargy_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "cursed_vulnerability_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     "cursed_misfortune_ring": {"min_floor": 4, "max_instances": 1, "weight_progression": [(4, 2), (6, 5)]},
     # OTHER
@@ -1159,10 +1159,10 @@ STAIRS_MONSTER_SPAWN_RULES = {
 STAIRS_MONSTER_AI = {
     "goblin": "ScoutV3",
     "orc": "ScoutV3",
-    "slime": "ScoutV3",
+    "slime": "SlimeAI",
     "skeleton": "ScoutV3",
     "grey_goblin": "ScoutV3",
-    "quasit": "ScoutV3",
+    "quasit": "HostileEnemyV3",
 }
 
 PROFICIENCY_LEVELS = {

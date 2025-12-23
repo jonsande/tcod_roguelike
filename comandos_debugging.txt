@@ -1,23 +1,23 @@
 DEBUGGING COMMANDS
 
 ÍNDICE
-- Cómo saber la posición de las casillas/tiles que forman parte de una habitación.
-- Cómo saber la posición de las casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual)
-- Cómo saber qué casillas son accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean).
+- Casillas/tiles que forman parte de una habitación.
+- Casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual)
+- Casillas accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean).
 - Centros de habitación más cercanos ordenados por distancia Manhattan
 - Dibujar y obtener el hot_path (step_by_step)
-- Obtener array del hot_path (sólo rooms)
+- Array del hot_path (sólo rooms)
 - Dibujar la green zone
-- Saber qué actor se encuentra en una casilla en concreto
+- Qué actor se encuentra en una casilla en concreto
 - Localización de las llaves
 - Localización de El Artefacto
 - Listado de todos los monstruos e items generados (organizados por planta)
 - Listado de todos los libros generados (con ubicacion)
-- Cómo abrir una consola python con el save de una partida guardada
+- Abrir una consola python con el save de una partida guardada
 - Imprimir el nombre de la habitación actual del jugador.
 
 
-=== Cómo saber la posición de las casillas/tiles que forman parte de una habitación ===
+=== Casillas/tiles que forman parte de una habitación ===
 
 Desde la consola de depuración (presiona BACKSPACE en cualquier momento del juego):
 
@@ -34,13 +34,13 @@ Recordatorio: los centros de las habitaciones de un nivel se pueden obtener así
 self.engine.game_map.center_rooms
 
 
-=== Cómo saber la posición de las casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual) ===
+=== Posición de las casillas/tiles que forman parte de una habitación (para un nivel en particular, distinto del actual) ===
 
 self.engine.game_world.get_room_tiles(floor, center)
 
 
 
-=== Cómo saber qué casillas son accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean): ===
+=== Casillas accesibles/caminables desde una posición dada (las puertas y muros rompibles bloquean): ===
 
 self.engine.game_map.walkable_tiles_from_position(center)
 
@@ -89,7 +89,7 @@ Esto funciona aunque DEBUG_DRAW_HOT_PATH sea False; solo necesitas que el mapa t
 
 
 
-=== Obtener array del hot_path (sólo centro de rooms) ===
+=== Array del hot_path (sólo centro de rooms) ===
 
 Funciona correctamente.
 
@@ -97,7 +97,7 @@ self.engine.game_map.rooms_hot_path
 
 
 
-=== Saber qué actor se encuentra en una casilla en concreto ===
+=== Qué actor se encuentra en una casilla en concreto ===
 
 self.engine.game_map.get_actor_at_location(x, y)
 
@@ -165,6 +165,7 @@ Reiniciar los contadores
 
 (Ahora se ejecuta automáticamente reset_generation_stats() al iniciar una partida nueva, lo cual borra el historial interno del GenerationTracker: deja a cero los totales y las cuentas por nivel).
 
+
 === Listado de todos los libros generados (con ubicacion) ===
 
 Durante una partida activa, abre la consola de depuración (BACKSPACE con DEBUG_MODE=True) y ejecuta:
@@ -185,23 +186,6 @@ Salida:
 - Dentro de cada tipo, se muestran variantes por título (name) con su propio contador.
 - Dentro de cada variante, ordenada por planta (rama y nivel) y ubicación.
 - Siempre indica el número total de instancias por tipo y por variante.
-
-
-Ir a consola con BACKSPACE en mitad del juego
-
-Escribir:
-from procgen import green_zone
-from procgen import _draw_green_zone
-
-origin=self.engine.game_map.hot_path[0] # por ejemplo, la primera sala del hot path
-_draw_green_zone(self.engine.game_map, origin)
-
-Y continuar juego.
-
-También se puede:
-reachable = green_zone(engine.game_map, origin)
-print(reachable)  # lista de centros de las salas accesibles sin llaves.
-
 
 
 === Cómo abrir una consola python con el save de una partida guardada ===
@@ -230,6 +214,6 @@ Durante una sesión, ejecuta print(procgen.report_generation_stats()) (o pasa "i
 Cuando termines, escribe exit() o pulsa Ctrl+D para salir de Python.
 
 
-=== imprimir el nombre de la habitación actual del jugador
+=== imprimir el nombre de la habitación actual del jugador ===
 
 self.engine.game_world.debug_print_player_room_name()
