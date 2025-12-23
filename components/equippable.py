@@ -41,6 +41,7 @@ class Equippable(BaseComponent):
         ranged_strength_bonus: bool = False,
         ranged_to_hit_bonus: int = 0,
         reach: int = 0,
+        critical_multiplier: float = 2.0,
     ):
         self.equipment_type = equipment_type
 
@@ -68,6 +69,7 @@ class Equippable(BaseComponent):
         self.ranged_strength_bonus = ranged_strength_bonus
         self.ranged_to_hit_bonus = ranged_to_hit_bonus
         self.reach = reach
+        self.critical_multiplier = critical_multiplier
     
     @property
     def weapon_dmg_dice(self) -> int:
@@ -179,6 +181,7 @@ class Dagger(Equippable):
             defense_bonus=1,
             stealth_bonus=0, 
             to_hit_bonus=1,
+            critical_multiplier=4.0,
             )
 
 class DaggerPlus(Equippable):
@@ -191,6 +194,7 @@ class DaggerPlus(Equippable):
             defense_bonus=1,
             stealth_bonus=1, 
             to_hit_bonus=2,
+            critical_multiplier=4.0,
             )
         
 class ShortSword(Equippable):

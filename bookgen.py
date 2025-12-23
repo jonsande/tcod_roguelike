@@ -239,7 +239,8 @@ STATIC_BOOKS = {
     "coal_stories": {
         "title": "Historias a la luz del carbón",
         "content": (
-            "Los aventureros veteranos atan campanas diminutas a sus mochilas. Dicen que ahuyentan a lo que vive en el techo.",
+            "Los aventureros veteranos atan campanas diminutas a sus mochilas. "
+            "Dicen que ahuyentan a lo que vive en el techo."
         ),
     },
     "crack_finder_book": {

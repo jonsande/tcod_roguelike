@@ -312,9 +312,14 @@ PLAYER_DEFENSE_MISS_THRESHOLD = 60
 # equipar esa copia en cuanto empiece la partida.
 PLAYER_STARTING_INVENTORY = [
     {"item": "triple_ration", "quantity": 1},
-    # {"item": "accuracy_ring", "equip": True},
-    # {"item": "leather_armor", "equip": True},
     {"item": "dagger", "quantity": 1, "equip": True},
+    # {"item": "leather_armor", "equip": True},
+    # STEALTH SET
+    # {"item": "sand_bag", "quantity": 2},
+    # {"item": "scout_hood", "quantity": 1},
+    # {"item": "cloak", "quantity": 1},
+    # OTHER
+    # {"item": "accuracy_ring", "equip": True},
     # {"item": "small_shield", "quantity": 1, "equip": False},
     # {"item": "medium_shield", "quantity": 1, "equip": False},
     # {"item": "large_shield", "quantity": 1, "equip": False},
@@ -334,9 +339,6 @@ PLAYER_STARTING_INVENTORY = [
     #{"item": "infra_vision_potion", "quantity": 5},
     #{"item": "confusion_potion", "quantity": 3},
     #{"item": "identify_scroll", "quantity": 9},
-    {"item": "sand_bag", "quantity": 2},
-    {"item": "scout_hood", "quantity": 1},
-    {"item": "cloak", "quantity": 1},
     #{"item": "tunneling_staff", "quantity": 1},
     # {"item": "long_bow", "quantity": 1},
     # {"item": "arrow", "quantity": 15},
@@ -1174,8 +1176,8 @@ PROFICIENCY_LEVELS = {
     "Master": 4.0
     }
 
-# Silencio: probabilidad de invocar criaturas cercanas al leer el códice.
-SILENCE_SUMMON_CHANCE = 0.08
+# Silencio: probabilidad de invocar criaturas al leer el códice.
+SILENCE_SUMMON_CHANCE = 0.05
 # Lista de criaturas posibles: ("entity_factories_key", weight)
 SILENCE_SUMMON_CREATURES = [
     ("quasit", 1),

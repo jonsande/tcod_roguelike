@@ -530,7 +530,6 @@ class ThrowItemAction(Action):
             equippable = getattr(self.ranged_weapon, "equippable", None)
             if equippable and getattr(equippable, "ranged_strength_bonus", False):
                 total += getattr(self.entity.fighter, "strength", 0)
-        total -= target.fighter.armor_value
         return round(total)
 
     def _ranged_to_hit_bonus(self) -> int:
@@ -693,6 +692,7 @@ class ThrowItemAction(Action):
         # CÁLCULO DE IMPACTOS
         hits = False
         stealth_attack = False
+        critical_hit = False
         attacking_from_hide = getattr(self.entity.fighter, "is_hidden", False)
 
         # Contra objetivos vivientes
@@ -713,9 +713,9 @@ class ThrowItemAction(Action):
                 if hits:
                     stealth_attack = True
                     if attacker_visible or target_visible:
-                        print(f"{self.entity.name} has SUCCESSFULLY executed a stealth attack (VS {target.name})")
+                        print(f"{self.entity.name} has SUCCESSFULLY executed a CRITICAL HIT (VS {target.name})")
                         self.engine.message_log.add_message(
-                            f"{self.entity.name} has SUCCESSFULLY executed a stealth attack (VS {target.name})", 
+                            f"{self.entity.name} has SUCCESSFULLY executed a CRITICAL HIT (VS {target.name})", 
                             color.orange
                             )
                 else:
@@ -798,11 +798,35 @@ class ThrowItemAction(Action):
                     and getattr(equippable, "equipment_type", None)
                     and equippable.equipment_type.name == "WEAPON"
                 )
+                crit_chance = self.entity.fighter.critical_chance
+                crit_multiplier = 2.0
+                if is_weapon:
+                    crit_multiplier = getattr(equippable, "critical_multiplier", 2.0)
+                elif self.ranged_weapon:
+                    ranged_equippable = getattr(self.ranged_weapon, "equippable", None)
+                    if ranged_equippable:
+                        crit_multiplier = getattr(ranged_equippable, "critical_multiplier", 2.0)
+                can_crit = bool(projectile_damage is not None or is_weapon)
+                if stealth_attack and can_crit:
+                    critical_hit = True
+                elif can_crit and random.random() < crit_chance:
+                    critical_hit = True
+
                 if projectile_damage is not None:
 
-                    damage = projectile_damage
+                    base_damage = projectile_damage
+                    damage = base_damage * (crit_multiplier if critical_hit else 1.0)
+                    damage = round(damage - target.fighter.armor_value)
                     if attacker_visible or target_visible:
                         print(f"{bcolors.WARNING}--> Projectile damage roll: {damage}{bcolors.ENDC}")
+                    if critical_hit and (attacker_visible or target_visible):
+                        self.engine.message_log.add_message("Critical hit!", damage_color)
+                        print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Critical hit! ({damage} dmg points)")
+                        print(f"Critical hit final damage: {damage}")
+                    if critical_hit and stealth_attack and self.entity == self.engine.player:
+                        if DEBUG_MODE:
+                            print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                        self.engine.player.level.add_xp(target.level.xp_given)
 
                 elif is_weapon:
 
@@ -828,35 +852,26 @@ class ThrowItemAction(Action):
                             print(f"{bcolors.WARNING}{target.name}{bcolors.ENDC} armor_value: {target.fighter.armor_value}")
                     
                     # El arma lanzada ya no se encuentra equipada, por eso hay que sumar su bonus aparte
-                    damage = ((strength + weapon_dmg_dice_roll + weapon_dmg_bonus + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
-                    damage = round(damage)
+                    base_damage = (
+                        (strength + weapon_dmg_dice_roll + weapon_dmg_bonus + total_equipment_dmg_bonus)
+                        * self.entity.fighter.weapon_proficiency
+                    )
+                    damage = base_damage * (crit_multiplier if critical_hit else 1.0)
+                    damage = round(damage - target.fighter.armor_value)
 
-                    # Bonificador STEALTH ATTACK al daño
-                    if stealth_attack:
-
-                        second_weapon_dmg_dice_roll = equippable.weapon_dmg_dice
-                        damage = damage + strength + second_weapon_dmg_dice_roll
-
+                    if critical_hit:
                         if target_visible or attacker_visible:
-                            self.engine.message_log.add_message("Successful stealth attack!", damage_color)
-                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful stealth attack! ({damage} dmg points)")
-                            print(f"Backstab final damage: {damage}")
+                            self.engine.message_log.add_message("Critical hit!", damage_color)
+                            print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Critical hit! ({damage} dmg points)")
+                            print(f"Critical hit final damage: {damage}")
 
                         if DEBUG_MODE:
-                            print("DEBUG: DAÑO BACKSTAB EXTRA: ", damage)
-                        
-                        # Especial para dagas
-                        if self.item.name == "Dagger":
-                            damage = damage * 1.5
-                            damage = round(damage)
-                            if DEBUG_MODE:
-                                print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
-                        
-                        if DEBUG_MODE == True:
-                            if self.entity == self.engine.player:
-                                print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                            print("DEBUG: DAÑO CRITICO: ", damage)
 
-                        self.engine.player.level.add_xp(target.level.xp_given)
+                        if stealth_attack and self.entity == self.engine.player:
+                            if DEBUG_MODE:
+                                print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
+                            self.engine.player.level.add_xp(target.level.xp_given)
 
                     if attacker_visible or target_visible:
                         print(f"{bcolors.WARNING}--> Final THROWING damage: {damage}{bcolors.ENDC}")
@@ -869,8 +884,8 @@ class ThrowItemAction(Action):
                         print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} strength: {self.entity.fighter.strength}")
                         print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} non_weapon_dmg_bonus: {self.entity.fighter.non_weapon_dmg_bonus}")
                         print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC} proficiency: {self.entity.fighter.weapon_proficiency}")
-                    damage = (self.entity.fighter.strength + self.entity.fighter.non_weapon_dmg_bonus) * self.entity.fighter.weapon_proficiency - target.fighter.armor_value
-                    damage = round(damage)
+                    base_damage = (self.entity.fighter.strength + self.entity.fighter.non_weapon_dmg_bonus) * self.entity.fighter.weapon_proficiency
+                    damage = round(base_damage - target.fighter.armor_value)
                     if attacker_visible or target_visible:
                         print(f"{bcolors.WARNING}--> Final THROWING damage (non-weapon): {damage}{bcolors.ENDC}")
 
@@ -1194,6 +1209,7 @@ class MeleeAction(ActionWithDirection):
         does_damage = False
         does_a_hit = False
         stealth_attack = False
+        critical_hit = False
         attacking_from_hide = getattr(getattr(self.entity, "fighter", None), "is_hidden", False)
 
         # Comprobar si atacante y/o objetivo son visibles para el jugador
@@ -1311,12 +1327,11 @@ class MeleeAction(ActionWithDirection):
                 damage_color = color.red
 
             if stealth_attack:
-                
                 if target_visible or attacker_visible:
                     self.engine.message_log.add_message(
-                            f"{self.entity.name} BACKSTABS {target.name}!", 
-                            damage_color
-                            )
+                        f"{self.entity.name} does a STEALTH ATTACK VS {target.name}!",
+                        damage_color,
+                    )
                 if self.engine.debug == True:
                     print("DEBUG: (Bonificador al impacto) ATAQUE SIGILOSO!")
 
@@ -1396,40 +1411,41 @@ class MeleeAction(ActionWithDirection):
             #total_equipment_dmg_bonus = getattr(self.entity.fighter, "total_equipment_dmg_bonus", 0)
             #import ipdb;ipdb.set_trace()
             
-            damage = ((strength + weapon_dmg_dice_roll + total_equipment_dmg_bonus) * self.entity.fighter.weapon_proficiency) - target.fighter.armor_value
-            damage = round(damage)
+            crit_chance = self.entity.fighter.critical_chance
+            if stealth_attack and stealth_allowed:
+                critical_hit = True
+            elif random.random() < crit_chance:
+                critical_hit = True
+
+            base_damage = (
+                (strength + weapon_dmg_dice_roll + weapon_dmg_bonus + total_equipment_dmg_bonus)
+                * self.entity.fighter.weapon_proficiency
+            )
+            if main_weapon and getattr(main_weapon, "equippable", None):
+                crit_multiplier = getattr(main_weapon.equippable, "critical_multiplier", 2.0)
+            elif self.entity.fighter.natural_weapon:
+                crit_multiplier = getattr(self.entity.fighter.natural_weapon, "critical_multiplier", 2.0)
+            else:
+                crit_multiplier = 2.0
+            damage = base_damage * (crit_multiplier if critical_hit else 1.0)
+            damage = round(damage - target.fighter.armor_value)
             print(f"{bcolors.WARNING}--> Final MELEE damage: {damage}{bcolors.ENDC}")
 
+            if critical_hit:
+                if target_visible or attacker_visible:
+                    self.engine.message_log.add_message("Critical hit!", damage_color)
+                    print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Critical hit! ({damage} dmg points)")
+                    print(f"Critical hit final damage: {damage}")
+
             # Mecánica backstab/stealth/sigilo (beta)
-            # Bonificador al daño
-            if stealth_attack and stealth_allowed:
+            # Golpe crítico asegurado por stealth
+            if stealth_attack and stealth_allowed and critical_hit:
 
                 if isinstance(target, Actor):
                     if not target_is_dummy:
                         if was_aggravated == False or attacking_from_hide:
-
-                            # Cálculo de daño Backstab
-                            second_weapon_dmg_dice_roll = self.entity.fighter.weapon_dmg_dice
-                            damage = damage + strength + second_weapon_dmg_dice_roll
-                            damage = round(damage)
-
-                            if DEBUG_MODE:
-                                print("DEBUG: DAÑO BACKSTAB: ", damage)
-
-                            # Especial para dagas
-                            if main_weapon and main_weapon.name == "Dagger":
-                                damage = damage * 1.5
-                                damage = round(damage)
-                                if DEBUG_MODE:
-                                    print(f"DEBUG: DAGGER BACKSTAB! (final damage: {damage})")
-
-                            if target_visible or attacker_visible:
-                                self.engine.message_log.add_message("Successful STEALTH attack!", damage_color)
-                                print(f"{bcolors.WARNING}{self.entity.name}{bcolors.ENDC}: Successful STEALTH attack! ({damage} dmg points)")
-                                print(f"Backstab final damage: {damage}")
-
                             # Experiencia extra
-                            if self.entity == self.engine.player:
+                            if stealth_attack and self.entity == self.engine.player:
                                 if self.engine.debug == True:
                                     print("DEBUG: EXPERIENCIA EXTRA (stealth attack): ", damage)
                                 self.engine.player.level.add_xp(target.level.xp_given)

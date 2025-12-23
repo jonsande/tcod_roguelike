@@ -62,11 +62,19 @@ gainance = 0
 class NaturalWeapon:
     """Simple helper that describes a creature's natural attack."""
 
-    def __init__(self, name: str, min_dmg: int, max_dmg: int, dmg_bonus: int = 0):
+    def __init__(
+        self,
+        name: str,
+        min_dmg: int,
+        max_dmg: int,
+        dmg_bonus: int = 0,
+        critical_multiplier: float = 2.0,
+    ):
         self.name = name
         self.min_dmg = min_dmg
         self.max_dmg = max_dmg
         self.dmg_bonus = dmg_bonus
+        self.critical_multiplier = critical_multiplier
 
     @property
     def weapon_dmg_dice(self) -> int:
@@ -266,7 +274,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         base_armor_value: int = 0,
         temporal_effects: bool = False,
         luck: int = 0,
-        critical_chance: int = 2,
+        critical_chance: float = 0.015,
         satiety: int = 32,
         max_satiety: int = 32,
         stamina: int = 3,
@@ -332,7 +340,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.to_hit_counter = to_hit_counter
         self.to_power_counter = to_power_counter
         self.to_defense_counter = to_defense_couter
-        self.critical_chance = critical_chance + luck
+        self._base_critical_chance = critical_chance
         self._base_super_memory = super_memory
         self.lamp_on = lamp_on
         self.escape_threshold = escape_threshold
@@ -555,6 +563,14 @@ class Fighter(FireStatusMixin, BaseComponent):
     @luck.setter
     def luck(self, value: int) -> None:
         self._base_luck = value - self.luck_bonus
+
+    @property
+    def critical_chance(self) -> float:
+        return max(0.0, self._base_critical_chance + (self.luck * 0.01))
+
+    @critical_chance.setter
+    def critical_chance(self, value: float) -> None:
+        self._base_critical_chance = max(0.0, value)
 
     @property
     def defense(self) -> int:
