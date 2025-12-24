@@ -1927,7 +1927,8 @@ def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_stamina = random.randint(2, 3)
     entity.fighter.stamina = entity.fighter.max_stamina
     #entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
-    entity.ai_cls=MODULAR_AI_PRESETS["patrol_chase"]
+    #entity.ai_cls=MODULAR_AI_PRESETS["patrol_chase"]
+    entity.ai_cls=random.choice([MODULAR_AI_PRESETS["patrol_chase"], MODULAR_AI_PRESETS["return_chase"], SleepingEnemy])
     #entity.ai_cls = ScoutV3
     entity.fighter.woke_ai_cls = HostileEnemyV3
     # etc.

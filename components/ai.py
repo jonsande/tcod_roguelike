@@ -118,7 +118,7 @@ class BaseAI(Action):
         except AttributeError:
             base = gamemap.tiles["transparent"]
         sound_map = base.astype(float)
-        wall_opacity = 0.8  # Muros dejan pasar algo de sonido.
+        wall_opacity = 0.2  # Muros dejan pasar algo de sonido. Menor valor, peor dejan pasar el sonido.
         sound_map = np.where(sound_map, sound_map, wall_opacity)
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
@@ -973,7 +973,7 @@ class HostileEnemyV3(BaseAI):
             base = gamemap.tiles["transparent"]
         sound_map = base.astype(float)
         # Opacidad sonora de muros y puertas
-        wall_opacity = 0.8  # Walls are semi-transparent for sound; tweak here if needed.
+        wall_opacity = 0.2  # Walls are semi-transparent for sound; tweak here if needed.
         sound_map = np.where(sound_map, sound_map, wall_opacity)
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
@@ -1322,7 +1322,7 @@ class ScoutV3(BaseAI):
         except AttributeError:
             base = gamemap.tiles["transparent"]
         sound_map = base.astype(float)
-        wall_opacity = 0.8  # Walls are semi-transparent for sound; tweak here if needed.
+        wall_opacity = 0.2  # Walls are semi-transparent for sound; tweak here if needed.
         sound_map = np.where(sound_map, sound_map, wall_opacity)
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]

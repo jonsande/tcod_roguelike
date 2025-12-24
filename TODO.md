@@ -1,9 +1,19 @@
 AÚN SIN CATALOGAR
-. [ ] Al coger un objeto debería aparecer la letra asignada al mismo.
+- [ ] Indicar con un pequeño signo en el log el principio de turno.
+- [!] Botas que reducen en 1 el ruido al caminar (nunca por debajo de 1).
+- [ ] Al coger un objeto debería aparecer la letra asignada al mismo.
+- [ ] Hay que solucionar el problema de asignación de letras imposibles de teclear, como '{' etc.
 - [ ] Equipar armaduras debería consumir 3 turnos (de otro modo compensa ponérselas en mitad de un combate).
 - [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
 - [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
 - [x] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
+
+
+CONCEPTO DE JUEGO
+- [ ] Hay que añadir/implementar más "mini-juegos". Interacciones con habitaciones, puzzles genéricos, etc.
+- [ ] Hacer que haya menos enemigos. Que el encuentro con un enemigo sea todo un reto. Que de más miedo encontrarse con algo. Que el juego exija obligatoriamente algo de uso de escucha e interacción con el medio. Premiar mejor los comportamientos de sigilo o aprovechamiento de posiciones o escucha, etc.
+- [ ] Hay que hacer más interesantes a las cuevas. Que no sea sólo una cuestión de forma del mapa. Pero que la forma del mapa tenga también más impacto.
+
 
 RENDIMIENTO
 - [!!] Algo está reduciendo el rendimiento. Mejorarlo!! Ver informe hecho por blackbox. P.D. Con 7 criaturas en una planta muy abierta (cueva), ya se nota una bajada de rendimiento considerable. Estoy hay que merorarlo. P.D.: es el cálculo de pathfinding, parece.
