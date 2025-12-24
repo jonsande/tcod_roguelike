@@ -507,6 +507,7 @@ ALL_ITEMS = [
     ("confusion_scroll", 1),
     ("paralisis_scroll", 1),
     ("identify_scroll", 1),
+    ("blessed_identify_scroll", 1),
     ("remove_curse_scroll", 1),
     ("lightning_scroll", 1),
     ("fireball_scroll", 1),
@@ -761,6 +762,7 @@ TABLE_LOOT_TABLES = {
         ("confusion_scroll", 1),
         ("paralisis_scroll", 1),
         ("identify_scroll", 1),
+        ("blessed_identify_scroll", 1),
         ("remove_curse_scroll", 1),
         ("lightning_scroll", 1),
         ("fireball_scroll", 1),
@@ -814,6 +816,7 @@ BOOKSHELF_LOOT_TABLES = {
         ("confusion_scroll", 1),
         ("paralisis_scroll", 1),
         ("identify_scroll", 1),
+        ("blessed_identify_scroll", 1),
         ("remove_curse_scroll", 1),
         ("lightning_scroll", 1),
         ("fireball_scroll", 1),
@@ -1041,6 +1044,7 @@ ITEM_SPAWN_RULES = {
     "confusion_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(4, 5)]},
     "paralisis_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(4, 5)]},
     "identify_scroll": {"min_floor": 2, "max_instances": 6, "weight_progression": [(4, 5)]},
+    "blessed_identify_scroll": {"min_floor": 4, "max_instances": 2, "weight_progression": [(6, 4)]},
     "remove_curse_scroll": {"min_floor": 3, "max_instances": 4, "weight_progression": [(4, 5)]},
     "lightning_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(4, 5)]},
     "fireball_scroll": {"min_floor": 2, "max_instances": 8, "weight_progression": [(4, 5)]},
@@ -1121,13 +1125,13 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
+    "goblin": {"min_floor": 2, "weight_progression": [(2, 10), (3, 40), (4, 50), (6, 20), (11, 10)]},
     "campfire": {"min_floor": 2, "weight_progression": [(2, 10), (13, 7), (14, 4), (15, 1), (16, 0),],},
     "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
     "snake": {"min_floor": 2, "weight_progression": [(2, 10), (4, 10), (8, 0)]},
     "rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 4)]},
     "swarm_rat": {"min_floor": 2, "weight_progression": [(2, 50), (3, 20), (6, 10), (8, 0)]},
     "cave_bat": {"min_floor": 2, "weight_progression": [(2, 25), (3, 18), (5, 10), (6, 3)]},
-    "goblin": {"min_floor": 2, "weight_progression": [(2, 40), (4, 50), (6, 20), (10, 15)]},
     "grey_goblin": {"min_floor": 7, "weight_progression": [(7, 15)]},
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 4, "weight_progression": [(4, 8), (5, 15), (6, 25), (11, 0)]},
@@ -1137,7 +1141,7 @@ ENEMY_SPAWN_RULES = {
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     # "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
     "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 10)]},
-    "adventurer": {"min_floor": 2, "weight_progression": [(1, 0), (2, 2), (3, 4), (15, 0),],},
+    "adventurer": {"min_floor": 2, "weight_progression": [(1, 0), (2, 1), (3, 3), (4, 4), (15, 0),],},
     #"warden": {"min_floor": 6, "weight_progression": [(6, 6), (8, 14), (10, 6), (12, 0)]},
 }
 

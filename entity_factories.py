@@ -21,6 +21,7 @@ from components.ai import (
     WardenAI,
     MimicSleepAI,
     DemonicObjectRetrieverAI,
+    MODULAR_AI_PRESETS,
 )
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -412,6 +413,17 @@ identify_scroll = Item(
     consumable=consumable.IdentificationScrollConsumable(),
 )
 loot_tables.register_loot_item("identify_scroll", identify_scroll)
+blessed_identify_scroll_name = scroll_name_roulette()
+blessed_identify_scroll = Item(
+    char="~",
+    color=(255, 230, 150),
+    name=blessed_identify_scroll_name,
+    id_name="Blessed Identify scroll",
+    info=f"A {blessed_identify_scroll_name}.",
+    id_info="Reveals the true nature of every item you carry.",
+    consumable=consumable.BlessedIdentificationScrollConsumable(),
+)
+loot_tables.register_loot_item("blessed_identify_scroll", blessed_identify_scroll)
 remove_curse_scroll_name = scroll_name_roulette()
 remove_curse_scroll = Item(
     char="~",
@@ -431,6 +443,7 @@ BREAKABLE_WALL_LOOT_TABLE = [
     lightning_scroll,
     fireball_scroll,
     identify_scroll,
+    blessed_identify_scroll,
     remove_curse_scroll,
 ]
 
@@ -837,50 +850,6 @@ campfire = _build_campfire_actor()
 eternal_campfire = _build_campfire_actor(eternal=True)
 
 #campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
-
-
-old_man = Actor(
-    char="@",
-    color=(150, 150, 150),
-    # name="El viejo",
-    name="The old man",
-    ai_cls=OldManAI,
-    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
-    fighter=Fighter(
-        hp=40,
-        base_defense=0,
-        strength=0,
-        recover_rate=50,
-        recover_amount=1,
-        fov=2,
-    ),
-    inventory=Inventory(capacity=1),
-    level=Level(xp_given=0),
-    faction="human",
-)
-old_man.id_name = "The old man"
-
-prisioner = Actor(
-    char="@",
-    color=(180, 180, 180),
-    name="Prisioner",
-    ai_cls=Dummy,
-    equipment=Equipment(),
-    fighter=Fighter(
-        hp=20,
-        base_defense=0,
-        strength=0,
-        recover_rate=50,
-        recover_amount=0,
-        fov=2,
-    ),
-    inventory=Inventory(capacity=0),
-    level=Level(xp_given=0),
-)
-prisioner.id_name = "prisioner"
-
-#campfire = Entity(char="x", color=(218,52,99), name="Campfire", blocks_movement=False)
-
 
 # EQUIPPABLES
 
@@ -1694,6 +1663,7 @@ player = Actor(
         lamp_on=False,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=0, max_dmg=2, dmg_bonus=0),
         can_open_doors=True,
+        perception=4,
     ),
     inventory=Inventory(capacity=35),
     level=Level(level_up_base=20), # Default: 200
@@ -1733,6 +1703,46 @@ adventurer = Actor(
 )
 
 adventurer.on_spawn = _setup_adventurer_equipment
+
+old_man = Actor(
+    char="@",
+    color=(150, 150, 150),
+    # name="El viejo",
+    name="The old man",
+    ai_cls=OldManAI,
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
+    fighter=Fighter(
+        hp=40,
+        base_defense=0,
+        strength=0,
+        recover_rate=50,
+        recover_amount=1,
+        fov=2,
+    ),
+    inventory=Inventory(capacity=1),
+    level=Level(xp_given=0),
+    faction="human",
+)
+old_man.id_name = "The old man"
+
+prisioner = Actor(
+    char="@",
+    color=(180, 180, 180),
+    name="Prisioner",
+    ai_cls=Dummy,
+    equipment=Equipment(),
+    fighter=Fighter(
+        hp=20,
+        base_defense=0,
+        strength=0,
+        recover_rate=50,
+        recover_amount=0,
+        fov=2,
+    ),
+    inventory=Inventory(capacity=0),
+    level=Level(xp_given=0),
+)
+prisioner.id_name = "prisioner"
 
 # adventurer_unique = Actor(
 #     char="@",
@@ -1916,7 +1926,9 @@ def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.base_defense = random.randint(2, 3)
     entity.fighter.max_stamina = random.randint(2, 3)
     entity.fighter.stamina = entity.fighter.max_stamina
-    entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
+    #entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
+    entity.ai_cls=MODULAR_AI_PRESETS["patrol_chase"]
+    #entity.ai_cls = ScoutV3
     entity.fighter.woke_ai_cls = HostileEnemyV3
     # etc.
 
@@ -1929,9 +1941,10 @@ goblin = Actor(
     char="g",
     color=(60,89,33),
     name="Goblin",
-    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
+    #ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
     #ai_cls=SleepingEnemy,
     #ai_cls=ScoutV3,
+    ai_cls=MODULAR_AI_PRESETS["patrol_chase"],
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,

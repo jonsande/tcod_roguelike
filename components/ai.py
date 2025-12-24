@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import random
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import Callable, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np  # type: ignore
 import tcod
@@ -350,6 +351,580 @@ class BaseAI(Action):
         computed_path = [(index[0], index[1]) for index in path]
         self._path_cache[cache_key] = (engine_turn, computed_path)
         return list(computed_path)
+
+
+@dataclass
+class AIState:
+    patrol_path: List[Tuple[int, int]] = field(default_factory=list)
+    patrol_target: Optional[Tuple[int, int]] = None
+    patrol_index: int = -1
+    room_centers: List[Tuple[int, int]] = field(default_factory=list)
+    combat_path: List[Tuple[int, int]] = field(default_factory=list)
+    return_path: List[Tuple[int, int]] = field(default_factory=list)
+    agro_lost_turns: int = 0
+
+
+@dataclass
+class AIContext:
+    ai: "ModularAI"
+    entity: "Actor"
+    engine: object
+    state: AIState
+    target: Optional["Actor"] = None
+    dx: int = 0
+    dy: int = 0
+    distance: int = 0
+    self_visible: bool = True
+    self_invisible: bool = False
+    can_see: bool = False
+    can_hear: bool = False
+    detection_base: Optional[int] = None
+    engage_rng: int = -1
+    engage_roll: int = 0
+    luck_roll: int = 0
+    noise_bonus: int = 0
+    target_stealth: int = 0
+    target_luck: int = 0
+
+
+class AIModule:
+    """Base class for AI behavior modules; returns an Action when it decides to act."""
+    priority: int = 0
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        return None
+
+
+ModuleFactory = Callable[[], AIModule]
+
+
+def make_modular_ai_class(name: str, module_factories: List[ModuleFactory]) -> type["ModularAI"]:
+    existing = globals().get(name)
+    if isinstance(existing, type) and issubclass(existing, ModularAI):
+        return existing
+
+    class _ConfiguredModularAI(ModularAI):
+        def __init__(self, entity: "Actor") -> None:
+            super().__init__(entity, module_factories=module_factories)
+
+    _ConfiguredModularAI.__name__ = name
+    _ConfiguredModularAI.__qualname__ = name
+    _ConfiguredModularAI.__module__ = __name__
+    globals()[name] = _ConfiguredModularAI
+    return _ConfiguredModularAI
+
+
+class ModularAI(BaseAI):
+    """AI composed of modules evaluated by priority each turn."""
+    def __init__(self, entity: "Actor", *, module_factories: Optional[List[ModuleFactory]] = None) -> None:
+        super().__init__(entity)
+        self.state = AIState()
+        factories = module_factories or []
+        self._modules = [factory() for factory in factories]
+        self._modules.sort(key=lambda module: module.priority, reverse=True)
+
+    def _build_context(self) -> AIContext:
+        target = self._select_target()
+        dx = dy = distance = 0
+        if target:
+            dx = target.x - self.entity.x
+            dy = target.y - self.entity.y
+            distance = max(abs(dx), abs(dy))
+
+        self_visible = True
+        self_invisible = False
+        gamemap = getattr(self.engine, "game_map", None)
+        if gamemap is not None:
+            try:
+                if gamemap.visible[self.entity.x, self.entity.y] == False:
+                    self_visible = False
+                    self_invisible = True
+            except Exception:
+                pass
+
+        return AIContext(
+            ai=self,
+            entity=self.entity,
+            engine=self.engine,
+            state=self.state,
+            target=target,
+            dx=dx,
+            dy=dy,
+            distance=distance,
+            self_visible=self_visible,
+            self_invisible=self_invisible,
+        )
+
+    def _can_see_actor(self, actor: "Actor") -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        radius = max(0, getattr(fighter, "fov", 0))
+        if radius <= 0:
+            return False
+
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+
+        visible = compute_fov(
+            transparent,
+            (self.entity.x, self.entity.y),
+            radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        can_see = bool(visible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][SIGHT] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_see else 'cannot'} see {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with fov={radius}"
+            )
+        return can_see
+
+    def _can_hear_actor(self, actor: "Actor", noise_bonus: int = 0) -> bool:
+        fighter = getattr(self.entity, "fighter", None)
+        if not fighter:
+            return False
+        if noise_bonus <= 0:
+            return False
+        hearing_radius = getattr(fighter, "foh", 0)
+        if hearing_radius <= 0:
+            return False
+        gamemap = self.engine.game_map
+        if not gamemap.in_bounds(actor.x, actor.y):
+            return False
+        sound_map = self._sound_transparency_map(gamemap)
+        audible = compute_fov(
+            sound_map,
+            (self.entity.x, self.entity.y),
+            hearing_radius,
+            algorithm=constants.FOV_SHADOW,
+        )
+        can_hear = bool(audible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][HEARING] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_hear else 'cannot'} hear {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with foh={hearing_radius}"
+            )
+        return can_hear
+
+    def _noise_bonus(self, actor: "Actor") -> int:
+        engine = getattr(self, "engine", None)
+        if not engine or not hasattr(engine, "noise_level"):
+            return 0
+        try:
+            return max(0, engine.noise_level(actor))
+        except Exception:
+            return 0
+
+    def _engage_range(
+        self,
+        base_range: Optional[int],
+        target_stealth: int,
+        target_luck: int,
+    ) -> Tuple[Optional[int], int, int]:
+        if base_range is None:
+            return None, 0, 0
+        if self.entity.fighter.aggravated is False:
+            luck_roll = random.randint(0, target_luck)
+            engage_roll = random.randint(0, self.entity.fighter.perception)
+            engage_rng = engage_roll + base_range - target_stealth - luck_roll
+            return engage_rng, engage_roll, luck_roll
+        luck_roll = 0
+        engage_roll = random.randint(0, 3)
+        engage_rng = engage_roll + base_range
+        return engage_rng, engage_roll, luck_roll
+
+    def perform(self) -> None:
+        ctx = self._build_context()
+        for module in self._modules:
+            action = module.run(ctx)
+            if action:
+                return action.perform()
+        return WaitAction(self.entity).perform()
+
+
+class DetectionModule(AIModule):
+    """Populate perception-related fields in the context (sight/hearing/engage range)."""
+    priority = 100
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        target = ctx.target
+        ctx.can_see = False
+        ctx.can_hear = False
+        ctx.detection_base = None
+        ctx.engage_rng = -1
+        ctx.engage_roll = 0
+        ctx.luck_roll = 0
+        ctx.noise_bonus = 0
+        ctx.target_stealth = 0
+        ctx.target_luck = 0
+
+        if not target:
+            return None
+
+        orig_target_stealth = getattr(target.fighter, "stealth", 0)
+        target_luck = getattr(target.fighter, "luck", 0)
+        noise_bonus = ctx.ai._noise_bonus(target)
+        target_stealth = orig_target_stealth
+        if noise_bonus:
+            target_stealth = max(0, target_stealth - noise_bonus)
+
+        ctx.target_stealth = target_stealth
+        ctx.target_luck = target_luck
+        ctx.noise_bonus = noise_bonus
+
+        can_see = ctx.ai._can_see_actor(target)
+        can_hear = False
+        detection_base: Optional[int] = None
+        if can_see:
+            detection_base = getattr(ctx.entity.fighter, "fov", 0)
+        else:
+            can_hear = ctx.ai._can_hear_actor(target, noise_bonus=noise_bonus)
+            if can_hear:
+                detection_base = getattr(ctx.entity.fighter, "foh", 0)
+            elif noise_bonus > 0:
+                detection_base = getattr(ctx.entity.fighter, "foh", 0)
+
+        if detection_base is None and ctx.entity.fighter.aggravated:
+            detection_base = max(
+                getattr(ctx.entity.fighter, "fov", 0),
+                getattr(ctx.entity.fighter, "foh", 0),
+                1,
+            )
+
+        ctx.can_see = can_see
+        ctx.can_hear = can_hear
+        ctx.detection_base = detection_base
+
+        engage_rng, engage_roll, luck_roll = ctx.ai._engage_range(
+            detection_base,
+            target_stealth,
+            target_luck,
+        )
+        if engage_rng is None:
+            engage_rng = -1
+        ctx.engage_rng = engage_rng
+        ctx.engage_roll = engage_roll
+        ctx.luck_roll = luck_roll
+
+        if settings.DEBUG_MODE:
+            noise_src = f"noise_bonus={noise_bonus}" if noise_bonus else "noise_bonus=0"
+            print(
+                f"[DEBUG][ENGAGE] {ctx.entity.name} at ({ctx.entity.x},{ctx.entity.y}) "
+                f"target={getattr(target,'name','?')} dist={ctx.distance} "
+                f"see={can_see} hear={can_hear} base_range={detection_base} "
+                f"target_stealth={orig_target_stealth} "
+                f"target_luck={target_luck} {noise_src} "
+                f"adjusted_stealth={target_stealth} "
+                f"roll_base={engage_roll} luck_roll={luck_roll} engage_rng={engage_rng}"
+            )
+        return None
+
+
+class AgroDecayModule(AIModule):
+    """Handle agro loss by distance or missed detections."""
+    priority = 90
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if ctx.entity.fighter.aggravated and ctx.detection_base is None:
+            ctx.state.agro_lost_turns += 1
+        else:
+            ctx.state.agro_lost_turns = 0
+
+        max_pursuit = getattr(settings, "AI_MAX_PURSUIT_RANGE", 25)
+        if ctx.entity.fighter.aggravated and ctx.target and ctx.distance > max_pursuit:
+            ctx.entity.fighter.aggravated = False
+            ctx.state.combat_path = []
+            ctx.state.return_path = []
+            ctx.state.agro_lost_turns = 0
+
+        if ctx.entity.fighter.aggravated and ctx.state.agro_lost_turns > 0:
+            threshold = getattr(settings, "AI_AGGRO_LOSS_BASE", 3) + getattr(ctx.entity.fighter, "aggressivity", 0)
+            if ctx.state.agro_lost_turns >= threshold:
+                ctx.entity.fighter.aggravated = False
+                ctx.state.combat_path = []
+                ctx.state.return_path = []
+                ctx.state.agro_lost_turns = 0
+        return None
+
+
+class MeleeCombatModule(AIModule):
+    """Resolve melee behavior once adjacent (stealth check, exhaustion, attack)."""
+    priority = 80
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not ctx.target or ctx.engage_rng < 0 or ctx.distance > 1:
+            return None
+
+        if ctx.entity.fighter.aggravated is False:
+            stealth_roll = random.randint(1, 4) + ctx.target_stealth + random.randint(0, ctx.target_luck)
+            awareness = random.randint(0, 3) + max(
+                getattr(ctx.entity.fighter, "fov", 0),
+                getattr(ctx.entity.fighter, "foh", 0),
+            )
+            if settings.DEBUG_MODE:
+                dbg = f"[DEBUG] {ctx.entity.name} melee stealth check: roll={stealth_roll} vs dc={awareness}"
+                try:
+                    ctx.ai.engine.message_log.add_message(dbg, color.white)
+                except Exception:
+                    if getattr(ctx.ai.engine, "debug", False):
+                        print(dbg)
+            if stealth_roll > awareness:
+                return WaitAction(ctx.entity)
+            ctx.entity.fighter.aggravated = True
+            return WaitAction(ctx.entity)
+
+        if ctx.entity.fighter.stamina == 0:
+            if ctx.self_visible:
+                ctx.ai.engine.message_log.add_message(f"{ctx.entity.name} exhausted!", color.green)
+            return WaitAction(ctx.entity)
+        return MeleeAction(ctx.entity, ctx.dx, ctx.dy)
+
+
+class ChaseModule(AIModule):
+    """Move towards the target when within engage range (search and destroy)."""
+    priority = 70
+
+    def __init__(self, *, recalc_each_turn: bool = True) -> None:
+        self.recalc_each_turn = recalc_each_turn
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not ctx.target or ctx.engage_rng < 0:
+            return None
+        if ctx.distance <= 1 or ctx.distance > ctx.engage_rng:
+            return None
+
+        if ctx.entity.fighter.aggravated is False:
+            ctx.entity.fighter.aggravated = True
+            if ctx.self_visible:
+                ctx.ai.engine.message_log.add_message(f"{ctx.entity.name} is aggravated!", color.red)
+            else:
+                if settings.DEBUG_MODE:
+                    print(f"DEBUG: {ctx.entity.name} is aggravated!")
+
+        if self.recalc_each_turn or not ctx.state.combat_path:
+            ctx.state.combat_path = ctx.ai.get_path_to(ctx.target.x, ctx.target.y)
+        if not ctx.state.combat_path:
+            return WaitAction(ctx.entity)
+        dest_x, dest_y = ctx.state.combat_path[0]
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+        if gamemap.is_closed_door(dest_x, dest_y) and can_open_doors:
+            # Use BumpAction so opening a door doesn't consume a path step.
+            return BumpAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+        dest_x, dest_y = ctx.state.combat_path.pop(0)
+        return MovementAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+
+
+class ReturnToSpawnModule(AIModule):
+    """Return to spawn when not engaged or out of range."""
+    priority = 30
+
+    def __init__(self, *, return_when_no_detection: bool = True, return_when_out_of_range: bool = True) -> None:
+        self.return_when_no_detection = return_when_no_detection
+        self.return_when_out_of_range = return_when_out_of_range
+
+    def _should_return(self, ctx: AIContext) -> bool:
+        if ctx.engage_rng >= 0 and ctx.distance > ctx.engage_rng and self.return_when_out_of_range:
+            return True
+        # If detectability exists but engage range is negative, avoid idle loops by returning/patrolling.
+        if ctx.engage_rng < 0 and ctx.detection_base is not None and self.return_when_out_of_range:
+            return True
+        if ctx.detection_base is None and ctx.entity.fighter.aggravated is False and self.return_when_no_detection:
+            return True
+        return False
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not self._should_return(ctx):
+            return None
+        ctx.state.combat_path = []
+        spawn = getattr(ctx.entity, "spawn_coord", None)
+        if not spawn:
+            return WaitAction(ctx.entity)
+        if (ctx.entity.x, ctx.entity.y) == (spawn[0], spawn[1]):
+            return WaitAction(ctx.entity)
+        if not ctx.state.return_path:
+            ctx.state.return_path = ctx.ai.get_path_to(spawn[0], spawn[1], ignore_senses=True)
+        if not ctx.state.return_path:
+            return WaitAction(ctx.entity)
+        dest_x, dest_y = ctx.state.return_path[0]
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+        if gamemap.is_closed_door(dest_x, dest_y) and can_open_doors:
+            # Use BumpAction so opening a door doesn't consume a path step.
+            return BumpAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+        dest_x, dest_y = ctx.state.return_path.pop(0)
+        try:
+            return MovementAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+        except exceptions.Impossible:
+            # Replan on dynamic blockers (doors/entities) instead of stalling.
+            ctx.state.return_path = []
+            if spawn:
+                ctx.state.return_path = ctx.ai.get_path_to(spawn[0], spawn[1], ignore_senses=True)
+            if not ctx.state.return_path:
+                return WaitAction(ctx.entity)
+            dest_x, dest_y = ctx.state.return_path.pop(0)
+            try:
+                return MovementAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+            except exceptions.Impossible:
+                ctx.state.return_path = []
+                return WaitAction(ctx.entity)
+
+
+class PatrolModule(AIModule):
+    """Patrol between room centers when not engaged."""
+    priority = 20
+
+    def __init__(self, *, patrol_when_no_detection: bool = True, patrol_when_out_of_range: bool = True) -> None:
+        self.patrol_when_no_detection = patrol_when_no_detection
+        self.patrol_when_out_of_range = patrol_when_out_of_range
+
+    def _should_patrol(self, ctx: AIContext) -> bool:
+        if ctx.engage_rng >= 0 and ctx.distance > ctx.engage_rng and self.patrol_when_out_of_range:
+            return True
+        # If detectability exists but engage range is negative, avoid idle loops by returning/patrolling.
+        if ctx.engage_rng < 0 and ctx.detection_base is not None and self.patrol_when_out_of_range:
+            return True
+        if ctx.detection_base is None and ctx.entity.fighter.aggravated is False and self.patrol_when_no_detection:
+            return True
+        return False
+
+    def _load_room_centers(self, ctx: AIContext) -> None:
+        if ctx.state.room_centers:
+            return
+        centers = getattr(ctx.engine, "center_room_array", None) or getattr(ctx.ai.engine.game_map, "center_rooms", None) or []
+        centers_list = [tuple(c) for c in centers if c]
+
+        spawn = getattr(ctx.entity, "spawn_coord", None)
+        if spawn:
+            sx, sy = spawn
+            centers_list.sort(key=lambda c: abs(c[0] - sx) + abs(c[1] - sy))
+        else:
+            random.shuffle(centers_list)
+
+        ctx.state.room_centers = centers_list
+
+    def _select_next_patrol_target(self, ctx: AIContext) -> bool:
+        self._load_room_centers(ctx)
+        if not ctx.state.room_centers:
+            ctx.state.patrol_target = None
+            return False
+
+        attempts = 0
+        while ctx.state.room_centers and attempts < len(ctx.state.room_centers):
+            ctx.state.patrol_index = (ctx.state.patrol_index + 1) % len(ctx.state.room_centers)
+            center = ctx.state.room_centers[ctx.state.patrol_index]
+            candidate_path = ctx.ai.get_path_to(center[0], center[1], ignore_senses=True)
+            if candidate_path:
+                ctx.state.patrol_target = center
+                ctx.state.patrol_path = candidate_path
+                return True
+
+            ctx.state.room_centers.pop(ctx.state.patrol_index)
+            if not ctx.state.room_centers:
+                ctx.state.patrol_index = -1
+                ctx.state.patrol_target = None
+                ctx.state.patrol_path = []
+                return False
+            ctx.state.patrol_index = (ctx.state.patrol_index - 1) % len(ctx.state.room_centers)
+            attempts += 1
+        ctx.state.patrol_target = None
+        return False
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not self._should_patrol(ctx):
+            return None
+        ctx.state.combat_path = []
+
+        if ctx.state.patrol_target is None or not ctx.state.patrol_path:
+            if not self._select_next_patrol_target(ctx):
+                return WaitAction(ctx.entity)
+
+        if not ctx.state.patrol_path:
+            ctx.state.patrol_target = None
+            return WaitAction(ctx.entity)
+
+        dest_x, dest_y = ctx.state.patrol_path[0]
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+        if gamemap.is_closed_door(dest_x, dest_y) and can_open_doors:
+            # Use BumpAction so opening a door doesn't consume a path step.
+            return BumpAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+        dest_x, dest_y = ctx.state.patrol_path.pop(0)
+        try:
+            return MovementAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+        except exceptions.Impossible:
+            # Replan on dynamic blockers (doors/entities) instead of stalling.
+            if ctx.state.patrol_target:
+                ctx.state.patrol_path = ctx.ai.get_path_to(
+                    ctx.state.patrol_target[0],
+                    ctx.state.patrol_target[1],
+                    ignore_senses=True,
+                )
+            if not ctx.state.patrol_path:
+                ctx.state.patrol_target = None
+                return WaitAction(ctx.entity)
+            dest_x, dest_y = ctx.state.patrol_path.pop(0)
+            try:
+                return MovementAction(ctx.entity, dest_x - ctx.entity.x, dest_y - ctx.entity.y)
+            except exceptions.Impossible:
+                ctx.state.patrol_target = None
+                ctx.state.patrol_path = []
+                return WaitAction(ctx.entity)
+
+
+class IdleModule(AIModule):
+    """Fallback module that waits when nothing else applies."""
+    priority = -10
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        return WaitAction(ctx.entity)
+
+
+MODULAR_AI_PRESETS = {
+    "patrol_chase": make_modular_ai_class(
+        "PatrolChaseAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            MeleeCombatModule,
+            ChaseModule,
+            PatrolModule,
+            IdleModule,
+        ],
+    ),
+    "return_chase": make_modular_ai_class(
+        "ReturnChaseAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            MeleeCombatModule,
+            ChaseModule,
+            ReturnToSpawnModule,
+            IdleModule,
+        ],
+    ),
+    "guard_chase": make_modular_ai_class(
+        "GuardChaseAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            MeleeCombatModule,
+            ChaseModule,
+            IdleModule,
+        ],
+    ),
+}
 
 
 class HostileEnemyV3(BaseAI):
@@ -944,7 +1519,6 @@ class ScoutV3(BaseAI):
 
         # Default fallback
         return WaitAction(self.entity).perform()
-
 
 
 class DemonicObjectRetrieverAI(BaseAI):

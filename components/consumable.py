@@ -127,6 +127,7 @@ SCROLL_IDENTIFICATION_DESCRIPTIONS: Dict[str, str] = {
     "Teleport scroll": "Las runas chispean y el aire distorsiona mientras desapareces.",
     "Prodigious memory scroll": "Tus pasos recientes quedaron grabados en tu mente como si el mapa entero se hubiera movido contigo.",
     "Identify scroll": "Las runas arden y revelan la verdadera identidad del objeto.",
+    "Blessed Identify scroll": "Las runas sagradas revelan {affected} objeto(s) de tu inventario.",
     "Remove curse scroll": "Las runas brillan y las ataduras oscuras del objeto se desvanecen.",
 }
 
@@ -1131,6 +1132,59 @@ class IdentificationScrollConsumable(ScrollConsumable):
             color.status_effect_applied,
         )
         return {"affected": 1, "item": target_item.name}
+
+
+class BlessedIdentificationScrollConsumable(ScrollConsumable):
+    """Identify all unidentified items carried by the reader, including equipped items."""
+
+    def _unidentified_items(self, consumer: Actor):
+        items = []
+        seen = set()
+
+        def _maybe_add(item: Optional[Item]) -> None:
+            if not item or item is self.parent:
+                return
+            if getattr(item, "identified", False):
+                return
+            item_id = id(item)
+            if item_id in seen:
+                return
+            seen.add(item_id)
+            items.append(item)
+
+        inventory = getattr(consumer, "inventory", None)
+        if inventory:
+            for item in inventory.items:
+                _maybe_add(item)
+        equipment = getattr(consumer, "equipment", None)
+        equipped_items = getattr(equipment, "equipped_items", None) if equipment else None
+        if callable(equipped_items):
+            for item in equipped_items() or []:
+                _maybe_add(item)
+        return items
+
+    def get_action(self, consumer: Actor) -> Optional[ActionOrHandler]:
+        if not self._unidentified_items(consumer):
+            self.engine.message_log.add_message(
+                "No tienes objetos sin identificar en tu inventario.",
+                color.impossible,
+            )
+            return None
+        return actions.ItemAction(consumer, self.parent)
+
+    def _activate_scroll(self, action: actions.ItemAction) -> Optional[Dict[str, object]]:
+        consumer = action.entity
+        unidentified_items = self._unidentified_items(consumer)
+        for item in unidentified_items:
+            item.identify()
+        if unidentified_items:
+            count = len(unidentified_items)
+            suffix = "s" if count != 1 else ""
+            self.engine.message_log.add_message(
+                f"Identificas {count} objeto{suffix} de tu inventario.",
+                color.status_effect_applied,
+            )
+        return {"affected": len(unidentified_items)}
 
 
 class ProdigiousMemoryConsumable(ScrollConsumable):
