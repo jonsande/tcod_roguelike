@@ -352,677 +352,6 @@ class BaseAI(Action):
         return list(computed_path)
 
 
-class DemonicObjectRetrieverAI(BaseAI):
-    """AI that relentlessly retrieves a specific item id_name."""
-
-    def __init__(self, entity: Actor, target_id_name: Optional[str] = None) -> None:
-        super().__init__(entity)
-        self.target_id_name = target_id_name
-        self.path: List[Tuple[int, int]] = []
-        self._missing_turns_remaining: Optional[int] = None
-
-    def set_target_id_name(self, target_id_name: str) -> None:
-        self.target_id_name = target_id_name
-        self._missing_turns_remaining = None
-
-    def _despawn(self) -> None:
-        gamemap = getattr(self.entity, "gamemap", None)
-        engine = getattr(gamemap, "engine", None) if gamemap else None
-        if engine and gamemap and gamemap.visible[self.entity.x, self.entity.y]:
-            engine.message_log.add_message(
-                f"{self.entity.name} disappears.",
-                color.descend,
-            )
-        entities = getattr(gamemap, "entities", None) if gamemap else None
-        if entities and self.entity in entities:
-            entities.remove(self.entity)
-        self.entity.ai = None
-
-    def _handle_missing_target(self) -> None:
-        if self._missing_turns_remaining is None:
-            self._missing_turns_remaining = 3
-        self._missing_turns_remaining -= 1
-        if self._missing_turns_remaining <= 0:
-            self._despawn()
-            return None
-        return WaitAction(self.entity).perform()
-
-    def _find_target_item(self):
-        if not self.target_id_name:
-            return None
-        gamemap = getattr(self.engine, "game_map", None)
-        if not gamemap:
-            return None
-
-        candidates: List[Tuple[object, Tuple[int, int], Optional[Actor]]] = []
-        seen_items = set()
-        for actor in gamemap.actors:
-            inventory = getattr(actor, "inventory", None)
-            for item in getattr(inventory, "items", []) or []:
-                if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
-                    candidates.append((item, (actor.x, actor.y), actor))
-                    seen_items.add(item)
-            equipment = getattr(actor, "equipment", None)
-            equipped_items = getattr(equipment, "equipped_items", None)
-            if callable(equipped_items):
-                for item in equipped_items() or []:
-                    if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
-                        candidates.append((item, (actor.x, actor.y), actor))
-                        seen_items.add(item)
-
-        for item in gamemap.items:
-            if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
-                candidates.append((item, (item.x, item.y), None))
-                seen_items.add(item)
-
-        if not candidates:
-            return None
-
-        def distance(candidate: Tuple[object, Tuple[int, int], Optional[Actor]]) -> int:
-            pos = candidate[1]
-            return max(abs(pos[0] - self.entity.x), abs(pos[1] - self.entity.y))
-
-        return min(candidates, key=distance)
-
-    def _fallback_step(self, dest_x: int, dest_y: int) -> None:
-        dx = 0
-        dy = 0
-        if dest_x > self.entity.x:
-            dx = 1
-        elif dest_x < self.entity.x:
-            dx = -1
-        if dest_y > self.entity.y:
-            dy = 1
-        elif dest_y < self.entity.y:
-            dy = -1
-        if dx == 0 and dy == 0:
-            return WaitAction(self.entity).perform()
-        return BumpAction(self.entity, dx, dy).perform()
-
-    def _move_towards(self, dest_x: int, dest_y: int) -> None:
-        self.path = self.get_path_to(dest_x, dest_y, ignore_senses=True)
-        if not self.path:
-            return self._fallback_step(dest_x, dest_y)
-        next_x, next_y = self.path.pop(0)
-        blocking_entity = self.engine.game_map.get_blocking_entity_at_location(next_x, next_y)
-        if blocking_entity and blocking_entity is not self.entity:
-            dx = next_x - self.entity.x
-            dy = next_y - self.entity.y
-            return BumpAction(self.entity, dx, dy).perform()
-        return MovementAction(self.entity, next_x - self.entity.x, next_y - self.entity.y).perform()
-
-    def _attack_or_chase(self, target: Actor) -> None:
-        dx = target.x - self.entity.x
-        dy = target.y - self.entity.y
-        distance = max(abs(dx), abs(dy))
-        if distance <= 1:
-            return MeleeAction(self.entity, dx, dy).perform()
-        return self._move_towards(target.x, target.y)
-
-    def _pickup_target_item(self, item) -> bool:
-        try:
-            PickupAction(self.entity, item).perform()
-            return True
-        except exceptions.Impossible:
-            inventory = getattr(self.entity, "inventory", None)
-            if not inventory:
-                return False
-            if item in inventory.items:
-                return True
-            gamemap = getattr(self.entity, "gamemap", None)
-            entities = getattr(gamemap, "entities", None) if gamemap else None
-            if entities and item in entities:
-                entities.remove(item)
-            item.parent = inventory
-            inventory.items.append(item)
-            if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-                self.engine.message_log.add_message(
-                    f"{self.entity.name} picks up the {item.name}."
-                )
-            fighter = getattr(self.entity, "fighter", None)
-            if fighter:
-                fighter.current_time_points -= fighter.action_time_cost
-            return True
-
-    def _relocate_book_after_retrieval(self, item) -> None:
-        try:
-            from entity import Book, Chest
-        except Exception:
-            return
-
-        if not isinstance(item, Book):
-            return
-
-        engine = getattr(self.entity, "gamemap", None)
-        engine = getattr(engine, "engine", None) if engine else None
-        if not engine:
-            return
-
-        game_world = getattr(engine, "game_world", None)
-        if not game_world:
-            return
-
-        def _detach_from_parent() -> None:
-            parent = getattr(item, "parent", None)
-            items = getattr(parent, "items", None)
-            if items and item in items:
-                try:
-                    items.remove(item)
-                except ValueError:
-                    pass
-
-        def _place_in_container(container, label: str) -> None:
-            inventory = getattr(container, "inventory", None)
-            if not inventory:
-                return
-            _detach_from_parent()
-            inventory.items.append(item)
-            item.parent = inventory
-            if getattr(settings, "DEBUG_MODE", False):
-                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
-                print(
-                    f"DEBUG: Demonic retrieval placed {name} in {container.name} at {label} ({container.x}, {container.y})"
-                )
-
-        fixed_layouts = getattr(settings, "FIXED_DUNGEON_LAYOUTS", {}) or {}
-        library_maps = []
-        for floor, layout in fixed_layouts.items():
-            map_name = ""
-            if isinstance(layout, dict):
-                map_name = str(layout.get("map", "")).lower()
-            if map_name in ("the_library", "the_library_template"):
-                if isinstance(floor, int) and 1 <= floor <= len(game_world.levels):
-                    library_maps.append((floor, game_world.levels[floor - 1]))
-
-        library_shelves = []
-        for floor, game_map in library_maps:
-            for entity in getattr(game_map, "entities", []):
-                if getattr(entity, "id_name", "").lower() == "bookshelf":
-                    library_shelves.append((game_map, entity))
-
-        if library_shelves:
-            _, shelf = random.choice(library_shelves)
-            label = getattr(getattr(shelf, "gamemap", None), "branch_label", None) or "?"
-            _place_in_container(shelf, label)
-            return
-
-        containers = []
-        iter_maps = getattr(game_world, "_iter_all_maps", None)
-        maps = list(iter_maps()) if callable(iter_maps) else list(getattr(game_world, "levels", []))
-        for game_map in maps:
-            for entity in getattr(game_map, "entities", []):
-                if isinstance(entity, Chest):
-                    containers.append((game_map, entity))
-
-        if not containers:
-            if getattr(settings, "DEBUG_MODE", False):
-                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
-                print(f"DEBUG: Demonic retrieval could not place {name}; no containers found.")
-            return
-
-        _, container = random.choice(containers)
-        label = getattr(getattr(container, "gamemap", None), "branch_label", None) or "?"
-        _place_in_container(container, label)
-
-    def perform(self) -> None:
-        if not self.target_id_name:
-            return self._handle_missing_target()
-
-        found = self._find_target_item()
-        if not found:
-            return self._handle_missing_target()
-
-        self._missing_turns_remaining = None
-        target_item, target_pos, holder = found
-
-        if holder is self.entity:
-            self._despawn()
-            return None
-
-        if holder:
-            return self._attack_or_chase(holder)
-
-        target_x, target_y = target_pos
-        if self.entity.x == target_x and self.entity.y == target_y:
-            if self._pickup_target_item(target_item):
-                self._relocate_book_after_retrieval(target_item)
-                self._despawn()
-            return None
-
-        blocking_actor = self.engine.game_map.get_actor_at_location(target_x, target_y)
-        if blocking_actor and blocking_actor is not self.entity:
-            return self._attack_or_chase(blocking_actor)
-
-        return self._move_towards(target_x, target_y)
-    
-class ConfusedEnemy(BaseAI):
-    """
-    A confused enemy will stumble around aimlessly for a given number of turns, then revert back to its previous AI.
-    If an actor occupies a tile it is randomly moving into, it will attack.
-    """
-
-    def __init__(
-        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
-    ):
-        super().__init__(entity)
-
-        self.previous_ai = previous_ai
-        self.turns_remaining = turns_remaining
-
-    def perform(self) -> None:
-        # Revert the AI back to the original state if the effect has run its course.
-        if self.turns_remaining <= 0:
-            self.engine.message_log.add_message(
-                f"The {self.entity.name} is no longer confused."
-            )
-            self.entity.ai = self.previous_ai
-        else:
-            # Pick a random direction
-            direction_x, direction_y = random.choice(
-                [
-                    (-1, -1),  # Northwest
-                    (0, -1),  # North
-                    (1, -1),  # Northeast
-                    (-1, 0),  # West
-                    (1, 0),  # East
-                    (-1, 1),  # Southwest
-                    (0, 1),  # South
-                    (1, 1),  # Southeast
-                ]
-            )
-
-            self.turns_remaining -= 1
-
-            # The actor will either try to move or attack in the chosen random direction.
-            # Its possible the actor will just bump into the wall, wasting a turn.
-            return BumpAction(self.entity, direction_x, direction_y,).perform()
-        
-class SelfConfused(BaseAI):
-
-    def __init__(
-        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
-    ):
-        super().__init__(entity)
-
-        self.previous_ai = previous_ai
-        self.turns_remaining = turns_remaining
-
-    def perform(self) -> None:
-        # Revert the AI back to the original state if the effect has run its course.
-        if self.turns_remaining <= 0:
-            self.engine.message_log.add_message(
-                f"You are no longer confused."
-            )
-            self.entity.ai = self.previous_ai
-        else:
-            # Pick a random direction
-            direction_x, direction_y = random.choice(
-                [
-                    (-1, -1),  # Northwest
-                    (0, -1),  # North
-                    (1, -1),  # Northeast
-                    (-1, 0),  # West
-                    (1, 0),  # East
-                    (-1, 1),  # Southwest
-                    (0, 1),  # South
-                    (1, 1),  # Southeast
-                ]
-            )
-
-            self.turns_remaining -= 1
-
-            # The actor will either try to move or attack in the chosen random direction.
-            # Its possible the actor will just bump into the wall, wasting a turn.
-            return BumpAction(self.entity, direction_x, direction_y,).perform()
-
-class ParalizeEnemy(BaseAI):
-    """
-    Se paraliza a la criatura.
-    """
-
-    def __init__(
-        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
-    ):
-        super().__init__(entity)
-
-        self.previous_ai = previous_ai
-        self.turns_remaining = turns_remaining
-
-    def perform(self) -> None:
-        # Revert the AI back to the original state if the effect has run its course.
-        if self.turns_remaining <= 0:
-            self.engine.message_log.add_message(
-                f"The {self.entity.name} is no longer paralized."
-            )
-            self.entity.ai = self.previous_ai
-        else:
-            #self.entity.fighter.effects += 'paralized'
-            self.engine.message_log.add_message(
-                f"The {self.entity.name} is paralized!"
-            )
-
-            self.turns_remaining -= 1
-
-            # The actor will either try to move or attack in the chosen random direction.
-            # Its possible the actor will just bump into the wall, wasting a turn.
-
-            # return BumpAction(self.entity, direction_x, direction_y,).perform()
-            return WaitAction(self.entity).perform()
-
-wait_counter = 0
-class HostileEnemyPlus(BaseAI):
-    """Actualmente esta AI sólo la usan los Bandidos. Básicamente tienen el mismo
-    comportamiento que HostileEnemy AI sólo que en combate en ocasiones retroceden
-    unos pasos antes de volver a atacar"""
-
-    def __init__(self, entity: Actor):
-        super().__init__(entity)
-        self.path: List[Tuple[int, int]] = []
-        self.path2: List[Tuple[int, int]] = []
-        #self.spawn_point = (self.entity.x, self.entity.y)
-
-    def perform(self) -> None:
-
-        target = self._select_target()
-        if not target:
-            return WaitAction(self.entity).perform()
-        dx = target.x - self.entity.x
-        dy = target.y - self.entity.y
-        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
-
-        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-            self_invisible = True
-            self_visible = False
-        else:
-            self_invisible = False
-            self_visible = True
-
-        """
-        if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-            if distance <= 1:
-                return MeleeAction(self.entity, dx, dy).perform()
-
-            self.path = self.get_path_to(target.x, target.y)
-
-        if self.path:
-            dest_x, dest_y = self.path.pop(0)
-            return MovementAction(
-                self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
-            ).perform()
-        
-        """
-        # Camino hacia el jugador       
-        self.path = []
-        self.path_to_origin: List[Tuple[int, int]] = []
-
-        # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
-        if self.entity.fighter.aggravated == False:
-
-            target_stealth = getattr(target.fighter, "stealth", 0)
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, self.entity.fighter.luck)
-        else:
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
-
-
-        if distance > 1 and distance <= engage_rng:
-            self.path = self.get_path_to(target.x, target.y)
-
-            if self.entity.fighter.aggravated == False:
-                self.entity.fighter.aggravated = True
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
-                else:
-                    if settings.DEBUG_MODE:
-                        print(f"DEBUG: {self.entity.name} is aggravated!")
-                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
-
-            # Esta condición es para evitar el error IndexError: pop from empty list
-            # que me ha empezado a dar a raíz de implementar las puertas como tiles y
-            # como entidades
-            if not self.path:
-                return WaitAction(self.entity).perform()
-            else:
-                dest_x, dest_y = self.path.pop(0)
-                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-
-        # Comportamiento al acercarse al jugador:         
-        elif distance == 1:
-
-            if self.entity.fighter.aggravated == False:
-                self.entity.fighter.aggravated = True
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
-                else:
-                    if settings.DEBUG_MODE:
-                        print(f"DEBUG: {self.entity.name} is aggravated!")
-                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
- 
-            # Si se queda sin estamina:
-            if self.entity.fighter.stamina == 0:
-
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
-               
-                self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-                if not self.path_to_origin:
-                    return WaitAction(self.entity).perform()
-                dest_x, dest_y = self.path_to_origin.pop(0)
-
-                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-                #return WaitAction(self.entity).perform()
-
-            if self.entity.fighter.stamina >= 1:
-
-                if random.randint(1,6) <= 3:
-
-                    self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-
-                    if not self.path_to_origin:
-                        return MeleeAction(self.entity, dx, dy).perform()
-
-                    dest_x, dest_y = self.path_to_origin.pop(0) # BUG: Esto estaba dando error IndexError: pop from empty list
-                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-
-                else:
-                    return MeleeAction(self.entity, dx, dy).perform()
-
-            else:
-                return MeleeAction(self.entity, dx, dy).perform()
-            """    
-            elif distance == 2:
-
-                if self.entity.fighter.stamina == 2:
-
-                    if random.randint(1,6) <= 3:
-
-                        self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-                        dest_x, dest_y = self.path_to_origin.pop(0)
-                        return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-            """
-        
-        elif distance > engage_rng:
-
-            #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
-
-            self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-
-            """self.path.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
-            """self.path2.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
-            original en la que fué spawmeada)"""
-
-            if not self.path2:
-                return WaitAction(self.entity).perform()
-            else:
-                # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
-
-                if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
-                    self.entity.fighter.wait_counter += 1
-                    return WaitAction(self.entity).perform()
-                else:
-                    self.entity.fighter.wait_counter -= 1
-                    dest_x, dest_y = self.path2.pop(0)
-                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-        
-            #return WaitAction(self.entity).perform()
-        """
-        SISTEMA DE DEAMBULAR:
-        Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
-        Mirar en esta misma página el final de la classe ConfusedEnemy
-        """
-
-# OBSOLETO
-class HostileEnemy(BaseAI):
-    def __init__(self, entity: Actor):
-        super().__init__(entity)
-        self.path: List[Tuple[int, int]] = []
-        self.path2: List[Tuple[int, int]] = []
-        #self.spawn_point = (self.entity.x, self.entity.y)
-
-    def perform(self) -> None:
-
-        target = self._select_target()
-        if not target:
-            return WaitAction(self.entity).perform()
-        dx = target.x - self.entity.x
-        dy = target.y - self.entity.y
-        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
-
-        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-            self_invisible = True
-            self_visible = False
-        else:
-            self_invisible = False
-            self_visible = True
-        
-        # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
-
-        # ENGAGE SYSTEM (ORIGINAL)
-        # Los enemigos persiguen al PJ en busca de melee en
-        # cuanto entran en el campo de visión del PJ (del
-        # propio PJ, no del suyo)
-        """
-        if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-            if distance <= 1:
-                return MeleeAction(self.entity, dx, dy).perform()
-
-            self.path = self.get_path_to(target.x, target.y)
-
-        if self.path:
-            dest_x, dest_y = self.path.pop(0)
-            return MovementAction(
-                self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
-            ).perform()
-        
-        """
-                
-
-        # ENGAGE SYSTEM (REVISED)
-        # Este sistema es mucho más potente de lo que parece a primera vista.
-        # Entre otras cosas permite implementar un sistema de sigilo (y de puntos
-        # de experiencia por salvar tiradas al sigilo)
-        # El siguiente trozo de código lo que hace, fundamentalmente, es que 
-        # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
-        # y que ese rango y valores sean independiente del FOV del PJ
-
-        self.path = []
-        # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
-        # la persecución (con un dandint(0,) es todavaía más probable que abandone
-        # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
-        # un enemigo puede abandonar la persecución aun estando en casilla
-        # contigua.
-
-        target_stealth = getattr(target.fighter, "stealth", 0)
-        target_luck = getattr(target.fighter, "luck", 0)
-        if self.entity.fighter.aggravated == False:
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
-
-        else:
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
-        
-        # Debug
-        #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
-        #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
-
-        if distance > 1 and distance <= engage_rng:
-            #self.engine.player.fighter.is_in_melee = False
-            if self.entity.fighter.aggravated == False:
-                self.entity.fighter.aggravated = True
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
-                else:
-                    if settings.DEBUG_MODE:
-                        print(f"DEBUG: {self.entity.name} is aggravated!")
-                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
-
-            # Esta condición es para evitar el error IndexError: pop from empty list
-            # que me ha empezado a dar a raíz de implementar las puertas como tiles y
-            # como entidades
-            if not self.path:
-                self.path = self.get_path_to(target.x, target.y)
-            if not self.path:
-                return WaitAction(self.entity).perform()
-            else:
-                dest_x, dest_y = self.path.pop(0)
-                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-
-
-        elif distance <= 1:
-
-            # if self.entity.fighter.stamina == 0:
-            #     if self_visible:
-            #         self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
-            #     return WaitAction(self.entity).perform()
-            # else:
-            #     return MeleeAction(self.entity, dx, dy).perform()
-        
-            if self.entity.fighter.aggravated == False:
-                # TODO: Comprobar si este cambio del aggravated es correcto aquí. ¿Es posible un
-                # ataque sigiloso contra esta criatura?
-                self.entity.fighter.aggravated = True
-                return WaitAction(self.entity).perform()
-            else:
-                if self.entity.fighter.stamina == 0:
-                    if self_visible:
-                        self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
-                    return WaitAction(self.entity).perform()
-                else:
-                    return MeleeAction(self.entity, dx, dy).perform()
-
-        elif distance > engage_rng:
-
-            #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
-
-            self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
-
-            """self.path.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
-            """self.path2.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
-            original en la que fué spawmeada)"""
-
-            if not self.path2:
-                return WaitAction(self.entity).perform()
-            else:
-                # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
-
-                if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
-                    self.entity.fighter.wait_counter += 1
-                    return WaitAction(self.entity).perform()
-                else:
-                    self.entity.fighter.wait_counter -= 1
-                    dest_x, dest_y = self.path2.pop(0)
-                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-        
-            #return WaitAction(self.entity).perform()
-
-        """
-        SISTEMA DE DEAMBULAR:
-        Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
-        Mirar en esta misma página el final de la classe ConfusedEnemy
-        """
-
 class HostileEnemyV3(BaseAI):
     """Hostile enemy that can engage via sight or hearing."""
 
@@ -1219,16 +548,17 @@ class HostileEnemyV3(BaseAI):
                 f"roll_base={engage_roll} luck_roll={luck_roll} engage_rng={engage_rng}"
             )
 
-        # if settings.DEBUG_MODE:
-        #     debug_msg = (
-        #         f"[DEBUG] {self.entity.name}: vision={can_see}, hearing={can_hear}, "
-        #         f"noise_bonus={noise_bonus}, engage_rng={engage_rng}, dist={distance}"
-        #     )
-        #     try:
-        #         self.engine.message_log.add_message(debug_msg, color.white)
-        #     except Exception:
-        #         if getattr(self.engine, "debug", False):
-        #             print(debug_msg)
+        if settings.DEBUG_MODE:
+            debug_msg = (
+                f"[DEBUG] {self.entity.name}: vision={can_see}, hearing={can_hear}, "
+                f"noise_bonus={noise_bonus}, engage_rng={engage_rng}, dist={distance}"
+            )
+            print(debug_msg)
+            # try:
+            #     self.engine.message_log.add_message(debug_msg, color.white)
+            # except Exception:
+            #     if getattr(self.engine, "debug", False):
+            #         print(debug_msg)
 
         if engage_rng >= 0 and distance > 1 and distance <= engage_rng:
             if not self.path:
@@ -1293,6 +623,7 @@ class HostileEnemyV3(BaseAI):
 
         # Default fallback
         return WaitAction(self.entity).perform()
+
 
 class ScoutV3(BaseAI):
     """Scout enemy that can engage via sight or hearing."""
@@ -1586,256 +917,368 @@ class ScoutV3(BaseAI):
         # Default fallback
         return WaitAction(self.entity).perform()
 
-class HostileEnemyV2(BaseAI):
 
-    _NEIGHBOR_DELTAS = [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-    ]
 
-    def __init__(self, entity: Actor):
+class DemonicObjectRetrieverAI(BaseAI):
+    """AI that relentlessly retrieves a specific item id_name."""
+
+    def __init__(self, entity: Actor, target_id_name: Optional[str] = None) -> None:
         super().__init__(entity)
+        self.target_id_name = target_id_name
         self.path: List[Tuple[int, int]] = []
-        self.path2: List[Tuple[int, int]] = []
-        #self.spawn_point = (self.entity.x, self.entity.y)
-        self._wander_cooldown = self._roll_wander_delay()
-        self._aggressor: Optional[Actor] = None
-        self._lost_sight_counter: Optional[int] = None
+        self._missing_turns_remaining: Optional[int] = None
 
-    # Movimiento oscilante/errático
-    def _wander_idle(self) -> None:
-        if self._wander_cooldown > 0:
-            self._wander_cooldown -= 1
+    def set_target_id_name(self, target_id_name: str) -> None:
+        self.target_id_name = target_id_name
+        self._missing_turns_remaining = None
+
+    def _despawn(self) -> None:
+        gamemap = getattr(self.entity, "gamemap", None)
+        engine = getattr(gamemap, "engine", None) if gamemap else None
+        if engine and gamemap and gamemap.visible[self.entity.x, self.entity.y]:
+            engine.message_log.add_message(
+                f"{self.entity.name} disappears.",
+                color.descend,
+            )
+        entities = getattr(gamemap, "entities", None) if gamemap else None
+        if entities and self.entity in entities:
+            entities.remove(self.entity)
+        self.entity.ai = None
+
+    def _handle_missing_target(self) -> None:
+        if self._missing_turns_remaining is None:
+            self._missing_turns_remaining = 3
+        self._missing_turns_remaining -= 1
+        if self._missing_turns_remaining <= 0:
+            self._despawn()
+            return None
+        return WaitAction(self.entity).perform()
+
+    def _find_target_item(self):
+        if not self.target_id_name:
+            return None
+        gamemap = getattr(self.engine, "game_map", None)
+        if not gamemap:
+            return None
+
+        candidates: List[Tuple[object, Tuple[int, int], Optional[Actor]]] = []
+        seen_items = set()
+        for actor in gamemap.actors:
+            inventory = getattr(actor, "inventory", None)
+            for item in getattr(inventory, "items", []) or []:
+                if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                    candidates.append((item, (actor.x, actor.y), actor))
+                    seen_items.add(item)
+            equipment = getattr(actor, "equipment", None)
+            equipped_items = getattr(equipment, "equipped_items", None)
+            if callable(equipped_items):
+                for item in equipped_items() or []:
+                    if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                        candidates.append((item, (actor.x, actor.y), actor))
+                        seen_items.add(item)
+
+        for item in gamemap.items:
+            if getattr(item, "id_name", "") == self.target_id_name and item not in seen_items:
+                candidates.append((item, (item.x, item.y), None))
+                seen_items.add(item)
+
+        if not candidates:
+            return None
+
+        def distance(candidate: Tuple[object, Tuple[int, int], Optional[Actor]]) -> int:
+            pos = candidate[1]
+            return max(abs(pos[0] - self.entity.x), abs(pos[1] - self.entity.y))
+
+        return min(candidates, key=distance)
+
+    def _fallback_step(self, dest_x: int, dest_y: int) -> None:
+        dx = 0
+        dy = 0
+        if dest_x > self.entity.x:
+            dx = 1
+        elif dest_x < self.entity.x:
+            dx = -1
+        if dest_y > self.entity.y:
+            dy = 1
+        elif dest_y < self.entity.y:
+            dy = -1
+        if dx == 0 and dy == 0:
             return WaitAction(self.entity).perform()
+        return BumpAction(self.entity, dx, dy).perform()
 
-        gamemap = self.engine.game_map
-        directions = list(self._NEIGHBOR_DELTAS)
-        random.shuffle(directions)
-        for dx, dy in directions:
-            nx = self.entity.x + dx
-            ny = self.entity.y + dy
-            if not gamemap.in_bounds(nx, ny):
-                continue
-            if not gamemap.tiles["walkable"][nx, ny]:
-                continue
-            if gamemap.get_blocking_entity_at_location(nx, ny):
-                continue
-            try:
-                MovementAction(self.entity, dx, dy).perform()
-                self._wander_cooldown = self._roll_wander_delay()
-                return
-            except exceptions.Impossible:
-                continue
+    def _move_towards(self, dest_x: int, dest_y: int) -> None:
+        self.path = self.get_path_to(dest_x, dest_y, ignore_senses=True)
+        if not self.path:
+            return self._fallback_step(dest_x, dest_y)
+        next_x, next_y = self.path.pop(0)
+        blocking_entity = self.engine.game_map.get_blocking_entity_at_location(next_x, next_y)
+        if blocking_entity and blocking_entity is not self.entity:
+            dx = next_x - self.entity.x
+            dy = next_y - self.entity.y
+            return BumpAction(self.entity, dx, dy).perform()
+        return MovementAction(self.entity, next_x - self.entity.x, next_y - self.entity.y).perform()
 
-        self._wander_cooldown = self._roll_wander_delay()
-        WaitAction(self.entity).perform()
-
-    def _roll_wander_delay(self) -> int:
-        return random.randint(1, 6)
-
-    def _is_valid_aggressor(self, actor: Optional[Actor]) -> bool:
-        if not actor:
-            return False
-        fighter = getattr(actor, "fighter", None)
-        if not fighter or getattr(fighter, "hp", 0) <= 0:
-            return False
-        return getattr(actor, "gamemap", None) is self.engine.game_map
-
-    def _can_see_actor(self, actor: Actor) -> bool:
-        fighter = getattr(self.entity, "fighter", None)
-        if not fighter:
-            return False
-        radius = max(0, fighter.fov)
-        if radius <= 0:
-            return actor.x == self.entity.x and actor.y == self.entity.y
-        gamemap = self.engine.game_map
-        try:
-            transparent = gamemap.get_transparency_map()
-        except AttributeError:
-            transparent = gamemap.tiles["transparent"]
-        visible = compute_fov(
-            transparent,
-            (self.entity.x, self.entity.y),
-            radius,
-            algorithm=constants.FOV_SHADOW,
-        )
-        if not gamemap.in_bounds(actor.x, actor.y):
-            return False
-        return bool(visible[actor.x, actor.y])
-
-    def perform(self) -> None:
-
-        target = self._select_target()
-        if not target:
-            #return WaitAction(self.entity).perform()
-            return self._wander_idle()
-        
+    def _attack_or_chase(self, target: Actor) -> None:
         dx = target.x - self.entity.x
         dy = target.y - self.entity.y
-        distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+        distance = max(abs(dx), abs(dy))
+        if distance <= 1:
+            return MeleeAction(self.entity, dx, dy).perform()
+        return self._move_towards(target.x, target.y)
 
-        if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-            self_invisible = True
-            self_visible = False
+    def _pickup_target_item(self, item) -> bool:
+        try:
+            PickupAction(self.entity, item).perform()
+            return True
+        except exceptions.Impossible:
+            inventory = getattr(self.entity, "inventory", None)
+            if not inventory:
+                return False
+            if item in inventory.items:
+                return True
+            gamemap = getattr(self.entity, "gamemap", None)
+            entities = getattr(gamemap, "entities", None) if gamemap else None
+            if entities and item in entities:
+                entities.remove(item)
+            item.parent = inventory
+            inventory.items.append(item)
+            if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+                self.engine.message_log.add_message(
+                    f"{self.entity.name} picks up the {item.name}."
+                )
+            fighter = getattr(self.entity, "fighter", None)
+            if fighter:
+                fighter.current_time_points -= fighter.action_time_cost
+            return True
+
+    def _relocate_book_after_retrieval(self, item) -> None:
+        try:
+            from entity import Book, Chest
+        except Exception:
+            return
+
+        if not isinstance(item, Book):
+            return
+
+        engine = getattr(self.entity, "gamemap", None)
+        engine = getattr(engine, "engine", None) if engine else None
+        if not engine:
+            return
+
+        game_world = getattr(engine, "game_world", None)
+        if not game_world:
+            return
+
+        def _detach_from_parent() -> None:
+            parent = getattr(item, "parent", None)
+            items = getattr(parent, "items", None)
+            if items and item in items:
+                try:
+                    items.remove(item)
+                except ValueError:
+                    pass
+
+        def _place_in_container(container, label: str) -> None:
+            inventory = getattr(container, "inventory", None)
+            if not inventory:
+                return
+            _detach_from_parent()
+            inventory.items.append(item)
+            item.parent = inventory
+            if getattr(settings, "DEBUG_MODE", False):
+                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
+                print(
+                    f"DEBUG: Demonic retrieval placed {name} in {container.name} at {label} ({container.x}, {container.y})"
+                )
+
+        fixed_layouts = getattr(settings, "FIXED_DUNGEON_LAYOUTS", {}) or {}
+        library_maps = []
+        for floor, layout in fixed_layouts.items():
+            map_name = ""
+            if isinstance(layout, dict):
+                map_name = str(layout.get("map", "")).lower()
+            if map_name in ("the_library", "the_library_template"):
+                if isinstance(floor, int) and 1 <= floor <= len(game_world.levels):
+                    library_maps.append((floor, game_world.levels[floor - 1]))
+
+        library_shelves = []
+        for floor, game_map in library_maps:
+            for entity in getattr(game_map, "entities", []):
+                if getattr(entity, "id_name", "").lower() == "bookshelf":
+                    library_shelves.append((game_map, entity))
+
+        if library_shelves:
+            _, shelf = random.choice(library_shelves)
+            label = getattr(getattr(shelf, "gamemap", None), "branch_label", None) or "?"
+            _place_in_container(shelf, label)
+            return
+
+        containers = []
+        iter_maps = getattr(game_world, "_iter_all_maps", None)
+        maps = list(iter_maps()) if callable(iter_maps) else list(getattr(game_world, "levels", []))
+        for game_map in maps:
+            for entity in getattr(game_map, "entities", []):
+                if isinstance(entity, Chest):
+                    containers.append((game_map, entity))
+
+        if not containers:
+            if getattr(settings, "DEBUG_MODE", False):
+                name = getattr(item, "name", "") or getattr(item, "id_name", "item")
+                print(f"DEBUG: Demonic retrieval could not place {name}; no containers found.")
+            return
+
+        _, container = random.choice(containers)
+        label = getattr(getattr(container, "gamemap", None), "branch_label", None) or "?"
+        _place_in_container(container, label)
+
+    def perform(self) -> None:
+        if not self.target_id_name:
+            return self._handle_missing_target()
+
+        found = self._find_target_item()
+        if not found:
+            return self._handle_missing_target()
+
+        self._missing_turns_remaining = None
+        target_item, target_pos, holder = found
+
+        if holder is self.entity:
+            self._despawn()
+            return None
+
+        if holder:
+            return self._attack_or_chase(holder)
+
+        target_x, target_y = target_pos
+        if self.entity.x == target_x and self.entity.y == target_y:
+            if self._pickup_target_item(target_item):
+                self._relocate_book_after_retrieval(target_item)
+                self._despawn()
+            return None
+
+        blocking_actor = self.engine.game_map.get_actor_at_location(target_x, target_y)
+        if blocking_actor and blocking_actor is not self.entity:
+            return self._attack_or_chase(blocking_actor)
+
+        return self._move_towards(target_x, target_y)
+
+
+class ConfusedEnemy(BaseAI):
+    """
+    A confused enemy will stumble around aimlessly for a given number of turns, then revert back to its previous AI.
+    If an actor occupies a tile it is randomly moving into, it will attack.
+    """
+
+    def __init__(
+        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
+    ):
+        super().__init__(entity)
+
+        self.previous_ai = previous_ai
+        self.turns_remaining = turns_remaining
+
+    def perform(self) -> None:
+        # Revert the AI back to the original state if the effect has run its course.
+        if self.turns_remaining <= 0:
+            self.engine.message_log.add_message(
+                f"The {self.entity.name} is no longer confused."
+            )
+            self.entity.ai = self.previous_ai
         else:
-            self_invisible = False
-            self_visible = True
-        
-        # HUIDA EN CASO DE PUNTOS DE VIDA BAJOS
-        escape_threshold = round((self.entity.fighter.max_hp * self.entity.fighter.escape_threshold) / 100)
-        # EN CONSTRUCCIÓN
-        # if self.entity.fighter.hp < escape_threshold:
-            
-        #     if distance < 8:
-        #         near_rooms = self.engine.game_map.nearest_rooms_from(self.entity.x, self.entity.y)
-        #         for room in near_rooms:
-        #             self.path = self.get_path_to(room[0], room[1])
-        #             if len(self.path) >= 1:
-        #                 break
-        #     if self.path:
-        #         dest_x, dest_y = self.path.pop(0)
-        #         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+            # Pick a random direction
+            direction_x, direction_y = random.choice(
+                [
+                    (-1, -1),  # Northwest
+                    (0, -1),  # North
+                    (1, -1),  # Northeast
+                    (-1, 0),  # West
+                    (1, 0),  # East
+                    (-1, 1),  # Southwest
+                    (0, 1),  # South
+                    (1, 1),  # Southeast
+                ]
+            )
+
+            self.turns_remaining -= 1
+
+            # The actor will either try to move or attack in the chosen random direction.
+            # Its possible the actor will just bump into the wall, wasting a turn.
+            return BumpAction(self.entity, direction_x, direction_y,).perform()
 
 
-        # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
+class SelfConfused(BaseAI):
 
-        # ENGAGE SYSTEM (ORIGINAL)
-        # Los enemigos persiguen al PJ en busca de melee en
-        # cuanto entran en el campo de visión del PJ (del
-        # propio PJ, no del suyo)
-        """
-        if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-            if distance <= 1:
-                return MeleeAction(self.entity, dx, dy).perform()
+    def __init__(
+        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
+    ):
+        super().__init__(entity)
 
-            self.path = self.get_path_to(target.x, target.y)
+        self.previous_ai = previous_ai
+        self.turns_remaining = turns_remaining
 
-        if self.path:
-            dest_x, dest_y = self.path.pop(0)
-            return MovementAction(
-                self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
-            ).perform()
-        
-        """
-
-        # ENGAGE SYSTEM (REVISED)
-        # Este sistema es mucho más potente de lo que parece a primera vista.
-        # Entre otras cosas permite implementar un sistema de sigilo (y de puntos
-        # de experiencia por salvar tiradas al sigilo)
-        # El siguiente trozo de código lo que hace, fundamentalmente, es que 
-        # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
-        # y que ese rango y valores sean independiente del FOV del PJ
-
-        # Camino / Serie de casillas hasta el objetivo,si hay camino transitable (si 
-        # hay puertas o muros se considera intransitable)
-        self.path = self.get_path_to(target.x, target.y)
-
-        # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
-        # la persecución (con un dandint(0,) es todavaía más probable que abandone
-        # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
-        # un enemigo puede abandonar la persecución aun estando en casilla
-        # contigua.
-
-        # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
-        target_stealth = getattr(target.fighter, "stealth", 0)
-        target_luck = getattr(target.fighter, "luck", 0)
-        if self.entity.fighter.aggravated == False:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
-            # if target_stealth < 0:
-            #     stealth_penalty = target_stealth
-            # else:
-            #     stealth_penalty = random.randint(0, target_stealth)
-            # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
-
+    def perform(self) -> None:
+        # Revert the AI back to the original state if the effect has run its course.
+        if self.turns_remaining <= 0:
+            self.engine.message_log.add_message(
+                f"You are no longer confused."
+            )
+            self.entity.ai = self.previous_ai
         else:
-            #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
-            engage_rng = random.randint(0, 3) + self.entity.fighter.fov
-        
-        # Debug
-        #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
-        #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
+            # Pick a random direction
+            direction_x, direction_y = random.choice(
+                [
+                    (-1, -1),  # Northwest
+                    (0, -1),  # North
+                    (1, -1),  # Northeast
+                    (-1, 0),  # West
+                    (1, 0),  # East
+                    (-1, 1),  # Southwest
+                    (0, 1),  # South
+                    (1, 1),  # Southeast
+                ]
+            )
 
-        if distance > 1 and distance <= engage_rng:
-            #self.engine.player.fighter.is_in_melee = False
-            if self.entity.fighter.aggravated == False:
-                self.entity.fighter.aggravated = True
-                if self_visible:
-                    self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
-                else:
-                    if settings.DEBUG_MODE:
-                        print(f"DEBUG: {self.entity.name} is aggravated!")
-                        #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+            self.turns_remaining -= 1
 
-            # Esta condición es para evitar el error IndexError: pop from empty list
-            # que me ha empezado a dar a raíz de implementar las puertas como tiles y
-            # como entidades
-            if not self.path:
-                return self._wander_idle()
-                #return WaitAction(self.entity).perform()
-            else:
-                dest_x, dest_y = self.path.pop(0)
-                return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+            # The actor will either try to move or attack in the chosen random direction.
+            # Its possible the actor will just bump into the wall, wasting a turn.
+            return BumpAction(self.entity, direction_x, direction_y,).perform()
 
 
-        elif distance <= 1:
+class ParalizeEnemy(BaseAI):
+    """
+    Se paraliza a la criatura.
+    """
 
-            if self.entity.fighter.aggravated == False:
-                # TODO: Comprobar si este cambio del aggravated es correcto. ¿Es posible un
-                # ataque sigiloso contra esta criatura?
-                self.entity.fighter.aggravated = True
-                return WaitAction(self.entity).perform()
-            else:
-                if self.entity.fighter.stamina == 0:
-                    if self_visible:
-                        self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
-                    return WaitAction(self.entity).perform()
-                else:
-                    return MeleeAction(self.entity, dx, dy).perform()
-        
-        elif distance > engage_rng:
+    def __init__(
+        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int
+    ):
+        super().__init__(entity)
 
-            #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
+        self.previous_ai = previous_ai
+        self.turns_remaining = turns_remaining
 
-            # Go home. La criatura regresa al punto de generación
-            self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+    def perform(self) -> None:
+        # Revert the AI back to the original state if the effect has run its course.
+        if self.turns_remaining <= 0:
+            self.engine.message_log.add_message(
+                f"The {self.entity.name} is no longer paralized."
+            )
+            self.entity.ai = self.previous_ai
+        else:
+            #self.entity.fighter.effects += 'paralized'
+            self.engine.message_log.add_message(
+                f"The {self.entity.name} is paralized!"
+            )
 
-            """self.path.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
-            """self.path2.pop(0) devuelve las coordenadas de la casilla
-            a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
-            original en la que fué spawmeada)"""
+            self.turns_remaining -= 1
 
-            if not self.path2:
+            # The actor will either try to move or attack in the chosen random direction.
+            # Its possible the actor will just bump into the wall, wasting a turn.
 
-                return WaitAction(self.entity).perform()
-                #return self._wander_idle()
-            
-            else:
-                # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
+            # return BumpAction(self.entity, direction_x, direction_y,).perform()
+            return WaitAction(self.entity).perform()
 
-                if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
-                    self.entity.fighter.wait_counter += 1
-                    return WaitAction(self.entity).perform()
-                else:
-                    self.entity.fighter.wait_counter -= 1
-                    dest_x, dest_y = self.path2.pop(0)
-                    return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
-        
-            #return WaitAction(self.entity).perform()
-
-
-        """
-        SISTEMA DE DEAMBULAR:
-        Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
-        Mirar en esta misma página el final de la classe ConfusedEnemy
-        """
 
 class SleepingEnemy(BaseAI):
 
@@ -1895,7 +1338,8 @@ class SleepingEnemy(BaseAI):
                     return PassAction(self.entity).perform()
             else:
                 return PassAction(self.entity).perform()
-     
+
+
 class MimicSleepAI(BaseAI):
     """Dormant mimic that looks like a chest until it wakes."""
 
@@ -2014,63 +1458,6 @@ class MimicHostileAI(BaseAI):
         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
 
 
-class ToDownStairs(BaseAI):
-
-    # Un personaje con esta IA camina derecho
-    # hacia las escaleras y baja por ellas.
-
-    def __init__(self, entity: Actor):
-        super().__init__(entity)
-        self.path: List[Tuple[int, int]] = []
-        self._last_hp: Optional[int] = None
-
-    def perform(self) -> None:
-
-        current_hp = self.entity.fighter.hp
-
-        if self._last_hp is None:
-            self._last_hp = current_hp
-
-        if current_hp < self._last_hp or self.entity.fighter.aggravated:
-            self.entity.fighter.aggravated = True
-            woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
-            self.entity.ai = woke_ai
-            return woke_ai.perform()
-
-        stairs = self.engine.game_map.get_primary_downstairs()
-        if not stairs:
-            return WaitAction(self.entity).perform()
-        target_x, target_y = stairs
-
-        if self.entity.x == target_x and self.entity.y == target_y:
-            self._last_hp = current_hp
-            return self.entity.fighter.desintegrate()
-
-        #dx = target_x - self.entity.x
-        #dy = target_y - self.entity.y
-        #distance = max(abs(dx), abs(dy))  # Chebyshev distance.
-        #if self.engine.game_map.visible[self.entity.x, self.entity.y]:
-        #    if distance <= 1:
-        #        pass
-
-        self.path = self.get_path_to(target_x, target_y)
-
-        #else:
-        #    while self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
-        #        self.search_and_destroy()
-
-        if self.path:
-            # Aquí se elimina del path la casilla que se acaba de ocupar...
-            dest_x, dest_y = self.path.pop(0)
-            # ...y se avanza a la siguiente casilla del path.
-            self._last_hp = current_hp
-            return MovementAction(
-                self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
-            ).perform()
-
-        self._last_hp = current_hp
-        return WaitAction(self.entity).perform()
-
 class SlimeAI(BaseAI):
     """Slime that wanders within its current room, visiting tiles until it resets."""
 
@@ -2165,6 +1552,7 @@ class SlimeAI(BaseAI):
                         return (nx, ny)
 
         return None
+
 
 class AdventurerAI(BaseAI):
     """Adventurers wander between rooms, rest when exhausted, stay neutral unless provoked,
@@ -2822,6 +2210,7 @@ class Dummy(BaseAI):
 
             #if self.engine.game_map.visible[campfire.x, campfire.y]:
 
+
 class OldManAI(BaseAI):
 
     def __init__(self, entity: Actor):
@@ -2890,3 +2279,630 @@ class OldManAI(BaseAI):
     def on_player_bump(self) -> None:
         self._speak()
         self._player_contact = True
+
+
+# ORIGINAL
+# class HostileEnemy(BaseAI):
+#     def __init__(self, entity: Actor):
+#         super().__init__(entity)
+#         self.path: List[Tuple[int, int]] = []
+#         self.path2: List[Tuple[int, int]] = []
+#         #self.spawn_point = (self.entity.x, self.entity.y)
+
+#     def perform(self) -> None:
+
+#         target = self._select_target()
+#         if not target:
+#             return WaitAction(self.entity).perform()
+#         dx = target.x - self.entity.x
+#         dy = target.y - self.entity.y
+#         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+#             self_invisible = True
+#             self_visible = False
+#         else:
+#             self_invisible = False
+#             self_visible = True
+        
+#         # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
+
+#         # ENGAGE SYSTEM (ORIGINAL)
+#         # Los enemigos persiguen al PJ en busca de melee en
+#         # cuanto entran en el campo de visión del PJ (del
+#         # propio PJ, no del suyo)
+#         """
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+#             if distance <= 1:
+#                 return MeleeAction(self.entity, dx, dy).perform()
+
+#             self.path = self.get_path_to(target.x, target.y)
+
+#         if self.path:
+#             dest_x, dest_y = self.path.pop(0)
+#             return MovementAction(
+#                 self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+#             ).perform()
+        
+#         """
+                
+
+#         # ENGAGE SYSTEM (REVISED)
+#         # Este sistema es mucho más potente de lo que parece a primera vista.
+#         # Entre otras cosas permite implementar un sistema de sigilo (y de puntos
+#         # de experiencia por salvar tiradas al sigilo)
+#         # El siguiente trozo de código lo que hace, fundamentalmente, es que 
+#         # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
+#         # y que ese rango y valores sean independiente del FOV del PJ
+
+#         self.path = []
+#         # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
+#         # la persecución (con un dandint(0,) es todavaía más probable que abandone
+#         # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
+#         # un enemigo puede abandonar la persecución aun estando en casilla
+#         # contigua.
+
+#         target_stealth = getattr(target.fighter, "stealth", 0)
+#         target_luck = getattr(target.fighter, "luck", 0)
+#         if self.entity.fighter.aggravated == False:
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
+
+#         else:
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov
+        
+#         # Debug
+#         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
+#         #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
+
+#         if distance > 1 and distance <= engage_rng:
+#             #self.engine.player.fighter.is_in_melee = False
+#             if self.entity.fighter.aggravated == False:
+#                 self.entity.fighter.aggravated = True
+#                 if self_visible:
+#                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+#                 else:
+#                     if settings.DEBUG_MODE:
+#                         print(f"DEBUG: {self.entity.name} is aggravated!")
+#                         #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+
+#             # Esta condición es para evitar el error IndexError: pop from empty list
+#             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
+#             # como entidades
+#             if not self.path:
+#                 self.path = self.get_path_to(target.x, target.y)
+#             if not self.path:
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 dest_x, dest_y = self.path.pop(0)
+#                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+
+#         elif distance <= 1:
+
+#             # if self.entity.fighter.stamina == 0:
+#             #     if self_visible:
+#             #         self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+#             #     return WaitAction(self.entity).perform()
+#             # else:
+#             #     return MeleeAction(self.entity, dx, dy).perform()
+        
+#             if self.entity.fighter.aggravated == False:
+#                 # TODO: Comprobar si este cambio del aggravated es correcto aquí. ¿Es posible un
+#                 # ataque sigiloso contra esta criatura?
+#                 self.entity.fighter.aggravated = True
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 if self.entity.fighter.stamina == 0:
+#                     if self_visible:
+#                         self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+#                     return WaitAction(self.entity).perform()
+#                 else:
+#                     return MeleeAction(self.entity, dx, dy).perform()
+
+#         elif distance > engage_rng:
+
+#             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
+
+#             self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+#             """self.path.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
+#             """self.path2.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
+#             original en la que fué spawmeada)"""
+
+#             if not self.path2:
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
+
+#                 if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
+#                     self.entity.fighter.wait_counter += 1
+#                     return WaitAction(self.entity).perform()
+#                 else:
+#                     self.entity.fighter.wait_counter -= 1
+#                     dest_x, dest_y = self.path2.pop(0)
+#                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+        
+#             #return WaitAction(self.entity).perform()
+
+#         """
+#         SISTEMA DE DEAMBULAR:
+#         Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
+#         Mirar en esta misma página el final de la classe ConfusedEnemy
+#         """
+
+
+# wait_counter = 0
+# class HostileEnemyPlus(BaseAI):
+#     """Actualmente esta AI sólo la usan los Bandidos. Básicamente tienen el mismo
+#     comportamiento que HostileEnemy AI sólo que en combate en ocasiones retroceden
+#     unos pasos antes de volver a atacar"""
+
+#     def __init__(self, entity: Actor):
+#         super().__init__(entity)
+#         self.path: List[Tuple[int, int]] = []
+#         self.path2: List[Tuple[int, int]] = []
+#         #self.spawn_point = (self.entity.x, self.entity.y)
+
+#     def perform(self) -> None:
+
+#         target = self._select_target()
+#         if not target:
+#             return WaitAction(self.entity).perform()
+#         dx = target.x - self.entity.x
+#         dy = target.y - self.entity.y
+#         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+#             self_invisible = True
+#             self_visible = False
+#         else:
+#             self_invisible = False
+#             self_visible = True
+
+#         """
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+#             if distance <= 1:
+#                 return MeleeAction(self.entity, dx, dy).perform()
+
+#             self.path = self.get_path_to(target.x, target.y)
+
+#         if self.path:
+#             dest_x, dest_y = self.path.pop(0)
+#             return MovementAction(
+#                 self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+#             ).perform()
+        
+#         """
+#         # Camino hacia el jugador       
+#         self.path = []
+#         self.path_to_origin: List[Tuple[int, int]] = []
+
+#         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
+#         if self.entity.fighter.aggravated == False:
+
+#             target_stealth = getattr(target.fighter, "stealth", 0)
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, self.entity.fighter.luck)
+#         else:
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov - random.randint(0, self.entity.fighter.luck)
+
+
+#         if distance > 1 and distance <= engage_rng:
+#             self.path = self.get_path_to(target.x, target.y)
+
+#             if self.entity.fighter.aggravated == False:
+#                 self.entity.fighter.aggravated = True
+#                 if self_visible:
+#                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+#                 else:
+#                     if settings.DEBUG_MODE:
+#                         print(f"DEBUG: {self.entity.name} is aggravated!")
+#                         #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+
+#             # Esta condición es para evitar el error IndexError: pop from empty list
+#             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
+#             # como entidades
+#             if not self.path:
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 dest_x, dest_y = self.path.pop(0)
+#                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+#         # Comportamiento al acercarse al jugador:         
+#         elif distance == 1:
+
+#             if self.entity.fighter.aggravated == False:
+#                 self.entity.fighter.aggravated = True
+#                 if self_visible:
+#                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+#                 else:
+#                     if settings.DEBUG_MODE:
+#                         print(f"DEBUG: {self.entity.name} is aggravated!")
+#                         #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+ 
+#             # Si se queda sin estamina:
+#             if self.entity.fighter.stamina == 0:
+
+#                 if self_visible:
+#                     self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+               
+#                 self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+#                 if not self.path_to_origin:
+#                     return WaitAction(self.entity).perform()
+#                 dest_x, dest_y = self.path_to_origin.pop(0)
+
+#                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+#                 #return WaitAction(self.entity).perform()
+
+#             if self.entity.fighter.stamina >= 1:
+
+#                 if random.randint(1,6) <= 3:
+
+#                     self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+#                     if not self.path_to_origin:
+#                         return MeleeAction(self.entity, dx, dy).perform()
+
+#                     dest_x, dest_y = self.path_to_origin.pop(0) # BUG: Esto estaba dando error IndexError: pop from empty list
+#                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+#                 else:
+#                     return MeleeAction(self.entity, dx, dy).perform()
+
+#             else:
+#                 return MeleeAction(self.entity, dx, dy).perform()
+#             """    
+#             elif distance == 2:
+
+#                 if self.entity.fighter.stamina == 2:
+
+#                     if random.randint(1,6) <= 3:
+
+#                         self.path_to_origin = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+#                         dest_x, dest_y = self.path_to_origin.pop(0)
+#                         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+#             """
+        
+#         elif distance > engage_rng:
+
+#             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
+
+#             self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+#             """self.path.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
+#             """self.path2.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
+#             original en la que fué spawmeada)"""
+
+#             if not self.path2:
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
+
+#                 if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
+#                     self.entity.fighter.wait_counter += 1
+#                     return WaitAction(self.entity).perform()
+#                 else:
+#                     self.entity.fighter.wait_counter -= 1
+#                     dest_x, dest_y = self.path2.pop(0)
+#                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+        
+#             #return WaitAction(self.entity).perform()
+#         """
+#         SISTEMA DE DEAMBULAR:
+#         Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
+#         Mirar en esta misma página el final de la classe ConfusedEnemy
+#         """
+
+
+# OBSOLETO
+# class HostileEnemyV2(BaseAI):
+
+#     _NEIGHBOR_DELTAS = [
+#         (-1, -1),
+#         (0, -1),
+#         (1, -1),
+#         (-1, 0),
+#         (1, 0),
+#         (-1, 1),
+#         (0, 1),
+#         (1, 1),
+#     ]
+
+#     def __init__(self, entity: Actor):
+#         super().__init__(entity)
+#         self.path: List[Tuple[int, int]] = []
+#         self.path2: List[Tuple[int, int]] = []
+#         #self.spawn_point = (self.entity.x, self.entity.y)
+#         self._wander_cooldown = self._roll_wander_delay()
+#         self._aggressor: Optional[Actor] = None
+#         self._lost_sight_counter: Optional[int] = None
+
+#     # Movimiento oscilante/errático
+#     def _wander_idle(self) -> None:
+#         if self._wander_cooldown > 0:
+#             self._wander_cooldown -= 1
+#             return WaitAction(self.entity).perform()
+
+#         gamemap = self.engine.game_map
+#         directions = list(self._NEIGHBOR_DELTAS)
+#         random.shuffle(directions)
+#         for dx, dy in directions:
+#             nx = self.entity.x + dx
+#             ny = self.entity.y + dy
+#             if not gamemap.in_bounds(nx, ny):
+#                 continue
+#             if not gamemap.tiles["walkable"][nx, ny]:
+#                 continue
+#             if gamemap.get_blocking_entity_at_location(nx, ny):
+#                 continue
+#             try:
+#                 MovementAction(self.entity, dx, dy).perform()
+#                 self._wander_cooldown = self._roll_wander_delay()
+#                 return
+#             except exceptions.Impossible:
+#                 continue
+
+#         self._wander_cooldown = self._roll_wander_delay()
+#         WaitAction(self.entity).perform()
+
+#     def _roll_wander_delay(self) -> int:
+#         return random.randint(1, 6)
+
+#     def _is_valid_aggressor(self, actor: Optional[Actor]) -> bool:
+#         if not actor:
+#             return False
+#         fighter = getattr(actor, "fighter", None)
+#         if not fighter or getattr(fighter, "hp", 0) <= 0:
+#             return False
+#         return getattr(actor, "gamemap", None) is self.engine.game_map
+
+#     def _can_see_actor(self, actor: Actor) -> bool:
+#         fighter = getattr(self.entity, "fighter", None)
+#         if not fighter:
+#             return False
+#         radius = max(0, fighter.fov)
+#         if radius <= 0:
+#             return actor.x == self.entity.x and actor.y == self.entity.y
+#         gamemap = self.engine.game_map
+#         try:
+#             transparent = gamemap.get_transparency_map()
+#         except AttributeError:
+#             transparent = gamemap.tiles["transparent"]
+#         visible = compute_fov(
+#             transparent,
+#             (self.entity.x, self.entity.y),
+#             radius,
+#             algorithm=constants.FOV_SHADOW,
+#         )
+#         if not gamemap.in_bounds(actor.x, actor.y):
+#             return False
+#         return bool(visible[actor.x, actor.y])
+
+#     def perform(self) -> None:
+
+#         target = self._select_target()
+#         if not target:
+#             #return WaitAction(self.entity).perform()
+#             return self._wander_idle()
+        
+#         dx = target.x - self.entity.x
+#         dy = target.y - self.entity.y
+#         distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+#             self_invisible = True
+#             self_visible = False
+#         else:
+#             self_invisible = False
+#             self_visible = True
+        
+#         # HUIDA EN CASO DE PUNTOS DE VIDA BAJOS
+#         escape_threshold = round((self.entity.fighter.max_hp * self.entity.fighter.escape_threshold) / 100)
+#         # EN CONSTRUCCIÓN
+#         # if self.entity.fighter.hp < escape_threshold:
+            
+#         #     if distance < 8:
+#         #         near_rooms = self.engine.game_map.nearest_rooms_from(self.entity.x, self.entity.y)
+#         #         for room in near_rooms:
+#         #             self.path = self.get_path_to(room[0], room[1])
+#         #             if len(self.path) >= 1:
+#         #                 break
+#         #     if self.path:
+#         #         dest_x, dest_y = self.path.pop(0)
+#         #         return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+
+#         # TODO: Patrol system. Un sistema de patrulla sencillo basado en waypoints.
+
+#         # ENGAGE SYSTEM (ORIGINAL)
+#         # Los enemigos persiguen al PJ en busca de melee en
+#         # cuanto entran en el campo de visión del PJ (del
+#         # propio PJ, no del suyo)
+#         """
+#         if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+#             if distance <= 1:
+#                 return MeleeAction(self.entity, dx, dy).perform()
+
+#             self.path = self.get_path_to(target.x, target.y)
+
+#         if self.path:
+#             dest_x, dest_y = self.path.pop(0)
+#             return MovementAction(
+#                 self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+#             ).perform()
+        
+#         """
+
+#         # ENGAGE SYSTEM (REVISED)
+#         # Este sistema es mucho más potente de lo que parece a primera vista.
+#         # Entre otras cosas permite implementar un sistema de sigilo (y de puntos
+#         # de experiencia por salvar tiradas al sigilo)
+#         # El siguiente trozo de código lo que hace, fundamentalmente, es que 
+#         # los distintos tipos de enemigos puedan tener distinto rango y valor de "detección/provocación",
+#         # y que ese rango y valores sean independiente del FOV del PJ
+
+#         # Camino / Serie de casillas hasta el objetivo,si hay camino transitable (si 
+#         # hay puertas o muros se considera intransitable)
+#         self.path = self.get_path_to(target.x, target.y)
+
+#         # Una rata (con un fov=0) y aquí con un randint(1,) a veces abandonará
+#         # la persecución (con un dandint(0,) es todavaía más probable que abandone
+#         # la persecución). La regla general: si el engage_rng resultante no es mayor a 1,
+#         # un enemigo puede abandonar la persecución aun estando en casilla
+#         # contigua.
+
+#         # El bonificador de STEALTH sólo se aplica si el monstruo no ha sido provocado nunca:
+#         target_stealth = getattr(target.fighter, "stealth", 0)
+#         target_luck = getattr(target.fighter, "luck", 0)
+#         if self.entity.fighter.aggravated == False:
+#             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}")
+#             # if target_stealth < 0:
+#             #     stealth_penalty = target_stealth
+#             # else:
+#             #     stealth_penalty = random.randint(0, target_stealth)
+#             # engage_rng = random.randint(1, 3) + self.entity.fighter.fov - stealth_penalty
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov - target_stealth - random.randint(0, target_luck)
+
+#         else:
+#             #print(f"{self.entity.name} aggravated: {self.entity.fighter.aggravated}") # Debug
+#             engage_rng = random.randint(0, 3) + self.entity.fighter.fov
+        
+#         # Debug
+#         #self.engine.message_log.add_message(f"{self.spawn_point} ---> (0, 0)")
+#         #self.engine.message_log.add_message(f"{self.entity.x} , {self.entity.y} ---> posición actual")
+
+#         if distance > 1 and distance <= engage_rng:
+#             #self.engine.player.fighter.is_in_melee = False
+#             if self.entity.fighter.aggravated == False:
+#                 self.entity.fighter.aggravated = True
+#                 if self_visible:
+#                     self.engine.message_log.add_message(f"{self.entity.name} is aggravated!", color.red)
+#                 else:
+#                     if settings.DEBUG_MODE:
+#                         print(f"DEBUG: {self.entity.name} is aggravated!")
+#                         #self.engine.message_log.add_message(f"DEBUG: {self.entity.name} is aggravated!", color.red)
+
+#             # Esta condición es para evitar el error IndexError: pop from empty list
+#             # que me ha empezado a dar a raíz de implementar las puertas como tiles y
+#             # como entidades
+#             if not self.path:
+#                 return self._wander_idle()
+#                 #return WaitAction(self.entity).perform()
+#             else:
+#                 dest_x, dest_y = self.path.pop(0)
+#                 return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+
+
+#         elif distance <= 1:
+
+#             if self.entity.fighter.aggravated == False:
+#                 # TODO: Comprobar si este cambio del aggravated es correcto. ¿Es posible un
+#                 # ataque sigiloso contra esta criatura?
+#                 self.entity.fighter.aggravated = True
+#                 return WaitAction(self.entity).perform()
+#             else:
+#                 if self.entity.fighter.stamina == 0:
+#                     if self_visible:
+#                         self.engine.message_log.add_message(f"{self.entity.name} exhausted!", color.green)
+#                     return WaitAction(self.entity).perform()
+#                 else:
+#                     return MeleeAction(self.entity, dx, dy).perform()
+        
+#         elif distance > engage_rng:
+
+#             #self.engine.message_log.add_message(f"{self.entity.name} te ignora.")
+
+#             # Go home. La criatura regresa al punto de generación
+#             self.path2 = self.get_path_to(self.entity.spawn_coord[0], self.entity.spawn_coord[1])
+
+#             """self.path.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar al jugador)"""
+#             """self.path2.pop(0) devuelve las coordenadas de la casilla
+#             a la que tiene que moverse en el siguiente turno la criatura (para alcanzar la posición
+#             original en la que fué spawmeada)"""
+
+#             if not self.path2:
+
+#                 return WaitAction(self.entity).perform()
+#                 #return self._wander_idle()
+            
+#             else:
+#                 # Esto hace que el monstruo, al de x turnos, vuelva a la casilla en la que fue spawmeada
+
+#                 if self.entity.fighter.wait_counter <= random.randint(1, 4) + self.entity.fighter.aggressivity:
+#                     self.entity.fighter.wait_counter += 1
+#                     return WaitAction(self.entity).perform()
+#                 else:
+#                     self.entity.fighter.wait_counter -= 1
+#                     dest_x, dest_y = self.path2.pop(0)
+#                     return MovementAction(self.entity, dest_x - self.entity.x, dest_y - self.entity.y).perform()
+        
+#             #return WaitAction(self.entity).perform()
+
+
+#         """
+#         SISTEMA DE DEAMBULAR:
+#         Se hace con BumpAction, clase de actions.py. BumpAction(self.entity, direction_x, direction_y,).perform()
+#         Mirar en esta misma página el final de la classe ConfusedEnemy
+#         """
+
+
+# class ToDownStairs(BaseAI):
+
+#     # Un personaje con esta IA camina derecho
+#     # hacia las escaleras y baja por ellas.
+
+#     def __init__(self, entity: Actor):
+#         super().__init__(entity)
+#         self.path: List[Tuple[int, int]] = []
+#         self._last_hp: Optional[int] = None
+
+#     def perform(self) -> None:
+
+#         current_hp = self.entity.fighter.hp
+
+#         if self._last_hp is None:
+#             self._last_hp = current_hp
+
+#         if current_hp < self._last_hp or self.entity.fighter.aggravated:
+#             self.entity.fighter.aggravated = True
+#             woke_ai = self.entity.fighter.woke_ai_cls(self.entity)
+#             self.entity.ai = woke_ai
+#             return woke_ai.perform()
+
+#         stairs = self.engine.game_map.get_primary_downstairs()
+#         if not stairs:
+#             return WaitAction(self.entity).perform()
+#         target_x, target_y = stairs
+
+#         if self.entity.x == target_x and self.entity.y == target_y:
+#             self._last_hp = current_hp
+#             return self.entity.fighter.desintegrate()
+
+#         #dx = target_x - self.entity.x
+#         #dy = target_y - self.entity.y
+#         #distance = max(abs(dx), abs(dy))  # Chebyshev distance.
+#         #if self.engine.game_map.visible[self.entity.x, self.entity.y]:
+#         #    if distance <= 1:
+#         #        pass
+
+#         self.path = self.get_path_to(target_x, target_y)
+
+#         #else:
+#         #    while self.engine.game_map.visible[self.entity.x, self.entity.y] == False:
+#         #        self.search_and_destroy()
+
+#         if self.path:
+#             # Aquí se elimina del path la casilla que se acaba de ocupar...
+#             dest_x, dest_y = self.path.pop(0)
+#             # ...y se avanza a la siguiente casilla del path.
+#             self._last_hp = current_hp
+#             return MovementAction(
+#                 self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+#             ).perform()
+
+#         self._last_hp = current_hp
+#         return WaitAction(self.entity).perform()

@@ -1319,9 +1319,11 @@ class MeleeAction(ActionWithDirection):
                 damage_color = color.health_recovered
 
                 # Despertar durmiente en caso de ser golpeado (aun sin daño)
-                from components.ai import HostileEnemy, SleepingEnemy
+                # from components.ai import HostileEnemyV3, SleepingEnemy
+                from components.ai import SleepingEnemy
                 if isinstance(target, Actor) and isinstance(target.ai, SleepingEnemy):
-                    target.ai = HostileEnemy(target)
+                    #target.ai = HostileEnemyV3(target)
+                    target.ai = target.fighter.woke_ai_cls(target)
 
             else:
                 damage_color = color.red

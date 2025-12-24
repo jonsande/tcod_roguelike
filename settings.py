@@ -1135,8 +1135,8 @@ ENEMY_SPAWN_RULES = {
     "true_orc": {"min_floor": 6, "weight_progression": [(7, 5), (8, 20), (12, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
-    "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
-    "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 0)]},
+    # "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
+    "cultist": {"min_floor": 7, "weight_progression": [(7, 9), (8, 70), (9, 20), (10, 7), (11, 10)]},
     "adventurer": {"min_floor": 2, "weight_progression": [(1, 0), (2, 2), (3, 4), (15, 0),],},
     #"warden": {"min_floor": 6, "weight_progression": [(6, 6), (8, 14), (10, 6), (12, 0)]},
 }

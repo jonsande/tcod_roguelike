@@ -250,7 +250,7 @@ class FireStatusMixin:
         if visible:
             engine.message_log.add_message("The slime regenerates!", color.orange)
 
-from components.ai import HostileEnemy
+from components.ai import HostileEnemyV3
 class Fighter(FireStatusMixin, BaseComponent):
 
     parent: Actor
@@ -290,7 +290,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         action_time_cost: int = 10,
         can_fortify: bool = False,
         fortified: bool = False,
-        woke_ai_cls=HostileEnemy,
+        woke_ai_cls=HostileEnemyV3,
         poisons_on_hit: bool = False,
         poisonous: int = 0,
         is_poisoned: bool = False,

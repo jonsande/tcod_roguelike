@@ -4,14 +4,14 @@ from typing import List
 from i18n import _
 
 from components.ai import (
-    HostileEnemy,
-    HostileEnemyV2,
+    #HostileEnemy,
+    #HostileEnemyV2,
     HostileEnemyV3,
     ScoutV3,
     #Neutral,
     Dummy,
     ConfusedEnemy,
-    HostileEnemyPlus,
+    #HostileEnemyPlus,
     SneakeEnemy,
     SleepingEnemy,
     SentinelEnemy,
@@ -1982,7 +1982,7 @@ grey_goblin = Actor(
     char="g",
     color=(95,117,91),
     name="Grey goblin",
-    ai_cls=random.choice([SleepingEnemy, HostileEnemyV2, ScoutV3]),
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
     #ai_cls=HostileEnemyV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
@@ -2266,7 +2266,8 @@ bandit = Actor(
     char="@",
     color=(66,13,77),
     name="bandit",
-    ai_cls=HostileEnemyPlus,
+    # ai_cls=HostileEnemyPlus,
+    ai_cls=HostileEnemyV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=32, 
@@ -2292,7 +2293,8 @@ cultist = Actor(
     char="c",
     color=(160, 0, 160),
     name="Cultist",
-    ai_cls=HostileEnemyPlus,
+    # ai_cls=HostileEnemyPlus,
+    ai_cls=HostileEnemyV3,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=18,
