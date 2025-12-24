@@ -122,7 +122,7 @@ class BaseAI(Action):
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
             door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
-            sound_map[door_mask] = 0.5  # Las puertas cierran menos el sonido que un muro.
+            sound_map[door_mask] = 0.5  # Las puertas cierran menos el sonido que un muro. Menor valor, peor dejan pasar el sonido.
         except Exception:
             pass
         return sound_map
@@ -403,7 +403,7 @@ class HostileEnemyV3(BaseAI):
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
             door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
-            sound_map[door_mask] = 0.5  # Closed doors are semi-transparent for sound; tweak here.
+            sound_map[door_mask] = 0.5  # Closed doors are semi-transparent for sound; tweak here. Menor valor, peor dejan pasar el ruido.
         except Exception:
             pass
         return sound_map
@@ -732,7 +732,14 @@ class ScoutV3(BaseAI):
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
-        return bool(visible[actor.x, actor.y])
+        can_see = bool(visible[actor.x, actor.y])
+        if settings.DEBUG_MODE:
+            print(
+                f"[DEBUG][SIGHT] {self.entity.name} at ({self.entity.x},{self.entity.y}) "
+                f"{'can' if can_see else 'cannot'} see {getattr(actor, 'name', '?')} "
+                f"at ({actor.x},{actor.y}) with fov={radius}"
+            )
+        return can_see
 
     def _sound_transparency_map(self, gamemap) -> np.ndarray:
         try:
@@ -745,7 +752,7 @@ class ScoutV3(BaseAI):
         try:
             closed_ch = tile_types.closed_door["dark"]["ch"]
             door_mask = gamemap.tiles["dark"]["ch"] == closed_ch
-            sound_map[door_mask] = 0.3  # Closed doors are semi-transparent for sound; tweak here.
+            sound_map[door_mask] = 0.5  # Closed doors are semi-transparent for sound; tweak here. Menor valor, peor dejan pasar el ruido.
         except Exception:
             pass
         return sound_map
@@ -847,6 +854,27 @@ class ScoutV3(BaseAI):
                 getattr(self.entity.fighter, "foh", 0),
                 1,
             )
+
+        # Si está agravado pero sin ver/oir y sin base de detección, acumula turnos perdidos.
+        if self.entity.fighter.aggravated and detection_base is None:
+            self._agro_lost_turns += 1
+        else:
+            self._agro_lost_turns = 0
+
+        # Pérdida de agro por distancia excesiva.
+        max_pursuit = getattr(settings, "AI_MAX_PURSUIT_RANGE", 25)
+        if self.entity.fighter.aggravated and distance > max_pursuit:
+            self.entity.fighter.aggravated = False
+            self._combat_path = []
+            self._agro_lost_turns = 0
+
+        # Pérdida de agro por demasiados turnos sin ver/oir.
+        if self.entity.fighter.aggravated and self._agro_lost_turns > 0:
+            threshold = getattr(settings, "AI_AGGRO_LOSS_BASE", 3) + getattr(self.entity.fighter, "aggressivity", 0)
+            if self._agro_lost_turns >= threshold:
+                self.entity.fighter.aggravated = False
+                self._combat_path = []
+                self._agro_lost_turns = 0
 
         # Si no percibe al objetivo y no está agravado, ignoramos al jugador y seguimos patrullando.
         if detection_base is None and self.entity.fighter.aggravated is False:
