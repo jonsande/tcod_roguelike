@@ -2083,6 +2083,7 @@ class WaitAction(Action):
 
         if self.entity is self.engine.player:
             self._handle_listen_through_door()
+            self._handle_listen_mode()
 
         # Hidden/stealth maintenance for non-player actors (players handled in input_handlers).
         fighter = getattr(self.entity, "fighter", None)
@@ -2177,6 +2178,33 @@ class WaitAction(Action):
                 "You don't hear nothing",
                 color.white,
             )
+
+    def _handle_listen_mode(self) -> None:
+        """Gestiona el modo escucha cuando no hay puertas adyacentes."""
+        engine = self.engine
+        gamemap = engine.game_map
+        px, py = self.entity.x, self.entity.y
+
+        deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        adjacent_closed_door = any(
+            gamemap.in_bounds(px + dx, py + dy) and gamemap.is_closed_door(px + dx, py + dy)
+            for dx, dy in deltas
+        )
+
+        if adjacent_closed_door:
+            engine.reset_listen_mode_counter()
+            engine.exit_listen_mode()
+            return
+
+        if getattr(engine, "_listen_mode_active", False):
+            return
+
+        engine._listen_mode_wait_turns += 1
+        if engine._listen_mode_wait_turns < 4:
+            return
+
+        engine._listen_mode_wait_turns = 0
+        engine.enter_listen_mode()
 
 
 class PassAction(Action):

@@ -317,6 +317,7 @@ class Fighter(FireStatusMixin, BaseComponent):
         self._recover_counter = self._recover_interval
         self._base_fov = fov
         self._base_foh = foh
+        self._listen_foh_bonus = 0
         self.perception = perception
         self.weapon_proficiency = weapon_proficiency
         self.base_stealth = base_stealth
@@ -495,11 +496,19 @@ class Fighter(FireStatusMixin, BaseComponent):
         engine = getattr(self, "engine", None)
         if engine and getattr(engine, "silence_turns", 0) > 0:
             return 0
-        return getattr(self, "_base_foh", 0)
+        return getattr(self, "_base_foh", 0) + getattr(self, "_listen_foh_bonus", 0)
 
     @foh.setter
     def foh(self, value: int) -> None:
         self._base_foh = value
+
+    @property
+    def listen_foh_bonus(self) -> int:
+        return getattr(self, "_listen_foh_bonus", 0)
+
+    @listen_foh_bonus.setter
+    def listen_foh_bonus(self, value: int) -> None:
+        self._listen_foh_bonus = max(0, value)
 
     @property
     def effective_fov(self) -> int:

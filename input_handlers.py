@@ -311,6 +311,8 @@ class EventHandler(BaseEventHandler):
 
         if actor is self.engine.player and not is_wait_action:
             self.engine.reset_listen_state()
+            self.engine.reset_listen_mode_counter()
+            self.engine.exit_listen_mode()
 
         profiler = getattr(self.engine, "profiler", None)
 

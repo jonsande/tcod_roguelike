@@ -177,6 +177,9 @@ class Engine:
         self._listen_wait_turns = 0
         self._listen_wait_position: Optional[Tuple[int, int]] = None
         self._listen_door_position: Optional[Tuple[int, int]] = None
+        # Contador y estado para el modo escucha sin puerta.
+        self._listen_mode_wait_turns = 0
+        self._listen_mode_active = False
         # Esto es para que no haya cortes al reproducir por primera vez el sonido
         # de fogatas. Como es un audio más largo, se precarga la pista de hoguera:
         # _load_sound y preload_campfire_audio(), que llama al mixer al arrancar y 
@@ -216,6 +219,30 @@ class Engine:
         self._listen_wait_turns = 0
         self._listen_wait_position = None
         self._listen_door_position = None
+
+    def reset_listen_mode_counter(self) -> None:
+        """Reinicia el contador del modo escucha sin puerta."""
+        self._listen_mode_wait_turns = 0
+
+    def enter_listen_mode(self) -> None:
+        """Activa el modo escucha para el jugador y aplica el bonus de FOH."""
+        if self._listen_mode_active:
+            return
+        self._listen_mode_active = True
+        fighter = getattr(self.player, "fighter", None)
+        if fighter:
+            fighter.listen_foh_bonus = max(0, getattr(fighter, "perception", 0))
+        self.message_log.add_message("You focus on listening.", color.white)
+
+    def exit_listen_mode(self) -> None:
+        """Desactiva el modo escucha del jugador y elimina el bonus de FOH."""
+        if not self._listen_mode_active:
+            return
+        self._listen_mode_active = False
+        fighter = getattr(self.player, "fighter", None)
+        if fighter:
+            fighter.listen_foh_bonus = 0
+        self.message_log.add_message("You stop listening.", color.white)
 
     @property
     def tile_info_pause_active(self) -> bool:
