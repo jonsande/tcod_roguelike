@@ -391,13 +391,29 @@ class Equipment(BaseComponent):
         )
 
     def unequip_message(self, item_name: str) -> None:
-        self.parent.gamemap.engine.message_log.add_message(
-            f"You remove the {item_name}.", color.orange
+        engine = self.parent.gamemap.engine
+        if self.parent is engine.player:
+            engine.message_log.add_message(
+                f"You remove the {item_name}.", color.orange
+            )
+            return
+        if not engine.game_map.visible[self.parent.x, self.parent.y]:
+            return
+        engine.message_log.add_message(
+            f"{self.parent.name} removes the {item_name}.", color.orange
         )
 
     def equip_message(self, item_name: str) -> None:
-        self.parent.gamemap.engine.message_log.add_message(
-            f"You equip the {item_name}."
+        engine = self.parent.gamemap.engine
+        if self.parent is engine.player:
+            engine.message_log.add_message(
+                f"You equip the {item_name}."
+            )
+            return
+        if not engine.game_map.visible[self.parent.x, self.parent.y]:
+            return
+        engine.message_log.add_message(
+            f"{self.parent.name} equips the {item_name}."
         )
 
     def equip_to_slot(self, slot: str, item: Item, add_message: bool) -> None:

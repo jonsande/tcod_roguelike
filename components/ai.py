@@ -10,7 +10,7 @@ from tcod import constants
 from tcod.map import compute_fov
 from i18n import _
 
-from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction, PickupAction
+from actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, PassAction, PickupAction, ThrowItemAction
 import color
 import tile_types
 import exceptions
@@ -21,7 +21,7 @@ from audio import update_campfire_audio
 # Lazy cache to avoid circular import at module load time.
 _BREAKABLE_WALL_FIGHTER = None
 if TYPE_CHECKING:
-    from entity import Actor
+    from entity import Actor, Item
 
 
 class BaseAI(Action):
@@ -764,6 +764,219 @@ class MeleeDefensiveModule(AIModule):
         return MeleeAction(ctx.entity, ctx.dx, ctx.dy)
 
 
+class RangedHarassModule(AIModule):
+    """Ranged combat: closes to range, kites when too close, and repositions for line of fire."""
+    priority = 85
+
+    def __init__(self, *, min_range: int = 2) -> None:
+        self.min_range = max(1, min_range)
+
+    def _line_of_fire_clear(self, ctx: AIContext, x0: int, y0: int, x1: int, y1: int) -> bool:
+        gamemap = ctx.ai.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+        line = tcod.los.bresenham((x0, y0), (x1, y1)).tolist()
+        for x, y in line[1:]:
+            if (x, y) == (x1, y1):
+                break
+            if not transparent[x, y]:
+                return False
+            if gamemap.get_actor_at_location(x, y):
+                return False
+        return True
+
+    def _get_ranged_weapon(self, ctx: AIContext) -> Optional["Item"]:
+        weapon = getattr(ctx.entity.equipment, "weapon", None)
+        equippable = getattr(weapon, "equippable", None)
+        if weapon and equippable and getattr(equippable, "ranged_range", 0) > 0:
+            return weapon
+        inventory = getattr(ctx.entity, "inventory", None)
+        for item in getattr(inventory, "items", []) or []:
+            equippable = getattr(item, "equippable", None)
+            if equippable and getattr(equippable, "ranged_range", 0) > 0:
+                return item
+        return None
+
+    def _get_melee_weapon(self, ctx: AIContext) -> Optional["Item"]:
+        weapon = getattr(ctx.entity.equipment, "weapon", None)
+        equippable = getattr(weapon, "equippable", None)
+        if weapon and equippable and getattr(equippable, "ranged_range", 0) <= 0:
+            return weapon
+        inventory = getattr(ctx.entity, "inventory", None)
+        for item in getattr(inventory, "items", []) or []:
+            equippable = getattr(item, "equippable", None)
+            if equippable and getattr(equippable, "ranged_range", 0) <= 0:
+                return item
+        return None
+
+    def _ensure_equipped(self, ctx: AIContext, item: Optional["Item"]) -> Optional["Item"]:
+        if not item:
+            return None
+        equipment = getattr(ctx.entity, "equipment", None)
+        if not equipment:
+            return None
+        if equipment.item_is_equipped(item):
+            return item
+        equipment.toggle_equip(item, add_message=True)
+        if equipment.item_is_equipped(item):
+            return item
+        return None
+
+    def _find_projectile(self, ctx: AIContext) -> Optional["Item"]:
+        inventory = getattr(ctx.entity, "inventory", None)
+        for item in getattr(inventory, "items", []) or []:
+            if getattr(item, "projectile_type", None) and getattr(item, "throwable", False):
+                return item
+        return None
+
+    def _retreat_candidates(self, ctx: AIContext) -> List[Tuple[int, int]]:
+        sx = 0 if ctx.dx == 0 else (1 if ctx.dx > 0 else -1)
+        sy = 0 if ctx.dy == 0 else (1 if ctx.dy > 0 else -1)
+        if sx == 0 and sy == 0:
+            return []
+        back = (-sx, -sy)
+        candidates: List[Tuple[int, int]] = []
+        neighbors = ctx.ai._neighbor_positions(0, 0)
+        if back in neighbors and (back[0] * sx + back[1] * sy) < 0:
+            candidates.append(back)
+        for dx, dy in neighbors:
+            if (dx, dy) == back:
+                continue
+            if (dx * sx + dy * sy) < 0:
+                candidates.append((dx, dy))
+        return candidates
+
+    def _step_to(self, ctx: AIContext, dest_x: int, dest_y: int) -> Optional[Action]:
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_open_doors = getattr(fighter, "can_open_doors", False)
+        dx = dest_x - ctx.entity.x
+        dy = dest_y - ctx.entity.y
+        if gamemap.is_closed_door(dest_x, dest_y) and can_open_doors:
+            return BumpAction(ctx.entity, dx, dy)
+        return MovementAction(ctx.entity, dx, dy)
+
+    def _try_retreat(self, ctx: AIContext) -> Optional[Action]:
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
+        for dx, dy in self._retreat_candidates(ctx):
+            nx = ctx.entity.x + dx
+            ny = ctx.entity.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if gamemap.is_closed_door(nx, ny) and not can_pass_closed_doors:
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            blocker = gamemap.get_blocking_entity_at_location(nx, ny)
+            if blocker and blocker is not ctx.entity:
+                continue
+            return self._step_to(ctx, nx, ny)
+        return None
+
+    def _reposition_for_los(self, ctx: AIContext, weapon_range: int) -> Optional[Action]:
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
+        candidates: List[Tuple[int, int, int]] = []
+        for dx, dy in ctx.ai._neighbor_positions(0, 0):
+            nx = ctx.entity.x + dx
+            ny = ctx.entity.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if gamemap.is_closed_door(nx, ny) and not can_pass_closed_doors:
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            blocker = gamemap.get_blocking_entity_at_location(nx, ny)
+            if blocker and blocker is not ctx.entity:
+                continue
+            dist = max(abs(nx - ctx.target.x), abs(ny - ctx.target.y))
+            if dist < self.min_range or dist > weapon_range:
+                continue
+            if not self._line_of_fire_clear(ctx, nx, ny, ctx.target.x, ctx.target.y):
+                continue
+            candidates.append((dist, nx, ny))
+
+        if not candidates:
+            return None
+        candidates.sort(key=lambda entry: entry[0])
+        _, nx, ny = candidates[0]
+        return self._step_to(ctx, nx, ny)
+
+    def _approach_target(self, ctx: AIContext) -> Optional[Action]:
+        if not ctx.target:
+            return None
+        path = ctx.ai.get_path_to(ctx.target.x, ctx.target.y)
+        if not path:
+            return WaitAction(ctx.entity)
+        dest_x, dest_y = path[0]
+        return self._step_to(ctx, dest_x, dest_y)
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not ctx.target:
+            return None
+        if ctx.detection_base is None and ctx.entity.fighter.aggravated is False:
+            return None
+
+        if ctx.distance <= 1 or ctx.distance < self.min_range:
+            retreat_action = self._try_retreat(ctx)
+            if retreat_action:
+                return retreat_action
+            melee_weapon = self._get_melee_weapon(ctx)
+            self._ensure_equipped(ctx, melee_weapon)
+            return None
+
+        ranged_weapon = self._get_ranged_weapon(ctx)
+        ranged_weapon = self._ensure_equipped(ctx, ranged_weapon)
+        projectile = self._find_projectile(ctx)
+
+        if not ranged_weapon or not projectile:
+            melee_weapon = self._get_melee_weapon(ctx)
+            self._ensure_equipped(ctx, melee_weapon)
+            return None
+
+        equippable = getattr(ranged_weapon, "equippable", None)
+        weapon_range = getattr(equippable, "ranged_range", 0) if equippable else 0
+        if weapon_range <= 0:
+            return None
+
+        if ctx.distance > weapon_range:
+            return self._approach_target(ctx)
+
+        if ctx.entity.fighter.aggravated is False:
+            ctx.entity.fighter.aggravated = True
+            if ctx.self_visible:
+                ctx.ai.engine.message_log.add_message(f"{ctx.entity.name} is aggravated!", color.red)
+            else:
+                if settings.DEBUG_MODE:
+                    print(f"DEBUG: {ctx.entity.name} is aggravated!")
+
+        if self._line_of_fire_clear(ctx, ctx.entity.x, ctx.entity.y, ctx.target.x, ctx.target.y):
+            if ctx.entity.fighter.stamina <= 0:
+                return WaitAction(ctx.entity)
+            return ThrowItemAction(ctx.entity, projectile, (ctx.target.x, ctx.target.y), ranged_weapon=ranged_weapon)
+
+        reposition = self._reposition_for_los(ctx, weapon_range)
+        if reposition:
+            return reposition
+        return WaitAction(ctx.entity)
+
+
+class RangedDefensiveModule(RangedHarassModule):
+    """Ranged combat: waits if out of range and does not reposition for line of fire."""
+    priority = 85
+
+    def _approach_target(self, ctx: AIContext) -> Optional[Action]:
+        return WaitAction(ctx.entity)
+
+    def _reposition_for_los(self, ctx: AIContext, weapon_range: int) -> Optional[Action]:
+        return None
+
+
 class ChaseModule(AIModule):
     """Move towards the target when within engage range (search and destroy)."""
     priority = 70
@@ -987,6 +1200,26 @@ MODULAR_AI_PRESETS = {
             MeleeDefensiveModule,
             ChaseModule,
             PatrolModule,
+            IdleModule,
+        ],
+    ),
+    "ranged_harass": make_modular_ai_class(
+        "RangedHarassAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            RangedHarassModule,
+            MeleeCombatModule,
+            IdleModule,
+        ],
+    ),
+    "ranged_defensive": make_modular_ai_class(
+        "RangedDefensiveAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            RangedDefensiveModule,
+            MeleeCombatModule,
             IdleModule,
         ],
     ),

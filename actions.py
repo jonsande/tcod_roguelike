@@ -627,7 +627,7 @@ class ThrowItemAction(Action):
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
             raise exceptions.Impossible("Invalid target")
 
-        if not self.engine.game_map.visible[dest_x, dest_y]:
+        if self.entity is self.engine.player and not self.engine.game_map.visible[dest_x, dest_y]:
             raise exceptions.Impossible("You cannot target a location you cannot see.")
 
         max_distance = self._max_distance()

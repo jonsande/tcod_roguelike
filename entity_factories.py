@@ -2125,7 +2125,7 @@ orc_archer = Actor(
     char="o",
     color=(63, 77, 63),
     name="Orc archer",
-    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3]),
+    ai_cls=MODULAR_AI_PRESETS["ranged_harass"],
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=12, 
@@ -2141,7 +2141,7 @@ orc_archer = Actor(
         stamina=3, 
         max_stamina=3,
         action_time_cost=10,
-        woke_ai_cls=HostileEnemyV3,
+        woke_ai_cls=MODULAR_AI_PRESETS["ranged_harass"],
         can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),

@@ -68,7 +68,19 @@ class Inventory(BaseComponent):
         self.items.remove(item)
         item.place(x, y, self.gamemap)
 
-        self.engine.message_log.add_message(f"You throw the {item.name}.")
+        owner = getattr(self, "parent", None)
+        engine = getattr(self, "engine", None)
+        if owner is None or engine is None:
+            return
+        if owner is engine.player:
+            engine.message_log.add_message(f"You throw the {item.name}.")
+            return
+        if not engine.game_map.visible[owner.x, owner.y]:
+            return
+        if getattr(item, "projectile_type", None):
+            engine.message_log.add_message(f"{owner.name} shoots an {item.name}.")
+        else:
+            engine.message_log.add_message(f"{owner.name} throws the {item.name}.")
 
     def reroll_loot(self) -> None:
         """Regenerate loot from the configured table, if any."""

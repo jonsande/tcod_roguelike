@@ -1136,7 +1136,7 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
-    "orc_archer": {"min_floor": 2, "weight_progression": [(2, 100), (3, 100), (4, 10), (6, 35), (9, 0)]},
+    "orc_archer": {"min_floor": 2, "weight_progression": [(4, 10), (6, 40), (8, 10), (6, 35), (9, 15), (16, 0)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 10), (3, 40), (4, 50), (6, 20), (11, 10)]},
     "campfire": {"min_floor": 2, "weight_progression": [(2, 10), (13, 7), (14, 4), (15, 1), (16, 0),],},
     "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
@@ -1148,7 +1148,7 @@ ENEMY_SPAWN_RULES = {
     "monkey": {"min_floor": 2, "weight_progression": [(2, 10), (4, 0)]},
     "orc": {"min_floor": 4, "weight_progression": [(4, 8), (5, 15), (6, 25), (11, 0)]},
     "orc_servant": {"min_floor": 2, "weight_progression": [(2, 4), (3, 6), (4, 10), (6, 35), (9, 0)]},
-    "true_orc": {"min_floor": 6, "weight_progression": [(7, 5), (8, 20), (12, 0)]},
+    "true_orc": {"min_floor": 6, "weight_progression": [(7, 5), (8, 15), (16, 0)]},
     "skeleton": {"min_floor": 5, "weight_progression": [(5, 7), (5, 10), (6, 10), (11, 40), (12, 0)]},
     "troll": {"min_floor": 5, "weight_progression": [(7, 5), (8, 0)]},
     # "bandit": {"min_floor": 8, "weight_progression": [(8, 10)]},
