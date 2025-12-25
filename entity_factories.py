@@ -2145,10 +2145,10 @@ orc_archer = Actor(
         can_open_doors=True,
         natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
     ),
-    inventory=Inventory(capacity=2, items=[leather_armor, long_bow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow]),
+    inventory=Inventory(capacity=25, items=[short_sword, leather_armor, long_bow, (arrow, 10)]),
     level=Level(xp_given=5),
 )
-orc_servant.on_spawn = _setup_creature_equipment
+orc_archer.on_spawn = _setup_creature_equipment
 
 true_orc = Actor(
     char="o",

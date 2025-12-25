@@ -747,9 +747,11 @@ class ThrowItemAction(Action):
             if hits == True:
 
                 # Despertar durmiente en caso de ser golpeado (aun sin daño)
-                from components.ai import HostileEnemy, SleepingEnemy
+                # from components.ai import HostileEnemy, SleepingEnemy
+                from components.ai import SleepingEnemy
                 if isinstance(target, Actor) and isinstance(target.ai, SleepingEnemy):
-                    target.ai = HostileEnemy(target)
+                    # target.ai = HostileEnemy(target)
+                    target.ai = target.fighter.woke_ai_cls(target)
 
                 # Relativizar colores para mensajes
                 if self.entity is self.engine.player:

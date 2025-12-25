@@ -34,7 +34,20 @@ class Inventory(BaseComponent):
 
         if items is not None:
             # Copy the provided list so inventories don't accidentally share references.
-            self.items = list(items)
+            expanded_items: List[Item] = []
+            for entry in items:
+                if (
+                    isinstance(entry, tuple)
+                    and len(entry) == 2
+                    and isinstance(entry[1], int)
+                ):
+                    item, count = entry
+                    if count <= 0:
+                        continue
+                    expanded_items.extend(copy.deepcopy(item) for _ in range(count))
+                else:
+                    expanded_items.append(entry)
+            self.items = expanded_items
         elif self.loot_table_key:
             # Pre-roll loot for blueprints; actual instances re-roll on spawn.
             self.reroll_loot()

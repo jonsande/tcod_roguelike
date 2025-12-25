@@ -1132,6 +1132,7 @@ CAVERN_ITEM_SPAWN_RULES = ITEM_SPAWN_RULES
 # Configuración de monstruos con los mismos campos que ITEM_SPAWN_RULES.
 ENEMY_SPAWN_RULES = {
     # Campfires: 10% chance up to floor 12, then drop 3% per floor.
+    "orc_archer": {"min_floor": 2, "weight_progression": [(2, 100), (3, 100), (4, 10), (6, 35), (9, 0)]},
     "goblin": {"min_floor": 2, "weight_progression": [(2, 10), (3, 40), (4, 50), (6, 20), (11, 10)]},
     "campfire": {"min_floor": 2, "weight_progression": [(2, 10), (13, 7), (14, 4), (15, 1), (16, 0),],},
     "slime": {"min_floor": 2, "weight_progression": [(2, 10), (3, 15), (5, 10)]},
