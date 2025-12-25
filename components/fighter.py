@@ -771,7 +771,7 @@ class Fighter(FireStatusMixin, BaseComponent):
                 transparency,
                 (other.x, other.y),
                 radius,
-                algorithm=constants.FOV_SHADOW,
+                algorithm=settings.FOV_ALGORITHM,
             )
             if bool(visible[actor.x, actor.y]):
                 return True

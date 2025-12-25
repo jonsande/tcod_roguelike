@@ -473,7 +473,7 @@ class ModularAI(BaseAI):
             transparent,
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
@@ -1040,7 +1040,7 @@ class HostileEnemyV3(BaseAI):
             transparent,
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
@@ -1390,7 +1390,7 @@ class ScoutV3(BaseAI):
             transparent,
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
@@ -2094,7 +2094,7 @@ class MimicHostileAI(BaseAI):
             transparent,
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False
@@ -2469,7 +2469,7 @@ class AdventurerAI(BaseAI):
             gamemap.tiles["transparent"],
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         x, y = stairs
         return bool(visible[x, y])
@@ -2676,7 +2676,7 @@ class WardenAI(BaseAI):
             transparent,
             (self.entity.x, self.entity.y),
             radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
         if not gamemap.in_bounds(actor.x, actor.y):
             return False

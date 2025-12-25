@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import color
+import tcod
 from entity import Actor, Chest, TableContainer, BookShelfContainer
 import exceptions
 import random
@@ -633,6 +634,9 @@ class ThrowItemAction(Action):
         if self.entity.distance(dest_x, dest_y) > max_distance:
             raise exceptions.Impossible("That target is too far away.")
 
+        if not self._line_of_fire_clear(self.entity.x, self.entity.y, dest_x, dest_y):
+            raise exceptions.Impossible("No hay línea de tiro clara.")
+
         # Stamina check before triggering any animations
         if self.entity.fighter.stamina <= 0:
             if self.entity is self.engine.player:
@@ -1187,6 +1191,23 @@ class ThrowItemAction(Action):
                 y += sy
             path.append((x, y))
         return path
+
+    def _line_of_fire_clear(self, x0: int, y0: int, x1: int, y1: int) -> bool:
+        """Return True if nothing blocks the projectile between origin and target."""
+        gamemap = self.engine.game_map
+        try:
+            transparent = gamemap.get_transparency_map()
+        except AttributeError:
+            transparent = gamemap.tiles["transparent"]
+        line = tcod.los.bresenham((x0, y0), (x1, y1)).tolist()
+        for x, y in line[1:]:
+            if (x, y) == (x1, y1):
+                break
+            if not transparent[x, y]:
+                return False
+            if gamemap.get_actor_at_location(x, y):
+                return False
+        return True
 
     def _animate_throw(self, path: List[Tuple[int, int]]) -> None:
         if not path:

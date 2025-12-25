@@ -852,7 +852,7 @@ class Engine:
             (self.player.x, self.player.y),
             #radius = random.randint(3,5)
             radius,
-            algorithm=constants.FOV_SHADOW
+            algorithm=settings.FOV_ALGORITHM,
         )
 
 
@@ -873,7 +873,8 @@ class Engine:
                 transparent,
                 (self.player.x, self.player.y),
                 #radius = random.randint(5,6)
-                memory_radius
+                memory_radius,
+                algorithm=settings.FOV_ALGORITHM,
             )
 
 
@@ -893,7 +894,8 @@ class Engine:
             transparent,
             (self.player.x, self.player.y),
             #radius = random.randint(3,5)
-            radius
+            radius,
+            algorithm=settings.FOV_ALGORITHM,
         )
         self._apply_campfire_effects()
         # If a tile is "visible" it should be added to "explored".
@@ -935,7 +937,7 @@ class Engine:
             transparent,
             (self.player.x, self.player.y),
             los_radius,
-            algorithm=constants.FOV_SHADOW,
+            algorithm=settings.FOV_ALGORITHM,
         )
 
         for campfire in campfires:
@@ -955,7 +957,7 @@ class Engine:
                 transparent,
                 (campfire.x, campfire.y),
                 radius,
-                algorithm=constants.FOV_SHADOW,
+                algorithm=settings.FOV_ALGORITHM,
             )
             gamemap.visible |= light_mask
 
@@ -973,7 +975,7 @@ class Engine:
                 transparent,
                 (adventurer.x, adventurer.y),
                 radius,
-                algorithm=constants.FOV_SHADOW,
+                algorithm=settings.FOV_ALGORITHM,
             )
             gamemap.visible |= light_mask
 

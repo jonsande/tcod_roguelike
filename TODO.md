@@ -1,4 +1,6 @@
 AÚN SIN CATALOGAR
+- [ ] Darle a recoger ("g") en la habitación del musgo azul te permite coger musgo azul. El musgo azul tiene varias propiedades. Debe anular la petrificación (es decir, el proceso de petrificación: una criatura ya petrificada es irreversible).
+- [ ] Tecla SPACE para abrir menú de interacciones avanzadas.
 - [ ] Las llaves debe ser más difícil encontrarlas. Debe haber alguna pista indicando dónde están. Eso permitirá no tener que limpiar los mapas enteros, ni tener que luchar contra todo.
 - [ ] Modo de combate alternativo. Opción, activable o desactibable de combate tipo JRPG: al entrar en melée se abre una ventana con una representación del enemigo o enemigos, y opciones, etc.
 - [x] Indicar con un pequeño signo en el log el principio de turno.

@@ -261,6 +261,10 @@ GOD_MODE_STEALTH = False
 DEBUG_MODE = True # Con la tecla BACKSPACE se hace un ipdb.set_trace() y se pueden ejecutar órdenes desde consola.
 DEBUG_DRAW_HOT_PATH = False
 
+# Algoritmo de FOV (cambia a tcod.constants.FOV_RESTRICTIVE para una visión más estricta,
+# tcod.constants.FOV_SHADOW para menos estricta).
+FOV_ALGORITHM = tcod.constants.FOV_RESTRICTIVE
+
 # Flag temporal para desactivar el sistema de ocultación del jugador.
 # Advertencia: mantener desactivado. Entra en conflicto con ScoutV3 y, por lo demás,
 # actualmente no es necesaria esta mecánica, ya que es posible hacer un backstab posicionándose
