@@ -9,22 +9,43 @@ import settings
 
 
 class Message:
-    def __init__(self, text: str, fg: Tuple[int, int, int]):
+    def __init__(
+        self,
+        text: str,
+        fg: Tuple[int, int, int],
+        *,
+        prefix: str = "",
+        prefix_fg: Optional[Tuple[int, int, int]] = None,
+        prefix_colors: Optional[List[Tuple[int, int, int]]] = None,
+    ):
         self.plain_text = text
         self.fg = fg
+        self.prefix = prefix
+        self.prefix_fg = prefix_fg
+        self.prefix_colors = prefix_colors
         self.count = 1
 
     @property
     def full_text(self) -> str:
         """The full text of this message, including the count if necessary."""
+        text = self.plain_text
         if self.count > 1:
-            return f"{self.plain_text} (x{self.count})"
-        return self.plain_text
+            text = f"{text} (x{self.count})"
+        if self.prefix:
+            return f"{self.prefix} {text}"
+        return text
 
 
 class MessageLog:
     def __init__(self) -> None:
         self.messages: List[Message] = []
+        self._turn_marker_pending = False
+        self._turn_marker_text = "[*]"
+        self._turn_marker_color = color.turn_marker
+
+    def mark_turn_start(self) -> None:
+        """Arm the next log message with a turn-start marker."""
+        self._turn_marker_pending = True
 
     def add_message(
         self, text: str, fg: Tuple[int, int, int] = color.white, *, stack: bool = True,
@@ -34,12 +55,28 @@ class MessageLog:
         If `stack` is True then the message can stack with a previous message
         of the same text.
         """
+        pending_marker = self._turn_marker_pending
+        if pending_marker:
+            stack = False
+
         if stack and self.messages and text == self.messages[-1].plain_text:
             self.messages[-1].count += 1
             message = self.messages[-1]
         else:
-            message = Message(text, fg)
+            message = Message(
+                text,
+                fg,
+                prefix=self._turn_marker_text if pending_marker else "",
+                prefix_colors=(
+                    [color.white, self._turn_marker_color, color.white]
+                    if pending_marker
+                    else None
+                ),
+            )
             self.messages.append(message)
+
+        if pending_marker:
+            self._turn_marker_pending = False
 
         if getattr(settings, "LOG_ECHO_TO_STDOUT", False):
             try:
@@ -102,14 +139,68 @@ class MessageLog:
 
         for message in reversed(messages):
             for line in reversed(list(cls.wrap(message.full_text, width))):
-                cls._print_with_highlights(
-                    console=console,
-                    x=x,
-                    y=y + y_offset,
-                    line=line,
-                    base_color=message.fg,
-                    name_colors=name_colors,
-                )
+                if message.prefix and line.startswith(message.prefix):
+                    cursor = x
+                    prefix = message.prefix
+                    prefix_colors = message.prefix_colors
+                    if prefix_colors and len(prefix_colors) == len(prefix):
+                        segment_start = 0
+                        current_color = prefix_colors[0]
+                        for i, fg in enumerate(prefix_colors[1:], start=1):
+                            if fg != current_color:
+                                console.print(
+                                    x=cursor,
+                                    y=y + y_offset,
+                                    string=prefix[segment_start:i],
+                                    fg=current_color,
+                                )
+                                cursor += i - segment_start
+                                segment_start = i
+                                current_color = fg
+                        console.print(
+                            x=cursor,
+                            y=y + y_offset,
+                            string=prefix[segment_start:],
+                            fg=current_color,
+                        )
+                        cursor += len(prefix) - segment_start
+                    else:
+                        console.print(
+                            x=cursor,
+                            y=y + y_offset,
+                            string=prefix,
+                            fg=message.prefix_fg or message.fg,
+                        )
+                        cursor += len(prefix)
+
+                    remaining = line[len(prefix):]
+                    if remaining.startswith(" "):
+                        console.print(
+                            x=cursor,
+                            y=y + y_offset,
+                            string=" ",
+                            fg=message.fg,
+                        )
+                        cursor += 1
+                        remaining = remaining[1:]
+                    if remaining:
+                        cls._print_with_highlights(
+                            console=console,
+                            x=cursor,
+                            y=y + y_offset,
+                            line=remaining,
+                            base_color=message.fg,
+                            name_colors=name_colors,
+                        )
+                else:
+                    cls._print_with_highlights(
+                        console=console,
+                        x=x,
+                        y=y + y_offset,
+                        line=line,
+                        base_color=message.fg,
+                        name_colors=name_colors,
+                    )
                 y_offset -= 1
                 if y_offset < 0:
                     return  # No more space to print messages.

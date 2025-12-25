@@ -1,5 +1,6 @@
 AÚN SIN CATALOGAR
-- [ ] Indicar con un pequeño signo en el log el principio de turno.
+- [ ] Modo de combate alternativo. Opción, activable o desactibable de combate tipo JRPG: al entrar en melée se abre una ventana con una representación del enemigo o enemigos, y opciones, etc.
+- [x] Indicar con un pequeño signo en el log el principio de turno.
 - [!] Botas que reducen en 1 el ruido al caminar (nunca por debajo de 1).
 - [ ] Al coger un objeto debería aparecer la letra asignada al mismo.
 - [ ] Hay que solucionar el problema de asignación de letras imposibles de teclear, como '{' etc.

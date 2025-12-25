@@ -688,6 +688,82 @@ class MeleeCombatModule(AIModule):
         return MeleeAction(ctx.entity, ctx.dx, ctx.dy)
 
 
+class MeleeDefensiveModule(AIModule):
+    """Melee behavior with a retreat attempt when exhausted."""
+    priority = 80
+
+    def _retreat_candidates(self, ctx: AIContext) -> List[Tuple[int, int]]:
+        sx = 0 if ctx.dx == 0 else (1 if ctx.dx > 0 else -1)
+        sy = 0 if ctx.dy == 0 else (1 if ctx.dy > 0 else -1)
+        if sx == 0 and sy == 0:
+            return []
+        back = (-sx, -sy)
+        candidates: List[Tuple[int, int]] = []
+        neighbors = ctx.ai._neighbor_positions(0, 0)
+        if back in neighbors and (back[0] * sx + back[1] * sy) < 0:
+            candidates.append(back)
+        for dx, dy in neighbors:
+            if (dx, dy) == back:
+                continue
+            if (dx * sx + dy * sy) < 0:
+                candidates.append((dx, dy))
+        return candidates
+
+    def _try_retreat(self, ctx: AIContext) -> Optional[Action]:
+        gamemap = ctx.ai.engine.game_map
+        fighter = getattr(ctx.entity, "fighter", None)
+        can_pass_closed_doors = getattr(fighter, "can_pass_closed_doors", False)
+        for dx, dy in self._retreat_candidates(ctx):
+            nx = ctx.entity.x + dx
+            ny = ctx.entity.y + dy
+            if not gamemap.in_bounds(nx, ny):
+                continue
+            if gamemap.is_closed_door(nx, ny) and not can_pass_closed_doors:
+                continue
+            if not gamemap.tiles["walkable"][nx, ny]:
+                continue
+            blocker = gamemap.get_blocking_entity_at_location(nx, ny)
+            if blocker and blocker is not ctx.entity:
+                continue
+            return MovementAction(ctx.entity, dx, dy)
+        return None
+
+    def run(self, ctx: AIContext) -> Optional[Action]:
+        if not ctx.target or ctx.engage_rng < 0 or ctx.distance > 1:
+            return None
+
+        if ctx.entity.fighter.aggravated is False:
+            stealth_roll = random.randint(1, 4) + ctx.target_stealth + random.randint(0, ctx.target_luck)
+            awareness = random.randint(0, 3) + max(
+                getattr(ctx.entity.fighter, "fov", 0),
+                getattr(ctx.entity.fighter, "foh", 0),
+            )
+            if settings.DEBUG_MODE:
+                dbg = f"[DEBUG] {ctx.entity.name} melee stealth check: roll={stealth_roll} vs dc={awareness}"
+                try:
+                    ctx.ai.engine.message_log.add_message(dbg, color.white)
+                except Exception:
+                    if getattr(ctx.ai.engine, "debug", False):
+                        print(dbg)
+            if stealth_roll > awareness:
+                return WaitAction(ctx.entity)
+            ctx.entity.fighter.aggravated = True
+            return WaitAction(ctx.entity)
+
+        if ctx.entity.fighter.stamina == 0:
+            aggressivity = max(0, getattr(ctx.entity.fighter, "aggressivity", 0))
+            retreat_chance = max(0, 50 - aggressivity)
+            if retreat_chance > 0 and random.randint(1, 100) <= retreat_chance:
+                retreat_action = self._try_retreat(ctx)
+                if retreat_action:
+                    return retreat_action
+            if ctx.self_visible:
+                ctx.ai.engine.message_log.add_message(f"{ctx.entity.name} exhausted!", color.green)
+            return WaitAction(ctx.entity)
+
+        return MeleeAction(ctx.entity, ctx.dx, ctx.dy)
+
+
 class ChaseModule(AIModule):
     """Move towards the target when within engage range (search and destroy)."""
     priority = 70
@@ -898,6 +974,17 @@ MODULAR_AI_PRESETS = {
             DetectionModule,
             AgroDecayModule,
             MeleeCombatModule,
+            ChaseModule,
+            PatrolModule,
+            IdleModule,
+        ],
+    ),
+    "patrol_defensive_chase": make_modular_ai_class(
+        "PatrolDefensiveChaseAI",
+        [
+            DetectionModule,
+            AgroDecayModule,
+            MeleeDefensiveModule,
             ChaseModule,
             PatrolModule,
             IdleModule,

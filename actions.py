@@ -122,7 +122,13 @@ class PickupAction(Action):
         inventory.items.append(item_to_pick)
 
         if self.entity is self.engine.player:
-            self.engine.message_log.add_message(f"You picked up the {item_to_pick.name}!")
+            item_key = inventory.entry_letter(
+                item_to_pick, equipment=getattr(self.entity, "equipment", None)
+            )
+            suffix = f" ({item_key})" if item_key else ""
+            self.engine.message_log.add_message(
+                f"You picked up the {item_to_pick.name}{suffix}!"
+            )
         elif self.engine.game_map.visible[self.entity.x, self.entity.y]:
             self.engine.message_log.add_message(
                 f"{self.entity.name} picks up the {item_to_pick.name}."

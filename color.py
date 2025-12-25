@@ -33,6 +33,8 @@ bar_empty = (0x40, 0x10, 0x10)
 menu_title = (255, 255, 63)
 menu_text = white
 
+turn_marker = (0xB0, 0x60, 0xFF)
+
 # Para convertir colores rgb a su valor hexadecimal:
 # color_rgb = (255, 170, 0)
 # color_hex = tuple(hex(c) for c in color_rgb)

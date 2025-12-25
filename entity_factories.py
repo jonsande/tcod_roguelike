@@ -1875,7 +1875,7 @@ cave_bat.fighter.is_flying = True
 # TODO: vampire_bat
 
 def _randomize_quasit_stats(entity: Actor) -> None:
-    entity.fighter.max_hp = random.randint(11, 14)
+    entity.fighter.max_hp = random.randint(14, 18)
     entity.fighter.hp = entity.fighter.max_hp
     #entity.ai = DemonicObjectRetrieverAI(entity, target_id_name="The Artifact")
     # etc.
@@ -1892,7 +1892,7 @@ quasit = Actor(
     ai_cls=SleepingEnemy,
     equipment=Equipment(),
     fighter=Fighter(
-        hp=11,
+        hp=16,
         base_defense=4,
         strength=0,
         base_to_hit=2,
@@ -1927,10 +1927,19 @@ def _randomize_goblin_stats(entity: Actor) -> None:
     entity.fighter.max_stamina = random.randint(2, 3)
     entity.fighter.stamina = entity.fighter.max_stamina
     #entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
-    #entity.ai_cls=MODULAR_AI_PRESETS["patrol_chase"]
-    entity.ai_cls=random.choice([MODULAR_AI_PRESETS["patrol_chase"], MODULAR_AI_PRESETS["return_chase"], SleepingEnemy])
+    #entity.ai_cls=MODULAR_AI_PRESETS["patrol_defensive_chase"]
+    entity.ai_cls=random.choice(
+        [
+            MODULAR_AI_PRESETS["patrol_chase"],
+            MODULAR_AI_PRESETS["return_chase"],
+            MODULAR_AI_PRESETS["patrol_defensive_chase"],
+            SleepingEnemy
+            ]
+        )
     #entity.ai_cls = ScoutV3
-    entity.fighter.woke_ai_cls = HostileEnemyV3
+    #entity.fighter.woke_ai_cls = HostileEnemyV3
+    entity.fighter.woke_ai_cls=MODULAR_AI_PRESETS["patrol_chase"]
+    entity.ai = entity.ai_cls(entity)
     # etc.
 
 def _goblin_on_spawn(entity: Actor) -> None:
@@ -1945,7 +1954,7 @@ goblin = Actor(
     #ai_cls=random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3]),
     #ai_cls=SleepingEnemy,
     #ai_cls=ScoutV3,
-    ai_cls=MODULAR_AI_PRESETS["patrol_chase"],
+    ai_cls=SleepingEnemy,
     equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
     fighter=Fighter(
         hp=8,
@@ -1984,6 +1993,7 @@ def _randomize_grey_goblin_stats(entity: Actor) -> None:
     entity.fighter.hp = entity.fighter.max_hp
     entity.fighter.base_defense = random.randint(3, 4)
     entity.ai_cls = random.choice([SleepingEnemy, HostileEnemyV3, ScoutV3])
+    entity.ai = entity.ai_cls(entity)
     entity.fighter.woke_ai_cls = HostileEnemyV3
     # etc.
 

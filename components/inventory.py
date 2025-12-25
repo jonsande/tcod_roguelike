@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import copy
-from typing import List, Optional, TYPE_CHECKING
+from collections import defaultdict
+from typing import Callable, List, Optional, TYPE_CHECKING, Tuple
 
 import loot_tables
 
 from components.base_component import BaseComponent
 
 if TYPE_CHECKING:
+    from components.equipment import Equipment
     from entity import Actor, Item
 
 
@@ -64,3 +66,64 @@ class Inventory(BaseComponent):
         )
         # Deep copy to ensure each entity gets independent item instances.
         self.items = [copy.deepcopy(item) for item in rolled_items]
+
+    def _display_name(self, item: Item) -> str:
+        base_name = item.name
+        if getattr(item, "id_name", "") == "Sand bag":
+            remaining = getattr(item, "uses", 0)
+            max_uses = getattr(item, "max_uses", remaining)
+            base_name = f"{base_name} ({remaining}/{max_uses})"
+        return base_name
+
+    def get_entries(
+        self,
+        *,
+        equipment: Optional[Equipment] = None,
+        filter_fn: Optional[Callable[[Item], bool]] = None,
+        skip: Optional[Item] = None,
+    ) -> List[Tuple[str, List[Item], bool]]:
+        """Return sorted entries for inventory listing, splitting equipped items."""
+        if filter_fn is None:
+            filter_fn = lambda item: True
+
+        equipped_entries = []
+        grouped_items = defaultdict(list)
+        entries = []
+
+        for item in self.items:
+            if skip and item is skip:
+                continue
+            if not filter_fn(item):
+                continue
+            entry_name = self._display_name(item)
+            if equipment and equipment.item_is_equipped(item):
+                equipped_entries.append((entry_name, [item], True))
+            else:
+                if getattr(item, "stackable", True):
+                    grouped_items[entry_name].append(item)
+                else:
+                    entries.append((entry_name, [item], False))
+
+        for name, items in grouped_items.items():
+            entries.append((name, items, False))
+
+        entries.extend(equipped_entries)
+        # Equipados primero, luego alfabéticamente
+        entries.sort(key=lambda entry: (0 if entry[2] else 1, entry[0]))
+        return entries
+
+    def entry_letter(
+        self,
+        item: Item,
+        *,
+        equipment: Optional[Equipment] = None,
+        filter_fn: Optional[Callable[[Item], bool]] = None,
+        skip: Optional[Item] = None,
+    ) -> Optional[str]:
+        entries = self.get_entries(equipment=equipment, filter_fn=filter_fn, skip=skip)
+        for index, (_, items, _) in enumerate(entries):
+            if item in items:
+                if 0 <= index < 26:
+                    return chr(ord("a") + index)
+                return None
+        return None

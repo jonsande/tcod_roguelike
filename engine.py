@@ -289,6 +289,7 @@ class Engine:
         """
 
         self.turn += 1
+        self.message_log.mark_turn_start()
         self._prune_noise_events()
         """
         # TIME SYSTEM
