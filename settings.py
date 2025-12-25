@@ -318,6 +318,13 @@ PLAYER_STARTING_INVENTORY = [
     # {"item": "sand_bag", "quantity": 2},
     # {"item": "scout_hood", "quantity": 1},
     # {"item": "cloak", "quantity": 1},
+    # POWER SET
+    # {"item": "accuracy_ring", "equip": False},
+    # {"item": "medium_shield", "quantity": 1, "equip": False},
+    # {"item": "spear_plus", "quantity": 1, "equip": False},
+    # {"item": "strength_potion", "quantity": 3},
+    # {"item": "iron_helmet", "quantity": 1},
+    # {"item": "chain_mail", "quantity": 1},
     # OTHER
     # {"item": "accuracy_ring", "equip": True},
     # {"item": "small_shield", "quantity": 1, "equip": False},

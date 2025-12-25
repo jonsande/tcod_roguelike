@@ -2121,6 +2121,35 @@ orc_servant = Actor(
 )
 orc_servant.on_spawn = _setup_creature_equipment
 
+orc_archer = Actor(
+    char="o",
+    color=(63, 77, 63),
+    name="Orc archer",
+    ai_cls=random.choice([SleepingEnemy, HostileEnemyV3]),
+    equipment=Equipment(has_head_slot=True, has_cloak_slot=True),
+    fighter=Fighter(
+        hp=12, 
+        base_defense=1, 
+        base_to_hit=1,
+        strength=1, 
+        recover_rate=50,
+        recover_amount=0,
+        fov=6,
+        foh=5,
+        weapon_proficiency = PROFICIENCY_LEVELS["Novice"], 
+        aggressivity=2, 
+        stamina=3, 
+        max_stamina=3,
+        action_time_cost=10,
+        woke_ai_cls=HostileEnemyV3,
+        can_open_doors=True,
+        natural_weapon=NaturalWeapon(name="Fist", min_dmg=1, max_dmg=2, dmg_bonus=0)
+    ),
+    inventory=Inventory(capacity=2, items=[leather_armor, long_bow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow, arrow]),
+    level=Level(xp_given=5),
+)
+orc_servant.on_spawn = _setup_creature_equipment
+
 true_orc = Actor(
     char="o",
     color=(63, 220, 63),

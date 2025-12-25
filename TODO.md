@@ -1,13 +1,20 @@
 AÚN SIN CATALOGAR
+- [ ] Las llaves debe ser más difícil encontrarlas. Debe haber alguna pista indicando dónde están. Eso permitirá no tener que limpiar los mapas enteros, ni tener que luchar contra todo.
 - [ ] Modo de combate alternativo. Opción, activable o desactibable de combate tipo JRPG: al entrar en melée se abre una ventana con una representación del enemigo o enemigos, y opciones, etc.
 - [x] Indicar con un pequeño signo en el log el principio de turno.
 - [!] Botas que reducen en 1 el ruido al caminar (nunca por debajo de 1).
-- [ ] Al coger un objeto debería aparecer la letra asignada al mismo.
+- [x] Al coger un objeto debería aparecer la letra asignada al mismo.
 - [ ] Hay que solucionar el problema de asignación de letras imposibles de teclear, como '{' etc.
 - [ ] Equipar armaduras debería consumir 3 turnos (de otro modo compensa ponérselas en mitad de un combate).
 - [ ] El color del cursor de selección debería ser algo como rojo o naranja, para que siempre se vea, y simplificar.
 - [ ] En los mensajes, los colores del nombre "player" y de las demás criaturas tiene que ser diferente, para que se distinga rápicamente quién hace qué.
 - [x] El orden de los nombres que aparecen en un tile tiene que corresponder con el de los sptrites. O sea, que si aparece primero dagger, entonces tiene que aparecer el sprite de dagger primero, y ser la dagger lo que se recoja primero. o mejon aún !! Tiene que salir un menú, como el de los cofres, para escoger qué se coge.
+
+
+BALANCE
+- [ ] Los guardianes de three doors tienen que ser mucho más difíciles. Pero que haya diferentes maneras de pasarlos.
+- [ ] Los enemigos tienen que ser más chungos en los niveles de abajo (pues ahora mismo con un power set te cargas a casi todo).
+- [ ] En los niveles más bajos, enemigos power, con escudo buenas armas, armadura, etc., enemigos ranged, enemigos mágicos, enemigos que hace phasedoor, etc.
 
 
 CONCEPTO DE JUEGO
