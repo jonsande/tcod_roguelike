@@ -1598,6 +1598,27 @@ class SingleRangedAttackHandler(SelectIndexHandler):
 
         self.callback = callback
 
+    def _draw_target_path(self, console: tcod.Console) -> None:
+        player = self.engine.player
+        x, y = self.engine.mouse_location
+        gamemap = self.engine.game_map
+        if not gamemap.in_bounds(x, y):
+            return
+        line = tcod.los.bresenham((player.x, player.y), (x, y)).tolist()
+        for lx, ly in line[1:]:
+            if not gamemap.in_bounds(lx, ly):
+                break
+            if not gamemap.visible[lx, ly]:
+                continue
+            console.rgb["bg"][lx, ly] = color.target_path
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        self._draw_target_path(console)
+        x, y = self.engine.mouse_location
+        console.rgb["bg"][x, y] = color.white
+        console.rgb["fg"][x, y] = color.black
+
     def on_index_selected(self, x: int, y: int) -> Optional[Action]:
         return self.callback((x, y))
 
@@ -1616,9 +1637,27 @@ class AreaRangedAttackHandler(SelectIndexHandler):
         self.radius = radius
         self.callback = callback
 
+    def _draw_target_path(self, console: tcod.Console) -> None:
+        player = self.engine.player
+        x, y = self.engine.mouse_location
+        gamemap = self.engine.game_map
+        if not gamemap.in_bounds(x, y):
+            return
+        line = tcod.los.bresenham((player.x, player.y), (x, y)).tolist()
+        for lx, ly in line[1:]:
+            if not gamemap.in_bounds(lx, ly):
+                break
+            if not gamemap.visible[lx, ly]:
+                continue
+            console.rgb["bg"][lx, ly] = color.target_path
+
     def on_render(self, console: tcod.Console) -> None:
         """Highlight the tile under the cursor."""
         super().on_render(console)
+        self._draw_target_path(console)
+        x, y = self.engine.mouse_location
+        console.rgb["bg"][x, y] = color.white
+        console.rgb["fg"][x, y] = color.black
 
         x, y = self.engine.mouse_location
 
