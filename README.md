@@ -61,7 +61,7 @@ t     - Throw item<br />
 f     - Fire weapon<br />
 TAB   - Reach attack (with spears, etc.)<br />
 x     - Look around<br />
-SPACE - Interact (take stairs)<br />
+SPACE - Interact (context menu)<br />
 q     - On/Off lantern<br />
 c     - Character information<br />
 p     - Enemies info panel<br />

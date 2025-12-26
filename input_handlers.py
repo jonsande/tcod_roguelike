@@ -108,6 +108,29 @@ CONFIRM_KEYS = {
     tcod.event.KeySym.KP_ENTER,
 }
 
+INTERACT_OPTION_KEYS = {
+    tcod.event.KeySym.N1: 0,
+    tcod.event.KeySym.N2: 1,
+    tcod.event.KeySym.N3: 2,
+    tcod.event.KeySym.N4: 3,
+    tcod.event.KeySym.N5: 4,
+    tcod.event.KeySym.N6: 5,
+    tcod.event.KeySym.N7: 6,
+    tcod.event.KeySym.N8: 7,
+    tcod.event.KeySym.N9: 8,
+    tcod.event.KeySym.N0: 9,
+    tcod.event.KeySym.KP_1: 0,
+    tcod.event.KeySym.KP_2: 1,
+    tcod.event.KeySym.KP_3: 2,
+    tcod.event.KeySym.KP_4: 3,
+    tcod.event.KeySym.KP_5: 4,
+    tcod.event.KeySym.KP_6: 5,
+    tcod.event.KeySym.KP_7: 6,
+    tcod.event.KeySym.KP_8: 7,
+    tcod.event.KeySym.KP_9: 8,
+    tcod.event.KeySym.KP_0: 9,
+}
+
 
 ActionOrHandler = Union[Action, "BaseEventHandler"]
 """An event handler return value which can trigger an action or switch active handlers.
@@ -127,6 +150,55 @@ satiety_counter = 0
 effect_timer = 0
 amount_affected = 0
 number_of_turns = None
+
+
+def _direction_label(dx: int, dy: int) -> str:
+    labels = {
+        (-1, 0): "W",
+        (1, 0): "E",
+        (0, -1): "N",
+        (0, 1): "S",
+        (-1, -1): "NW",
+        (-1, 1): "SW",
+        (1, -1): "NE",
+        (1, 1): "SE",
+    }
+    return labels.get((dx, dy), f"{dx},{dy}")
+
+
+def _current_room_name(engine: "Engine") -> Optional[str]:
+    player = engine.player
+    center = engine.game_map.get_room_center_for_tile(player.x, player.y)
+    if not center:
+        return None
+    return engine.game_map.room_names_by_center.get(center)
+
+
+def _items_here_sorted(engine: "Engine") -> list["Item"]:
+    player = engine.player
+    items = [
+        item
+        for item in engine.game_map.items
+        if item.x == player.x and item.y == player.y
+    ]
+    return sorted(items, key=lambda item: item.name)
+
+
+def _pickup_action_or_handler(engine: "Engine") -> ActionOrHandler:
+    player = engine.player
+    items_here = _items_here_sorted(engine)
+    if len(items_here) > 1:
+        return GroundItemPickupHandler(engine)
+    if items_here:
+        return PickupAction(player, items_here[0])
+    room_name = _current_room_name(engine)
+    if room_name == "Blue moss chamber":
+        import entity_factories
+        moss = entity_factories.blue_moss.spawn(
+            engine.game_map, player.x, player.y
+        )
+        return PickupAction(player, moss)
+    return PickupAction(player)
 
 
 class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
@@ -1484,6 +1556,122 @@ class ChestLootHandler(AskUserEventHandler):
         return actions.OpenChestAction(self.engine.player, self.chest)
 
 
+class InteractionMenuHandler(AskUserEventHandler):
+    """Modal interaction menu for context-sensitive environment actions."""
+
+    TITLE = "Interacciones"
+
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+        self._options = self._build_options()
+
+    def _build_options(self) -> List[Tuple[str, Callable[[], ActionOrHandler]]]:
+        options: List[Tuple[str, Callable[[], ActionOrHandler]]] = []
+        player = self.engine.player
+
+        if getattr(player.fighter, "is_player_paralyzed", False):
+            return options
+
+        gamemap = self.engine.game_map
+        if gamemap.is_downstairs_location(player.x, player.y):
+            options.append(("Bajar escaleras", lambda: actions.TakeStairsAction(player)))
+        if gamemap.upstairs_location and (
+            player.x,
+            player.y,
+        ) == gamemap.upstairs_location:
+            options.append(("Subir escaleras", lambda: actions.TakeStairsAction(player)))
+
+        for dx, dy in ADJACENT_DELTAS:
+            dest_x = player.x + dx
+            dest_y = player.y + dy
+            if not gamemap.in_bounds(dest_x, dest_y):
+                continue
+            blocker = gamemap.get_blocking_entity_at_location(dest_x, dest_y)
+            if isinstance(blocker, (Chest, TableContainer, BookShelfContainer)):
+                direction = _direction_label(dx, dy)
+                label = f"Abrir {blocker.name} ({direction})"
+                options.append(
+                    (
+                        label,
+                        lambda chest=blocker: ChestLootHandler(self.engine, chest),
+                    )
+                )
+                continue
+            fighter = getattr(blocker, "fighter", None)
+            if fighter and hasattr(fighter, "set_open") and not getattr(fighter, "is_open", False):
+                direction = _direction_label(dx, dy)
+                label = f"Abrir puerta ({direction})"
+                options.append(
+                    (label, lambda dx=dx, dy=dy: BumpAction(player, dx, dy))
+                )
+
+        has_open_door = any(
+            gamemap.in_bounds(player.x + dx, player.y + dy)
+            and gamemap.is_open_door(player.x + dx, player.y + dy)
+            for dx, dy in ADJACENT_DELTAS
+        )
+        if has_open_door:
+            options.append(
+                ("Cerrar puerta cercana", lambda: actions.CloseDoorAction(player))
+            )
+
+        items_here = _items_here_sorted(self.engine)
+        if items_here:
+            options.append(("Coger objetos", lambda: _pickup_action_or_handler(self.engine)))
+        else:
+            if _current_room_name(self.engine) == "Blue moss chamber":
+                options.append(("Recoger musgo", lambda: _pickup_action_or_handler(self.engine)))
+
+        return options
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        height = max(3, len(self._options) + 2)
+        width = 78
+        x = 1
+        y = 1
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        if not self._options:
+            console.print(x + 1, y + 1, "(Sin opciones disponibles)")
+            return
+
+        for index, (label, _) in enumerate(self._options):
+            key_num = index + 1
+            key_label = "0" if key_num == 10 else str(key_num)
+            console.print(x + 1, y + index + 1, f"({key_label}) {label}")
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+
+        if key in {
+            tcod.event.KeySym.ESCAPE,
+            tcod.event.KeySym.RETURN,
+            tcod.event.KeySym.KP_ENTER,
+        }:
+            return self.on_exit()
+
+        if key in INTERACT_OPTION_KEYS:
+            index = INTERACT_OPTION_KEYS[key]
+            if 0 <= index < len(self._options):
+                _, action_factory = self._options[index]
+                return action_factory()
+            self.engine.message_log.add_message("Invalid entry.", color.invalid)
+            return None
+
+        return None
+
+
 class SelectIndexHandler(AskUserEventHandler):
     """Handles asking the user for an index on the map."""
 
@@ -1734,7 +1922,7 @@ class MainGameEventHandler(EventHandler):
             action = BumpAction(player, dx, dy)
         # Bajar escaleras
         elif key == tcod.event.KeySym.SPACE:
-            return actions.TakeStairsAction(player)
+            return InteractionMenuHandler(self.engine)
         # Pasar turno
         elif key in WAIT_KEYS:
             action = WaitAction(player)
@@ -1749,33 +1937,7 @@ class MainGameEventHandler(EventHandler):
             return HistoryViewer(self.engine, parent_handler=self)
         # Coger objeto
         elif key == tcod.event.KeySym.g:
-            items_here = sorted(
-                [
-                    item
-                    for item in self.engine.game_map.items
-                    if item.x == player.x and item.y == player.y
-                ],
-                key=lambda item: item.name,
-            )
-            if len(items_here) > 1:
-                return GroundItemPickupHandler(self.engine)
-            if items_here:
-                action = PickupAction(player, items_here[0])
-            else:
-                center = self.engine.game_map.get_room_center_for_tile(player.x, player.y)
-                room_name = (
-                    self.engine.game_map.room_names_by_center.get(center)
-                    if center
-                    else None
-                )
-                if room_name == "Blue moss chamber":
-                    import entity_factories
-                    moss = entity_factories.blue_moss.spawn(
-                        self.engine.game_map, player.x, player.y
-                    )
-                    action = PickupAction(player, moss)
-                else:
-                    action = PickupAction(player)
+            return _pickup_action_or_handler(self.engine)
         # Activar item del inventario
         elif key == tcod.event.KeySym.a:
             return InventoryActivateHandler(self.engine)
@@ -2134,7 +2296,7 @@ class HelpScreenEventHandler(EventHandler):
             "",
             "   c           Close door",
             "",
-            "   SPACE       Interact (take stairs)",
+            "   SPACE       Interact (context menu)",
             "",
             "   q           On/Off lantern",
             "",

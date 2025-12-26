@@ -1,9 +1,14 @@
 AÚN SIN CATALOGAR
+- [ ] Diseñar un límite al stealth. Comprobar qué pasa con un stealth demasiado alto, para ver cómo desarrollar el sistema de progreso de un stealth build.
 - [x] Darle a recoger ("g") en la habitación del musgo azul te permite coger musgo azul. El musgo azul tiene varias propiedades. Debe anular la petrificación (es decir, el proceso de petrificación: una criatura ya petrificada es irreversible).
-- [ ] Evitar el farming infinito de musgo mediante alguna mecánica.
+- [ ] Evitar el farming infinito de musgo mediante alguna mecánica. Hay que diseñar el sistema riesgo/recompensa. Es decir que recoger musgo tenga también algunos riesgos.
 - [ ] Inspección avanzada. Al inspeccionar una casilla y darle a enter debería en algunos casos imprimirse una descripción avanzada, como en el caso de las criaturas.
 - [ ] Tecla SPACE para abrir menú de interacciones avanzadas.
+- [ ] Diseño de trampas. Las trampas tienen que ser más interesantes que en los roguelikes tradicionales habituales. Un minijuego.
+- [ ] Habilidades especiales: habilidades de combate y otras. 
+- [ ] Habilidades de combate especiales: consumir dos de stamina 
 - [ ] Las llaves debe ser más difícil encontrarlas. Debe haber alguna pista indicando dónde están. Eso permitirá no tener que limpiar los mapas enteros, ni tener que luchar contra todo.
+
 - [ ] Modo de combate alternativo. Opción, activable o desactibable de combate tipo JRPG: al entrar en melée se abre una ventana con una representación del enemigo o enemigos, y opciones, etc.
 - [x] Indicar con un pequeño signo en el log el principio de turno.
 - [!] Botas que reducen en 1 el ruido al caminar (nunca por debajo de 1).

@@ -1846,7 +1846,7 @@ class MovementAction(ActionWithDirection):
                 )
             ):
                 self.engine.message_log.add_message(
-                    "Press SPACE to take the stairs.", color.orange
+                    "Press SPACE to interact.", color.orange
                 )
         # Especial de slimes
         elif player_moved and getattr(self.entity.fighter, "is_slime", False):

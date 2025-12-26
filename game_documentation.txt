@@ -98,7 +98,7 @@ INSTRUCCIONES DEL JUEGO
 
 1.7. BAJAR/SUBIER ESCALERAS
 
-- Puedes subir o bajar por unas escaleras situándote sobre ellas y pulsando la tecla 'SPACE'.
+- Puedes interactuar con el entorno pulsando la tecla 'SPACE' (por ejemplo, subir/bajar escaleras cuando estés sobre ellas).
 
 
 2. MECÁNICAS ESPECIALES
