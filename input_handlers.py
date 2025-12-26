@@ -335,6 +335,7 @@ class EventHandler(BaseEventHandler):
         if actor is self.engine.player:
             self.engine.player.fighter.advance_player_confusion()
             self.engine.player.fighter.advance_player_paralysis()
+            self.engine.player.fighter.advance_player_petrification()
 
         if profiler:
             profiler.end_phase("player_action")
@@ -1758,7 +1759,23 @@ class MainGameEventHandler(EventHandler):
             )
             if len(items_here) > 1:
                 return GroundItemPickupHandler(self.engine)
-            action = PickupAction(player, items_here[0]) if items_here else PickupAction(player)
+            if items_here:
+                action = PickupAction(player, items_here[0])
+            else:
+                center = self.engine.game_map.get_room_center_for_tile(player.x, player.y)
+                room_name = (
+                    self.engine.game_map.room_names_by_center.get(center)
+                    if center
+                    else None
+                )
+                if room_name == "Blue moss chamber":
+                    import entity_factories
+                    moss = entity_factories.blue_moss.spawn(
+                        self.engine.game_map, player.x, player.y
+                    )
+                    action = PickupAction(player, moss)
+                else:
+                    action = PickupAction(player)
         # Activar item del inventario
         elif key == tcod.event.KeySym.a:
             return InventoryActivateHandler(self.engine)

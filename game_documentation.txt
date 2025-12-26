@@ -115,6 +115,8 @@ INSTRUCCIONES DEL JUEGO
 
 - Además, es posible escuchar a través de las puertas: espera cuatro turnos junto a una puerta y se llevará a cabo una tirada de percepción. Si tiene éxito, quizá oigas algo al otro lado.
 
+- Si no estás junto a una puerta (posición ortogonal) y pasas cuatro turnos seguidos esperando (WaitAction), entras en «modo escucha»: mientras permanezcas esperando, tu FOH aumenta en una cantidad igual a tu percepción. El modo termina en cuanto te mueves o usas un objeto del inventario.
+
 - Cuando el Personaje Jugador mejore su percepción, podrá interpretar qué tipo de criatura se oye al otro lado de una puerta, si la conoce.
 
 

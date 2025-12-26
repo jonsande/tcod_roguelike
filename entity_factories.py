@@ -612,6 +612,17 @@ antidote = Item(
     throwable=True,
 )
 
+blue_moss = Item(
+    char=",",
+    color=(40, 120, 200),
+    name="Blue moss",
+    id_name="Blue moss",
+    info="A tuft of blue moss.",
+    id_info="Stops petrification in progress and cures confusion, poison, and blindness.",
+    consumable=consumable.BlueMossConsumable(),
+    identified=True,
+)
+
 #damage_potion = Item(
 #    char="!",
 #    color=(200, 200, 200),

@@ -59,7 +59,7 @@ class Consumable(BaseComponent):
         if isinstance(inventory, components.inventory.Inventory):
             inventory.items.remove(entity)
 
-    def _clear_confusion(self, target: Actor) -> None:
+    def _clear_confusion(self, target: Actor) -> bool:
         cleared = False
         if target is self.engine.player:
             if target.fighter.is_player_confused:
@@ -75,6 +75,7 @@ class Consumable(BaseComponent):
                 f"{target.name} regains its senses.",
                 color.status_effect_applied,
             )
+        return cleared
 
     def _effect_message(
         self,
@@ -322,7 +323,7 @@ class ParalysisConsumable(Consumable):
     def activate(self, action: actions.ItemAction) -> None:
         consumer = action.entity
         turns = random.randint(self.min_turns, self.max_turns)
-        self._clear_confusion(consumer)
+        cleared_confusion = self._clear_confusion(consumer)
         self._effect_message(
             consumer,
             "Your muscles seize up; you cannot move!",
@@ -343,18 +344,18 @@ class PetrifyConsumable(Consumable):
     def activate(self, action: actions.ItemAction) -> None:
         consumer = action.entity
         self._clear_confusion(consumer)
-        self._effect_message(
-            consumer,
-            "Your body turns to stone. You cannot move anymore.",
-            "{name} turns to stone and cannot move anymore.",
-            color.status_effect_applied,
-        )
+        # self._effect_message(
+        #     consumer,
+        #     "Sientes que la petrificacion comienza a apoderarse de ti.",
+        #     "La piel de {name} comienza a endurecerse.",
+        #     color.status_effect_applied,
+        # )
         if consumer is self.engine.player:
-            # Remove the player's AI to mark them as no longer alive, triggering game over.
-            consumer.ai = None
+            consumer.fighter.apply_player_petrification(10)
         else:
-            consumer.ai = components.ai.ParalizeEnemy(
-                entity=consumer, previous_ai=consumer.ai, turns_remaining=999999,
+            previous_ai = consumer.ai
+            consumer.ai = components.ai.PetrifyingEnemy(
+                entity=consumer, previous_ai=previous_ai, turns_remaining=10,
             )
         self.consume()
         self.parent.identify()
@@ -849,6 +850,80 @@ class AntidoteConsumable(Consumable):
                 color.white,
             )
         
+        self.consume()
+        self.parent.identify()
+
+
+class BlueMossConsumable(Consumable):
+    def __init__(self):
+        pass
+
+    def _clear_blindness(self, target: Actor) -> bool:
+        engine = getattr(self, "engine", None)
+        effects = getattr(engine, "temporal_effects", None) if engine else None
+        cleared = False
+        if effects:
+            for effect in list(effects):
+                if (
+                    effect.get("actor") is target
+                    and effect.get("attribute") == "fov"
+                    and effect.get("amount", 0) < 0
+                ):
+                    target.fighter.fov -= effect.get("amount", 0)
+                    effects.remove(effect)
+                    cleared = True
+        if cleared or getattr(target.fighter, "is_blind", False):
+            target.fighter.is_blind = False
+        return cleared
+
+    def _clear_petrification(self, target: Actor) -> bool:
+        cleared = False
+        if target is self.engine.player:
+            if getattr(target.fighter, "is_player_petrifying", False):
+                target.fighter.clear_player_petrification()
+                cleared = True
+        else:
+            ai = target.ai
+            if isinstance(ai, components.ai.PetrifyingEnemy):
+                target.ai = ai.previous_ai
+                cleared = True
+        return cleared
+
+    def activate(self, action: actions.ItemAction) -> None:
+        consumer = action.entity
+
+        cleared_confusion = self._clear_confusion(consumer)
+        cleared_poison = False
+        if consumer.fighter.is_poisoned:
+            consumer.fighter.is_poisoned = False
+            consumer.fighter.poisoned_counter = 0
+            consumer.fighter.poison_dmg = 0
+            cleared_poison = True
+
+        cleared_blindness = self._clear_blindness(consumer)
+        cleared_petrification = self._clear_petrification(consumer)
+
+        cleared_any = (
+            cleared_confusion
+            or cleared_poison
+            or cleared_blindness
+            or cleared_petrification
+        )
+        if cleared_any:
+            self._effect_message(
+                consumer,
+                "El musgo azul detiene la petrificacion y limpia tus males.",
+                "{name} parece recuperar el color y la calma.",
+                color.status_effect_applied,
+            )
+        else:
+            self._effect_message(
+                consumer,
+                "No parece que el musgo azul te afecte.",
+                "El musgo azul no parece afectar a {name}.",
+                color.white,
+            )
+
         self.consume()
         self.parent.identify()
 

@@ -128,7 +128,7 @@ class PickupAction(Action):
             )
             suffix = f" ({item_key})" if item_key else ""
             self.engine.message_log.add_message(
-                f"You picked up the {item_to_pick.name}{suffix}!"
+                f"You picked up the {item_to_pick.name}{suffix}."
             )
         elif self.engine.game_map.visible[self.entity.x, self.entity.y]:
             self.engine.message_log.add_message(

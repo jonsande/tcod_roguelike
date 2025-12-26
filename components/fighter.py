@@ -254,6 +254,18 @@ from components.ai import HostileEnemyV3
 class Fighter(FireStatusMixin, BaseComponent):
 
     parent: Actor
+    _PLAYER_PETRIFY_MESSAGES = [
+        "Tu piel se enfria y pierde color.",
+        "Sientes un hormigueo duro en las manos.",
+        "Tu piel comienza a agrietarse.",
+        "Tus articulaciones comienzan a endurecerse.",
+        "Te duelen los ojos.",
+        "Tus piernas se entumecen y se vuelven muy pesadas.",
+        "Te cuesta mover la cabeza.",
+        "Sientes un dolor terrible en la espalda.",
+        "Apenas puedes respirar.",
+        "...",
+    ]
 
     def __init__(
         self,
@@ -382,6 +394,9 @@ class Fighter(FireStatusMixin, BaseComponent):
         self.player_confusion_turns = 0
         self.is_player_paralyzed = False
         self.player_paralysis_turns = 0
+        self.is_player_petrifying = False
+        self.player_petrify_turns = 0
+        self.player_petrify_stage = 0
         # Cuenta ataques fallidos de enemigos contra el jugador para bonificar defensa.
         self.missed_by_enemy_counter = 0
 
@@ -1419,6 +1434,47 @@ class Fighter(FireStatusMixin, BaseComponent):
             "You cannot move; your body is paralyzed!",
             color.status_effect_applied,
         )
+
+    def apply_player_petrification(self, turns: int = 10) -> None:
+        self.is_player_petrifying = True
+        self.player_petrify_turns = max(1, turns)
+        self.player_petrify_stage = 0
+
+    def advance_player_petrification(self) -> None:
+        if not getattr(self, "is_player_petrifying", False):
+            return
+
+        if self.player_petrify_turns <= 0:
+            self._finalize_player_petrification()
+            return
+
+        message_index = min(self.player_petrify_stage, len(self._PLAYER_PETRIFY_MESSAGES) - 1)
+        self.engine.message_log.add_message(
+            self._PLAYER_PETRIFY_MESSAGES[message_index],
+            color.status_effect_applied,
+        )
+        self.player_petrify_turns -= 1
+        self.player_petrify_stage += 1
+
+        if self.player_petrify_turns <= 0:
+            self._finalize_player_petrification()
+
+    def clear_player_petrification(self) -> None:
+        if getattr(self, "is_player_petrifying", False):
+            self.is_player_petrifying = False
+            self.player_petrify_turns = 0
+            self.player_petrify_stage = 0
+
+    def _finalize_player_petrification(self) -> None:
+        self.is_player_petrifying = False
+        self.player_petrify_turns = 0
+        self.player_petrify_stage = 0
+        self.engine.message_log.add_message(
+            "Tu cuerpo se ha convertido en piedra.",
+            color.status_effect_applied,
+        )
+        if getattr(self.parent, "ai", None):
+            self.parent.ai = None
 
     def advance_player_paralysis(self) -> None:
         if not getattr(self, "is_player_paralyzed", False):

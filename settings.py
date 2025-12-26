@@ -317,6 +317,8 @@ PLAYER_DEFENSE_MISS_THRESHOLD = 60
 PLAYER_STARTING_INVENTORY = [
     {"item": "triple_ration", "quantity": 1},
     {"item": "dagger", "quantity": 1, "equip": True},
+    # {"item": "petrification_potion", "quantity": 1},
+    # {"item": "blue_moss", "quantity": 1},
     # {"item": "leather_armor", "equip": True},
     # STEALTH SET
     # {"item": "sand_bag", "quantity": 2},

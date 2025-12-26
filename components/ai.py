@@ -2202,6 +2202,71 @@ class ParalizeEnemy(BaseAI):
             return WaitAction(self.entity).perform()
 
 
+class PetrifyingEnemy(BaseAI):
+    """Petrification in progress: counts down while the creature can still act."""
+
+    _messages = [
+        "La piel de {name} adopta un aspecto frío y descolorido.",
+        "{name} contempla sus manos asustado.",
+        "Pequenas grietas aparecen en los brazos de {name}.",
+        "Las articulaciones de {name} comienzan a endurecerse.",
+        "Los ojos de {name} se están ensombreciendo.",
+        "Las piernas de {name} se entumecen.",
+        "El cuello de {name} se endurece lentamente.",
+        "La espalda de {name} se acoraza con placas de piedra.",
+        "{name} apenas respira.",
+        "{name} se transforma en roca.",
+    ]
+
+    def __init__(
+        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int = 10
+    ):
+        super().__init__(entity)
+        self.previous_ai = previous_ai
+        self.turns_remaining = turns_remaining
+        self.stage_index = 0
+
+    def _log_stage(self) -> None:
+        engine = getattr(self, "engine", None)
+        gamemap = getattr(engine, "game_map", None) if engine else None
+        if not gamemap or not gamemap.visible[self.entity.x, self.entity.y]:
+            return
+        message_index = min(self.stage_index, len(self._messages) - 1)
+        self.engine.message_log.add_message(
+            self._messages[message_index].format(name=self.entity.name),
+            color.status_effect_applied,
+        )
+
+    def _finalize_petrification(self) -> None:
+        engine = getattr(self, "engine", None)
+        gamemap = getattr(engine, "game_map", None) if engine else None
+        if gamemap and gamemap.visible[self.entity.x, self.entity.y]:
+            self.engine.message_log.add_message(
+                f"{self.entity.name} se convierte en piedra.",
+                color.status_effect_applied,
+            )
+        self.entity.ai = ParalizeEnemy(
+            entity=self.entity, previous_ai=None, turns_remaining=999999
+        )
+
+    def perform(self) -> None:
+        if self.turns_remaining <= 0:
+            self._finalize_petrification()
+            return WaitAction(self.entity).perform()
+
+        self._log_stage()
+        self.turns_remaining -= 1
+        self.stage_index += 1
+
+        if self.turns_remaining <= 0:
+            self._finalize_petrification()
+            return WaitAction(self.entity).perform()
+
+        if self.previous_ai:
+            return self.previous_ai.perform()
+        return WaitAction(self.entity).perform()
+
+
 class SleepingEnemy(BaseAI):
 
     def __init__(self, entity: Actor):
