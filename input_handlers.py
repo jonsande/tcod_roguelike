@@ -22,7 +22,7 @@ from actions import (
 )
 import color
 import exceptions
-from entity import Chest, Book, SilenceBook, TableContainer, BookShelfContainer
+from entity import Chest, Book, TableContainer, BookShelfContainer
 from audio import play_chest_open_sound, play_table_open_sound, play_bookshelf_open_sound
 from i18n import _
 
@@ -1166,8 +1166,10 @@ class BookOptionsHandler(AskUserEventHandler):
             message = self.book.read_aloud(self.engine.player)
             if message:
                 self.engine.message_log.add_message(message, color.orange)
-            if isinstance(self.book, SilenceBook) and getattr(self.book, "_silence_spawn_pending", False):
-                self.book._silence_spawn_pending = False
+            if getattr(self.book, "can_summon_demon", False) and getattr(
+                self.book, "_demon_spawn_pending", False
+            ):
+                self.book._demon_spawn_pending = False
                 self.engine.maybe_spawn_silence_creature(
                     self.engine.player,
                     target_id_name=getattr(self.book, "id_name", None),

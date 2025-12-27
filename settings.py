@@ -1194,7 +1194,7 @@ PROFICIENCY_LEVELS = {
     "Master": 4.0
     }
 
-# Silencio: probabilidad de invocar criaturas al leer el códice.
+# Probabilidad de invocar criaturas al leer en voz alta libros marcados.
 SILENCE_SUMMON_CHANCE = 0.05
 # Lista de criaturas posibles: ("entity_factories_key", weight)
 SILENCE_SUMMON_CREATURES = [

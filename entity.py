@@ -300,11 +300,19 @@ class Item(Entity):
 class Book(Item):
     """Consumables or notes that simply reveal their info text when read."""
 
-    def __init__(self, *, info: str = "NO INFO", **kwargs):
+    def __init__(
+        self,
+        *,
+        info: str = "NO INFO",
+        can_summon_demon: bool = False,
+        **kwargs,
+    ):
         kwargs.setdefault("throwable", True)
         kwargs.setdefault("info", info)
         kwargs.setdefault("equippable", equippable_component.OffhandBook())
         super().__init__(**kwargs)
+        self.can_summon_demon = bool(can_summon_demon)
+        self._demon_spawn_pending = False
 
     def read_message(self) -> str:
         return self.info
@@ -312,7 +320,9 @@ class Book(Item):
     def read_aloud(self, reader: "Actor") -> str:
         engine = getattr(getattr(reader, "gamemap", None), "engine", None)
         if engine and getattr(engine, "silence_turns", 0) > 0:
+            self._demon_spawn_pending = False
             return "No es posible leer en voz alta mientras dure el silencio."
+        self._demon_spawn_pending = self.can_summon_demon
         return f"Lees en voz alta el libro {self.name}."
 
 
@@ -342,6 +352,7 @@ class GeneratedBook(Book):
             char=self.char,
             color=self.color,
             id_name=self.id_name,
+            can_summon_demon=getattr(self, "can_summon_demon", False),
         )
         clone._spawn_key = getattr(self, "_spawn_key", "generated_book")
         return clone
@@ -354,6 +365,7 @@ class ApothecaryBook(Book):
         from entity_factories import identify_all_potions
 
         identify_all_potions()
+        self._demon_spawn_pending = self.can_summon_demon
         return "Las pócimas quedan identificadas."
 
 
@@ -363,14 +375,14 @@ class SilenceBook(Book):
     def read_aloud(self, reader: "Actor") -> str:
         engine = getattr(getattr(reader, "gamemap", None), "engine", None)
         if engine and getattr(engine, "silence_turns", 0) > 0:
-            self._silence_spawn_pending = False
+            self._demon_spawn_pending = False
             return "No es posible leer en voz alta mientras dure el silencio."
         if engine:
             engine.apply_silence(
                 25,
                 end_message="El silencio se disipa.",
             )
-        self._silence_spawn_pending = True
+        self._demon_spawn_pending = self.can_summon_demon
         return "Tras la recitación, se produce un silencio terrible y absoluto."
 
 

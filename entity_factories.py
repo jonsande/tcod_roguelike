@@ -1407,6 +1407,7 @@ generated_book = GeneratedBook(
     title_fn=bookgen.random_book_title,
     content_fn=bookgen.random_book_fragment,
     id_name="Book",
+    can_summon_demon=False,
 )
 generated_book._spawn_key = "generated_book"
 loot_tables.register_loot_item("generated_book", generated_book)
@@ -1420,6 +1421,7 @@ def _build_static_book(key: str) -> Book:
         name=title,
         id_name=title,
         info=content,
+        can_summon_demon=True,
         stackable=False,
     )
 
@@ -1485,6 +1487,7 @@ apothecary_book = ApothecaryBook(
         "Un libro que permite identificar hierbas y distintas pócimas, tónicos y "
         "medicinas creadas con ellas."
     ),
+    can_summon_demon=True,
     stackable=False,
 )
 apothecary_book._spawn_key = "apothecary_book"
@@ -1499,6 +1502,7 @@ silence_book = SilenceBook(
         "Un libro envuelto en harapos. Sus páginas describen el arte "
         "de silenciar el mundo a través de palabras."
     ),
+    can_summon_demon=True,
     stackable=False,
 )
 silence_book._spawn_key = "silence_book"
