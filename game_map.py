@@ -59,7 +59,7 @@ class GameMapTown:
         self.entities = set(entities)
         self.ambient_effects: List[object] = []
         #self.tiles = np.full((width, height), fill_value=tile_types.town_wall, order="F")
-        self.tiles = np.full((width, height), fill_value=tile_types.town_floor, order="F")
+        self.tiles = np.full((width, height), fill_value=tile_types.sand_floor, order="F")
         self.is_town = True
         self.visible = np.full(
             (width, height), fill_value=False, order="F"

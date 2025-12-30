@@ -70,7 +70,7 @@ if GRAPHIC_MODE == "pseudo_ascii":
         dark=(ord("∞"), (15,15,15), (0,0,0)),
         light=(ord("∞"), (50,50,40), (5,5,5)),
     )
-    town_floor = new_tile(
+    sand_floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord("~"), (133,116,66), (0,0,0)),
@@ -228,7 +228,7 @@ elif GRAPHIC_MODE == "ascii":
         light=(ord("."), (189, 138, 62), (0, 0, 0)),
     )
 
-    town_floor = new_tile(
+    sand_floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord("~"), (133,116,66), (0,0,0)),
@@ -397,7 +397,7 @@ else:
         light=(ord("."), (50,50,40), (5,5,5)),
     )
 
-    town_floor = new_tile(
+    sand_floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord(" "), (0,0,0), (0,0,0)),
@@ -548,7 +548,7 @@ else:
         dark=dark,
     )
     town_wall = wall
-    town_floor = new_tile(
+    sand_floor = new_tile(
         walkable=True,
         transparent=True,
         dark=(ord("~"), (133,116,66), (0,0,0)),

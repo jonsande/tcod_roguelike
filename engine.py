@@ -968,9 +968,6 @@ class Engine:
         )
 
         for campfire in campfires:
-            if not player_los[campfire.x, campfire.y]:
-                continue
-
             fighter = getattr(campfire, "fighter", None)
             base_radius = getattr(fighter, "fov", 3) if fighter else 3
             base_radius = max(1, base_radius - 1)
@@ -986,11 +983,9 @@ class Engine:
                 radius,
                 algorithm=settings.FOV_ALGORITHM,
             )
-            gamemap.visible |= light_mask
+            gamemap.visible |= (light_mask & player_los)
 
         for adventurer in adventurers:
-            if not player_los[adventurer.x, adventurer.y]:
-                continue
             fighter = getattr(adventurer, "fighter", None)
             if not fighter:
                 continue
@@ -1004,7 +999,7 @@ class Engine:
                 radius,
                 algorithm=settings.FOV_ALGORITHM,
             )
-            gamemap.visible |= light_mask
+            gamemap.visible |= (light_mask & player_los)
 
     def _tick_campfire(self, campfire: Actor, fighter: components.fighter.Fighter) -> None:
         if getattr(fighter, "never_extinguish", False):

@@ -51,7 +51,7 @@ def generate_town(
 
     new_room = TownRoom(x, y, room_width, room_height)
 
-    dungeon.tiles[new_room.inner] = tile_types.town_floor
+    dungeon.tiles[new_room.inner] = tile_types.sand_floor
 
     if place_player:
         engine.player.place(*new_room.center, dungeon)

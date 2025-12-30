@@ -383,7 +383,7 @@ Se vuelve a garantizar camino entre escaleras, se colocan cofres y se valida con
 
 generate_town() es básicamente un mapa único (el desierto inicial de entrada):
 
-Usa GameMapTown y una única TownRoom (80×36) como zona principal con tile town_floor.
+Usa GameMapTown y una única TownRoom (80×36) como zona principal con tile sand_floor.
 Coloca directamente al jugador en el centro del “pueblo” (o reutiliza upstairs_location). Las escaleras bajan siempre en las coordenadas fijas (35, 17).
 Spawnea NPC fijo “el viejo” y su hoguera cerca de las escaleras (_place_town_old_man_with_campfire), con cofre garantizado en planta 1 (_place_town_old_man_chest).
 Luego llama a place_entities para añadir monstruos/ítems/props según reglas estándar, y si aplica, cofre random + chequeo de acceso a escaleras.

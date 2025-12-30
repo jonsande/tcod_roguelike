@@ -1,4 +1,9 @@
 AÚN SIN CATALOGAR
+- [ ] Menú de interacción: coger arena si se está en desierto (genera un sand bag con 4 de arena). Coger piedra roca en algunas habitaciones.
+- [ ] La arena tiene que tener más usos aparte de cegar. Puede servir, por ejemplo, para evitar que un pedestal-trampa se active al retirar el objeto que haya sobre él (en plan Indiana Jones).
+- [!] Sala con fuente/pozo. Habrá diversas interacciones posibles con la fuente. Beber el agua puede produir efectos aleatorios.
+- [x] Luz realista. Ahora mismo la luz sólo es visible si se ve la fuente de luz. Hay que arreglar esto.
+- [ ] La lámpara/linterna debería ser un objeto equipable. Y debería tener un tiempo de duración. Recargable con pociones de aceite.
 - [ ] Diseñar un límite al stealth. Comprobar qué pasa con un stealth demasiado alto, para ver cómo desarrollar el sistema de progreso de un stealth build.
 - [x] Darle a recoger ("g") en la habitación del musgo azul te permite coger musgo azul. El musgo azul tiene varias propiedades. Debe anular la petrificación (es decir, el proceso de petrificación: una criatura ya petrificada es irreversible).
 - [ ] Evitar el farming infinito de musgo mediante alguna mecánica. Hay que diseñar el sistema riesgo/recompensa. Es decir que recoger musgo tenga también algunos riesgos.
@@ -262,8 +267,10 @@ Output to Abelardo.txt
 - [ ] Rellenar la info de objetos.
 - [ ] Etiqueta "poisoned" en el panel de abajo para cuando se está envenenado. Y etiqueta confused.
 
-SALAS ESPECIALES
+SALAS/HABITACIONES ESPECIALES
 - [ ] Tiendas.
+- [ ] Sala con fuente/pozo (ver más arriba, en "sin catalogar").
+- [ ] Sala del pedestal (en plan Indiana Jones). Ver más arriba, en "sin catalogar". En el pedestal podría generarse un objeto especial, aleatoriamente escogido de una batería, que incluyera una llave necesaria, o un libro mágico o común, un item mágico, etc.
 
 EVENTOS ESPECIALES
 - [ ] Misiones.
@@ -339,13 +346,20 @@ MECÁNICAS
 - [-] Decidir cómo se sube la DEFENSE. Hay que tener en cuenta que la DEFENSE es el valor contra el que tira el atacante para decidir un hit. Actualmente sólo es posible acumular puntos mediante la mecánica táctica de melee (de esperar, retirarse, etc.), pero haría falta que hubiera alguna manera de que el PJ desarrollara su DEFENSE a lo largo de la partida. [P.D. Actualmente se suve el DEF por un sistema básico de xp: se contabiliza el número de impactos fallados dirigidos contra el jugador; a partir de un determinado número, configurable desde el settings, gana 1 punto a DEF y el contador se reinicia].
 - [-] Decidir en consecuencia (con lo decidido para el DEFENSE) cómo subir el To-hit. Progresiń en el aumento de defensa tiene que ir acompañado de la posibilidad de progresión en el to-hit. [P.D. En el modelo actual el to hit se puede subir mediante pociones y a las bonificaciones de las propias armas; pendiente está crear algún encantamiento o pergamino dedicado a ello].
 - [x] Puertas cerradas con llave. Sólo se abren si el personaje jugador tiene la llave correspondiente a esa puerta en el inventario. Las llaves se tienen que generar siempre en lugares de la mazmorra anteriores a la puerta [redactar esto mejor].
-- [!] Trampas!
 - [ ] Portales mágicos!
 - [x] Objeto malditos!: debe ser simplificado (tipo unexplored, no nethack: o sea, que no haya con un mismo nombre una versión maldita y otra no, pues complica mucho el código). 
 - [ ] Unos objetos se considerarán "bueno", otros "malos", y otros "netrales". Crearles ese atributo, a fin de poder crear un pergamino de tipo "detectar magia".
 - [ ] Profundizar en el sistema de críticos (creo que hay algo en el stealth mode, pero nada más)
 - [ ] Profundizar en el sistema de suerte.
 - [DESCARTADO] Sí que va a haber un sistema de experiencia. Estará oculto. El jugador no sabrá nada. Servirá para subir la weapon proficiency. Hay que rediseñarlo. Dará puntos por los túrnos que se pase en melee junto a una criatura hostil (hay que arreglar eso de que junto a neutrales se entre en melee también).
+
+TRAMPAS
+- [ ] Trampa de ruido. Al activarla hará mucho ruido y atraerá a enemigos. Se podrá recoger y colocar, de forma que pueda servir para atraer a enemigos a la sala deseada. Se podrá activar por pisada (un slime, por ejemplo, podría pisarla), lazando una daga o flecha o piedra sobre ella.
+- [x] Crear piedra/roca recogible del suelo.
+- [ ] Techo que baja y aplasta todo lo que haya en la sala.
+- [ ] Bola rodante (con y sin foso).
+- [ ] Foso (habrá que crear habilidad de saltar).
+
 
 VARIOS
 - [ ] El nombre del Personaje Jugador (PJ) debe generarse proceduralmente, siguiendo las siguientes reglas y consideraciones: habrá una batería de hasta 12 nombres de pila, y un contador de cuántas veces se ha jugado una partida con ese nombre de pila. Al comenzar una partida, se escogerá aleatoriamente un nombre de pila, se le añadirá el artículo " the ", y por último se le añadirá un ordinal (escrito en texto, no en número), de modo que quede un resultado así como, por ejemplo, "Abelardo the fourth". No podrá haber más de 16 ordinales por nombre.

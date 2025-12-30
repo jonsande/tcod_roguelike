@@ -623,6 +623,18 @@ blue_moss = Item(
     identified=True,
 )
 
+stone = Item(
+    char=",",
+    color=(95, 85, 95),
+    name="stone",
+    id_name="stone",
+    info="An old and reliable stone.",
+    id_info="[...]",
+    throwable=True,
+    #consumable=consumable.BlueMossConsumable(),
+    identified=False,
+)
+
 #damage_potion = Item(
 #    char="!",
 #    color=(200, 200, 200),
@@ -1009,7 +1021,7 @@ def _setup_creature_equipment(entity: Actor) -> None:
 short_sword_plus = Item(
     char="/", 
     color=(0, 191, 155), 
-    name="Short Sword",
+    name="Short Sword (good)",
     id_name="Short Sword (good)",
     equippable=equippable.ShortSwordPlus(),
     info="A short sword with superior temper and bite."
@@ -1028,7 +1040,7 @@ long_sword = Item(
 long_sword_plus = Item(
     char="/", 
     color=(0, 191, 155), 
-    name="Long Sword",
+    name="Long Sword (good)",
     id_name="Long Sword (good)",
     equippable=equippable.LongSwordPlus(),
     info="A masterwork long sword with a razor-straight edge."
@@ -1048,7 +1060,7 @@ loot_tables.register_loot_item("spear", spear)
 spear_plus = Item(
     char="/", 
     color=(0, 191, 155), 
-    name="Spear",
+    name="Spear (good)",
     id_name="Spear (good)",
     equippable=equippable.SpearPlus(),
     throwable=True,
